@@ -64,7 +64,7 @@ export default function OptiPilotHeader({
       {/* Right */}
       <div className="min-w-[80px] flex justify-end">
         {rightAction || (
-          <button className="p-2 rounded-xl" style={{ color: "#6b7280" }}>
+          <button className="p-2 rounded-xl" style={{ color: "#9B96DA" }}>
             <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
               <path
                 d="M4 6h16M4 12h16M4 18h16"

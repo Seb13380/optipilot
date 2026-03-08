@@ -52,7 +52,7 @@ const OFFRES_COMPLEMENTAIRES: OffreCompl[] = [
     description: "Masque correcteur",
     prix: 79,
     icon: "🏊",
-    gradient: "linear-gradient(135deg, #7e22ce 0%, #a855f7 100%)",
+    gradient: "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)",
     avantages: [
       "Résistante aux chocs (norme EN 166)",
       "Courbure enveloppante",
@@ -103,7 +103,7 @@ export default function OffreComplementairePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#f0f4f8" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
       <OptiPilotHeader
         title="Offre Complémentaire"
         showBack
@@ -115,7 +115,7 @@ export default function OffreComplementairePage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="text-sm mb-5"
-          style={{ color: "#6b7280" }}
+          style={{ color: "#9B96DA" }}
         >
           Complétez votre équipement avec nos offres exclusives
         </motion.p>
@@ -131,8 +131,8 @@ export default function OffreComplementairePage() {
                 transition={{ delay: i * 0.1 }}
                 className="rounded-2xl overflow-hidden shadow-sm"
                 style={{
-                  border: isAdded ? "2px solid #22c55e" : "2px solid #e5e7eb",
-                  background: "white",
+                  border: isAdded ? "2px solid #22c55e" : "2px solid rgba(83,49,208,0.35)",
+                  background: "#0A0338",
                 }}
               >
                 {/* Header coloré */}
@@ -165,7 +165,7 @@ export default function OffreComplementairePage() {
                 <div className="p-4">
                   <div className="grid grid-cols-2 gap-1.5 mb-4">
                     {offre.avantages.map((av, j) => (
-                      <p key={j} className="text-xs flex items-start gap-1.5" style={{ color: "#374151" }}>
+                      <p key={j} className="text-xs flex items-start gap-1.5" style={{ color: "#FDFDFE" }}>
                         <span className="text-green-500 flex-shrink-0">✓</span>
                         {av}
                       </p>
@@ -180,8 +180,8 @@ export default function OffreComplementairePage() {
                       style={
                         isAdded
                           ? {
-                              background: "#f0fdf4",
-                              color: "#15803d",
+                              background: "rgba(34,197,94,0.12)",
+                              color: "#22c55e",
                               border: "2px solid #22c55e",
                             }
                           : {
@@ -198,7 +198,7 @@ export default function OffreComplementairePage() {
                         if (!isAdded) router.back();
                       }}
                       className="flex-1 py-3.5 rounded-xl font-medium text-sm"
-                      style={{ background: "#f3f4f6", color: "#9ca3af" }}
+                      style={{ background: "rgba(10,3,56,0.8)", color: "rgba(155,150,218,0.6)" }}
                     >
                       Ignorer
                     </motion.button>
@@ -217,7 +217,7 @@ export default function OffreComplementairePage() {
             initial={{ opacity: 0, y: 80 }}
             animate={{ opacity: 1, y: 0 }}
             className="fixed bottom-0 left-0 right-0 p-5"
-            style={{ background: "#f0fdf4", borderTop: "2px solid #22c55e" }}
+            style={{ background: "rgba(34,197,94,0.12)", borderTop: "2px solid #22c55e" }}
           >
             <p className="text-center font-semibold text-green-700 text-lg">
               ✓ Ajouté au devis ! Finalisation...
@@ -228,10 +228,10 @@ export default function OffreComplementairePage() {
             initial={{ opacity: 0, y: 80 }}
             animate={{ opacity: 1, y: 0 }}
             className="fixed bottom-0 left-0 right-0 p-5"
-            style={{ background: "white", borderTop: "1px solid #e5e7eb", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}
+            style={{ background: "#0A0338", borderTop: "1px solid rgba(83,49,208,0.35)", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}
           >
             {added.size > 0 && (
-              <p className="text-center text-sm mb-3" style={{ color: "#6b7280" }}>
+              <p className="text-center text-sm mb-3" style={{ color: "#9B96DA" }}>
                 {added.size} offre{added.size > 1 ? "s" : ""} ajoutée{added.size > 1 ? "s" : ""} — +{totalAjouts}€
               </p>
             )}
@@ -240,7 +240,7 @@ export default function OffreComplementairePage() {
                 whileTap={{ scale: 0.97 }}
                 onClick={() => router.back()}
                 className="flex-1 py-4 rounded-2xl font-medium"
-                style={{ background: "#f3f4f6", color: "#6b7280" }}
+                style={{ background: "rgba(10,3,56,0.8)", color: "#9B96DA" }}
               >
                 Passer
               </motion.button>
@@ -249,7 +249,7 @@ export default function OffreComplementairePage() {
                   whileTap={{ scale: 0.97 }}
                   onClick={valider}
                   className="flex-[2] py-4 rounded-2xl text-white font-semibold"
-                  style={{ background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)" }}
+                  style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
                 >
                   Valider +{totalAjouts}€ →
                 </motion.button>

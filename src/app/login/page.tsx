@@ -153,7 +153,7 @@ export default function LoginPage() {
               className="w-full py-4 rounded-2xl text-white text-base font-semibold mt-2 relative overflow-hidden"
               style={{
                 background: loading
-                  ? "#9ca3af"
+                  ? "rgba(155,150,218,0.6)"
                   : "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)",
                 boxShadow: loading ? "none" : "0 4px 24px rgba(83,49,208,0.5)",
               }}

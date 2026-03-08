@@ -41,7 +41,7 @@ const MENU_ITEMS = [
         <path d="M19 12v6M16 15h6" stroke="white" strokeWidth="2" strokeLinecap="round" />
       </svg>
     ),
-    gradient: "linear-gradient(135deg, #0f5c2e 0%, #16a34a 100%)",
+    gradient: "linear-gradient(135deg, #1C0B62 0%, #5331D0 100%)",
     href: "/nouveau-client",
   },
   {
@@ -55,7 +55,7 @@ const MENU_ITEMS = [
         <path d="M7 14h5M7 17h8" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
     ),
-    gradient: "linear-gradient(135deg, #7e22ce 0%, #a855f7 100%)",
+    gradient: "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)",
     href: "/historique",
   },
 ];
@@ -244,7 +244,7 @@ function StatCard({
       <span className="text-2xl font-bold" style={{ color }}>
         {value}
       </span>
-      <span className="text-xs font-medium mt-1 leading-tight" style={{ color: "#6b7280" }}>
+      <span className="text-xs font-medium mt-1 leading-tight" style={{ color: "#9B96DA" }}>
         {label}
       </span>
     </div>

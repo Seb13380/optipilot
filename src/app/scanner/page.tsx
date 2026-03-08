@@ -106,7 +106,7 @@ export default function ScannerPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#f0f4f8" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
       <OptiPilotHeader
         title="Scanner Ordonnance"
         showBack
@@ -126,7 +126,7 @@ export default function ScannerPage() {
             >
               <div
                 className="rounded-2xl overflow-hidden shadow-md relative"
-                style={{ background: "#1a1a2e", minHeight: 280 }}
+                style={{ background: "#FDFDFE", minHeight: 280 }}
               >
                 <video
                   ref={videoRef}
@@ -167,7 +167,7 @@ export default function ScannerPage() {
                     whileTap={{ scale: 0.97 }}
                     onClick={startCamera}
                     className="py-4 rounded-2xl text-white font-semibold text-base"
-                    style={{ background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)", boxShadow: "0 4px 20px rgba(30,58,138,0.35)" }}
+                    style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}
                   >
                     📸 Démarrer la caméra
                   </motion.button>
@@ -176,7 +176,7 @@ export default function ScannerPage() {
                     whileTap={{ scale: 0.97 }}
                     onClick={capturePhoto}
                     className="py-4 rounded-2xl text-white font-semibold text-base"
-                    style={{ background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)", boxShadow: "0 4px 20px rgba(30,58,138,0.35)" }}
+                    style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}
                   >
                     📷 Prendre la photo
                   </motion.button>
@@ -186,7 +186,7 @@ export default function ScannerPage() {
                   whileTap={{ scale: 0.97 }}
                   onClick={useDemoImage}
                   className="py-3.5 rounded-2xl font-medium text-base"
-                  style={{ background: "white", color: "#1e3a8a", border: "2px solid #dbeafe" }}
+                  style={{ background: "#0A0338", color: "#5331D0", border: "2px solid #dbeafe" }}
                 >
                   🔵 Utiliser une ordonnance démo
                 </motion.button>
@@ -203,7 +203,7 @@ export default function ScannerPage() {
               exit={{ opacity: 0, y: -20 }}
               className="flex flex-col gap-5"
             >
-              <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: "#f3f4f6", minHeight: 280 }}>
+              <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: "rgba(10,3,56,0.8)", minHeight: 280 }}>
                 {imageDataUrl && imageDataUrl !== "/demo-ordonnance.jpg" ? (
                   <img src={imageDataUrl} alt="Ordonnance" className="w-full object-contain" style={{ maxHeight: 380 }} />
                 ) : (
@@ -224,7 +224,7 @@ export default function ScannerPage() {
                     setImageDataUrl("");
                   }}
                   className="flex-1 py-4 rounded-2xl font-medium"
-                  style={{ background: "white", color: "#6b7280", border: "2px solid #e5e7eb" }}
+                  style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}
                 >
                   Reprendre
                 </motion.button>
@@ -232,7 +232,7 @@ export default function ScannerPage() {
                   whileTap={{ scale: 0.97 }}
                   onClick={analyseOrdonnance}
                   className="flex-[2] py-4 rounded-2xl text-white font-semibold"
-                  style={{ background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)", boxShadow: "0 4px 20px rgba(30,58,138,0.35)" }}
+                  style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}
                 >
                   🤖 Analyser
                 </motion.button>
@@ -253,24 +253,24 @@ export default function ScannerPage() {
                 <div className="flex flex-col items-center justify-center gap-5 py-16">
                   <div
                     className="w-20 h-20 rounded-full flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)" }}
+                    style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
                   >
                     <svg className="animate-spin" width="32" height="32" viewBox="0 0 24 24" fill="none">
                       <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" />
                     </svg>
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-semibold" style={{ color: "#1a1a2e" }}>
+                    <p className="text-lg font-semibold" style={{ color: "#FDFDFE" }}>
                       Analyse en cours...
                     </p>
-                    <p className="text-sm mt-1" style={{ color: "#6b7280" }}>
+                    <p className="text-sm mt-1" style={{ color: "#9B96DA" }}>
                       L'IA extrait les données optiques
                     </p>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="rounded-2xl p-5 shadow-sm" style={{ background: "white" }}>
+                  <div className="rounded-2xl p-5 shadow-sm" style={{ background: "#0A0338" }}>
                     <div className="flex items-center gap-2 mb-4">
                       <span
                         className="px-2.5 py-1 rounded-full text-xs font-semibold text-white"
@@ -278,7 +278,7 @@ export default function ScannerPage() {
                       >
                         ✓ Extrait
                       </span>
-                      <h2 className="text-base font-semibold" style={{ color: "#1a1a2e" }}>
+                      <h2 className="text-base font-semibold" style={{ color: "#FDFDFE" }}>
                         Résultats de l'ordonnance
                       </h2>
                     </div>
@@ -290,7 +290,7 @@ export default function ScannerPage() {
                         cylindre={ordonnance.odCylindre}
                         axe={ordonnance.odAxe}
                         addition={ordonnance.odAddition}
-                        color="#1e3a8a"
+                        color="#5331D0"
                         onChange={(field, val) =>
                           setOrdonnance((prev) => ({
                             ...prev,
@@ -304,7 +304,7 @@ export default function ScannerPage() {
                         cylindre={ordonnance.ogCylindre}
                         axe={ordonnance.ogAxe}
                         addition={ordonnance.ogAddition}
-                        color="#7e22ce"
+                        color="#5331D0"
                         onChange={(field, val) =>
                           setOrdonnance((prev) => ({
                             ...prev,
@@ -315,7 +315,7 @@ export default function ScannerPage() {
                     </div>
 
                     {ordonnance.prescripteur && (
-                      <p className="mt-3 text-xs" style={{ color: "#9ca3af" }}>
+                      <p className="mt-3 text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
                         Prescripteur : {ordonnance.prescripteur}
                       </p>
                     )}
@@ -326,7 +326,7 @@ export default function ScannerPage() {
                       whileTap={{ scale: 0.97 }}
                       onClick={() => setStep("camera")}
                       className="flex-1 py-4 rounded-2xl font-medium"
-                      style={{ background: "white", color: "#6b7280", border: "2px solid #e5e7eb" }}
+                      style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}
                     >
                       Modifier
                     </motion.button>
@@ -334,7 +334,7 @@ export default function ScannerPage() {
                       whileTap={{ scale: 0.97 }}
                       onClick={confirmerOrdonnance}
                       className="flex-[2] py-4 rounded-2xl text-white font-semibold"
-                      style={{ background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)", boxShadow: "0 4px 20px rgba(30,58,138,0.35)" }}
+                      style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}
                     >
                       ✓ Confirmer
                     </motion.button>
@@ -369,7 +369,7 @@ function OrdonnanceSection({
   return (
     <div
       className="rounded-xl p-3.5"
-      style={{ background: "#f8fafc", border: `2px solid ${color}20` }}
+      style={{ background: "rgba(10,3,56,0.6)", border: `2px solid ${color}20` }}
     >
       <p className="text-xs font-bold mb-3" style={{ color }}>
         {label}
@@ -381,7 +381,7 @@ function OrdonnanceSection({
         ...(addition ? [{ field: "addition", label: "Addition", value: addition }] : []),
       ].map((row) => (
         <div key={row.field} className="flex items-center justify-between mb-1.5">
-          <span className="text-xs" style={{ color: "#6b7280" }}>
+          <span className="text-xs" style={{ color: "#9B96DA" }}>
             {row.label}
           </span>
           <input
@@ -389,7 +389,7 @@ function OrdonnanceSection({
             value={row.value || ""}
             onChange={(e) => onChange(row.field, e.target.value)}
             className="text-sm font-bold text-right w-20 px-2 py-1 rounded-lg border outline-none"
-            style={{ color, borderColor: `${color}30`, background: "white" }}
+            style={{ color, borderColor: `${color}30`, background: "#0A0338" }}
           />
         </div>
       ))}

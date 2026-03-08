@@ -46,9 +46,9 @@ export default function RecommandationsPage() {
   }
 
   const COULEURS: Record<string, { bg: string; border: string; badge: string; text: string }> = {
-    Essentiel: { bg: "#f0fdf4", border: "#22c55e", badge: "#22c55e", text: "#15803d" },
-    Confort: { bg: "#eff6ff", border: "#1e3a8a", badge: "#1e3a8a", text: "#1e3a8a" },
-    Premium: { bg: "#faf5ff", border: "#7e22ce", badge: "#7e22ce", text: "#7e22ce" },
+    Essentiel: { bg: "rgba(34,197,94,0.12)", border: "#22c55e", badge: "#22c55e", text: "#22c55e" },
+    Confort: { bg: "rgba(83,49,208,0.15)", border: "#5331D0", badge: "#5331D0", text: "#5331D0" },
+    Premium: { bg: "rgba(83,49,208,0.15)", border: "#5331D0", badge: "#5331D0", text: "#5331D0" },
   };
 
   const GLASSES_ICONS: Record<string, string> = {
@@ -58,7 +58,7 @@ export default function RecommandationsPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#f0f4f8" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
       <OptiPilotHeader
         title="Recommandations OptiPilot"
         showBack
@@ -70,13 +70,13 @@ export default function RecommandationsPage() {
           <div className="flex flex-col items-center justify-center gap-5 py-20">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)" }}
+              style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
             >
               <svg className="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" />
               </svg>
             </div>
-            <p className="text-base font-semibold" style={{ color: "#1a1a2e" }}>
+            <p className="text-base font-semibold" style={{ color: "#FDFDFE" }}>
               Calcul des recommandations...
             </p>
           </div>
@@ -88,7 +88,7 @@ export default function RecommandationsPage() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-5 p-4 rounded-2xl"
-                style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}
+                style={{ background: "rgba(83,49,208,0.15)", border: "1px solid #bfdbfe" }}
               >
                 <p className="text-sm font-medium" style={{ color: "#1e40af" }}>
                   🤖 {result.argumentaireGlobal}
@@ -112,7 +112,7 @@ export default function RecommandationsPage() {
                     className="rounded-2xl p-5 cursor-pointer transition-all relative overflow-hidden"
                     style={{
                       background: isSelected ? couleur.bg : "white",
-                      border: `2px solid ${isSelected ? couleur.border : "#e5e7eb"}`,
+                      border: `2px solid ${isSelected ? couleur.border : "rgba(83,49,208,0.35)"}`,
                       boxShadow: isSelected ? `0 4px 24px ${couleur.border}25` : "0 2px 8px rgba(0,0,0,0.05)",
                     }}
                   >
@@ -138,10 +138,10 @@ export default function RecommandationsPage() {
                         <h3 className="text-lg font-bold" style={{ color: couleur.text }}>
                           {offre.nom}
                         </h3>
-                        <p className="text-sm" style={{ color: "#6b7280" }}>
+                        <p className="text-sm" style={{ color: "#9B96DA" }}>
                           {offre.verrier} — {offre.gamme}
                         </p>
-                        <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
+                        <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>
                           Indice {offre.indice} • Classe {offre.classe100ps}
                         </p>
                       </div>
@@ -162,15 +162,15 @@ export default function RecommandationsPage() {
                       style={{ background: `${couleur.border}10` }}
                     >
                       <div>
-                        <p className="text-xs" style={{ color: "#9ca3af" }}>
+                        <p className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
                           Prix verres
                         </p>
-                        <p className="font-bold" style={{ color: "#374151" }}>
+                        <p className="font-bold" style={{ color: "#FDFDFE" }}>
                           {offre.prixVerres}€
                         </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs" style={{ color: "#9ca3af" }}>
+                        <p className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
                           Remboursement
                         </p>
                         <p className="font-bold text-green-600">
@@ -178,7 +178,7 @@ export default function RecommandationsPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs" style={{ color: "#9ca3af" }}>
+                        <p className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
                           Reste à charge
                         </p>
                         <p className="text-2xl font-black" style={{ color: couleur.text }}>

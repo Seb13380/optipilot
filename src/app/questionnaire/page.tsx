@@ -76,7 +76,7 @@ export default function QuestionnairePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#f0f4f8" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
       <OptiPilotHeader title="Profil Client" showBack onBack={back} />
 
       {/* Barre de progression */}
@@ -87,13 +87,13 @@ export default function QuestionnairePage() {
               key={i}
               className="h-1.5 rounded-full flex-1"
               animate={{
-                background: i < step ? "#1e3a8a" : "#e5e7eb",
+                background: i < step ? "#5331D0" : "rgba(83,49,208,0.35)",
               }}
               transition={{ duration: 0.3 }}
             />
           ))}
         </div>
-        <p className="text-xs mt-2" style={{ color: "#9ca3af" }}>
+        <p className="text-xs mt-2" style={{ color: "rgba(155,150,218,0.6)" }}>
           Question {step}/{TOTAL_STEPS}
         </p>
       </div>
@@ -116,15 +116,15 @@ export default function QuestionnairePage() {
                     }}
                     className="rounded-2xl py-5 px-2 flex flex-col items-center gap-2 border-2 transition-all"
                     style={{
-                      background: data.profession === p.id ? "#eff6ff" : "white",
-                      borderColor: data.profession === p.id ? "#1e3a8a" : "#e5e7eb",
+                      background: data.profession === p.id ? "rgba(83,49,208,0.15)" : "white",
+                      borderColor: data.profession === p.id ? "#5331D0" : "rgba(83,49,208,0.35)",
                     }}
                   >
                     <span className="text-3xl">{p.icon}</span>
                     <span
                       className="text-xs font-semibold text-center leading-tight"
                       style={{
-                        color: data.profession === p.id ? "#1e3a8a" : "#374151",
+                        color: data.profession === p.id ? "#5331D0" : "#FDFDFE",
                         whiteSpace: "pre-line",
                       }}
                     >
@@ -204,7 +204,7 @@ export default function QuestionnairePage() {
               </QuestionTitle>
               <div className="flex flex-col gap-4 mt-6">
                 <div>
-                  <p className="text-sm font-medium mb-2" style={{ color: "#6b7280" }}>
+                  <p className="text-sm font-medium mb-2" style={{ color: "#9B96DA" }}>
                     Sensibilité à la lumière
                   </p>
                   <YesNoButtons
@@ -219,7 +219,7 @@ export default function QuestionnairePage() {
                   />
                 </div>
                 <div>
-                  <p className="text-sm font-medium mb-2" style={{ color: "#6b7280" }}>
+                  <p className="text-sm font-medium mb-2" style={{ color: "#9B96DA" }}>
                     Sécheresse oculaire
                   </p>
                   <YesNoButtons
@@ -237,7 +237,7 @@ export default function QuestionnairePage() {
                   whileTap={{ scale: 0.97 }}
                   onClick={next}
                   className="py-4 rounded-2xl text-white font-semibold mt-2"
-                  style={{ background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)" }}
+                  style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
                 >
                   Suivant →
                 </motion.button>
@@ -257,9 +257,9 @@ export default function QuestionnairePage() {
                       onClick={() => update({ mutuelle: m })}
                       className="py-3 px-3 rounded-xl text-sm font-medium border-2 text-left transition-all"
                       style={{
-                        background: data.mutuelle === m ? "#eff6ff" : "white",
-                        borderColor: data.mutuelle === m ? "#1e3a8a" : "#e5e7eb",
-                        color: data.mutuelle === m ? "#1e3a8a" : "#374151",
+                        background: data.mutuelle === m ? "rgba(83,49,208,0.15)" : "white",
+                        borderColor: data.mutuelle === m ? "#5331D0" : "rgba(83,49,208,0.35)",
+                        color: data.mutuelle === m ? "#5331D0" : "#FDFDFE",
                       }}
                     >
                       {m}
@@ -269,7 +269,7 @@ export default function QuestionnairePage() {
 
                 {data.mutuelle && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4">
-                    <p className="text-sm font-medium mb-2" style={{ color: "#374151" }}>
+                    <p className="text-sm font-medium mb-2" style={{ color: "#FDFDFE" }}>
                       Niveau de garantie
                     </p>
                     <div className="flex gap-2">
@@ -280,9 +280,9 @@ export default function QuestionnairePage() {
                           onClick={() => update({ niveauGarantie: n.toLowerCase() })}
                           className="flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition-all"
                           style={{
-                            background: data.niveauGarantie === n.toLowerCase() ? "#eff6ff" : "white",
-                            borderColor: data.niveauGarantie === n.toLowerCase() ? "#1e3a8a" : "#e5e7eb",
-                            color: data.niveauGarantie === n.toLowerCase() ? "#1e3a8a" : "#374151",
+                            background: data.niveauGarantie === n.toLowerCase() ? "rgba(83,49,208,0.15)" : "white",
+                            borderColor: data.niveauGarantie === n.toLowerCase() ? "#5331D0" : "rgba(83,49,208,0.35)",
+                            color: data.niveauGarantie === n.toLowerCase() ? "#5331D0" : "#FDFDFE",
                           }}
                         >
                           {n}
@@ -299,7 +299,7 @@ export default function QuestionnairePage() {
                     whileTap={{ scale: 0.97 }}
                     onClick={next}
                     className="w-full py-4 rounded-2xl text-white font-semibold mt-4"
-                    style={{ background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)" }}
+                    style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
                   >
                     Suivant →
                   </motion.button>
@@ -313,9 +313,9 @@ export default function QuestionnairePage() {
               <QuestionTitle>Quel est votre budget ?</QuestionTitle>
               <div className="flex flex-col gap-3 mt-6">
                 {[
-                  { value: "economique", label: "Économique", sub: "100% Santé — Reste à charge 0€", icon: "💚", color: "#15803d" },
-                  { value: "standard", label: "Standard", sub: "Bon rapport qualité / prix", icon: "💙", color: "#1e3a8a" },
-                  { value: "premium", label: "Premium", sub: "Le meilleur de la technologie optique", icon: "⭐", color: "#7e22ce" },
+                  { value: "economique", label: "Économique", sub: "100% Santé — Reste à charge 0€", icon: "💚", color: "#22c55e" },
+                  { value: "standard", label: "Standard", sub: "Bon rapport qualité / prix", icon: "💙", color: "#5331D0" },
+                  { value: "premium", label: "Premium", sub: "Le meilleur de la technologie optique", icon: "⭐", color: "#5331D0" },
                 ].map((opt) => (
                   <motion.button
                     key={opt.value}
@@ -323,8 +323,8 @@ export default function QuestionnairePage() {
                     onClick={() => { update({ budget: opt.value }); next(); }}
                     className="flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all"
                     style={{
-                      background: data.budget === opt.value ? "#f8fafc" : "white",
-                      borderColor: data.budget === opt.value ? opt.color : "#e5e7eb",
+                      background: data.budget === opt.value ? "rgba(10,3,56,0.6)" : "white",
+                      borderColor: data.budget === opt.value ? opt.color : "rgba(83,49,208,0.35)",
                     }}
                   >
                     <span className="text-3xl">{opt.icon}</span>
@@ -332,7 +332,7 @@ export default function QuestionnairePage() {
                       <p className="font-semibold" style={{ color: opt.color }}>
                         {opt.label}
                       </p>
-                      <p className="text-sm" style={{ color: "#6b7280" }}>
+                      <p className="text-sm" style={{ color: "#9B96DA" }}>
                         {opt.sub}
                       </p>
                     </div>
@@ -395,7 +395,7 @@ function StepWrapper({ children }: { children: React.ReactNode }) {
 
 function QuestionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xl font-bold leading-snug" style={{ color: "#1a1a2e" }}>
+    <h2 className="text-xl font-bold leading-snug" style={{ color: "#FDFDFE" }}>
       {children}
     </h2>
   );
@@ -423,23 +423,23 @@ function ChoiceButton({
       className="flex items-center gap-4 border-2 rounded-2xl text-left transition-all"
       style={{
         padding: compact ? "12px 16px" : "16px 20px",
-        background: selected ? "#eff6ff" : "white",
-        borderColor: selected ? "#1e3a8a" : "#e5e7eb",
+        background: selected ? "rgba(83,49,208,0.15)" : "white",
+        borderColor: selected ? "#5331D0" : "rgba(83,49,208,0.35)",
       }}
     >
       {icon && <span className="text-2xl">{icon}</span>}
       <div>
-        <p className="font-semibold" style={{ color: selected ? "#1e3a8a" : "#1a1a2e" }}>
+        <p className="font-semibold" style={{ color: selected ? "#5331D0" : "#FDFDFE" }}>
           {label}
         </p>
         {sub && (
-          <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
+          <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>
             {sub}
           </p>
         )}
       </div>
       {selected && (
-        <span className="ml-auto text-blue-700 font-bold text-lg">✓</span>
+        <span className="ml-auto  font-bold text-lg">✓</span>
       )}
     </motion.button>
   );

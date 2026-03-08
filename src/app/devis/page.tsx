@@ -113,7 +113,7 @@ Reste à charge: ${resteACharge}€`;
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#f0f4f8" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
       <OptiPilotHeader
         title="Votre Devis"
         showBack
@@ -128,15 +128,15 @@ Reste à charge: ${resteACharge}€`;
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="rounded-2xl p-6 shadow-sm"
-              style={{ background: "white" }}
+              style={{ background: "#0A0338" }}
             >
             {/* En-tête */}
-            <div className="flex items-center justify-between mb-5 pb-4" style={{ borderBottom: "1px solid #f3f4f6" }}>
+            <div className="flex items-center justify-between mb-5 pb-4" style={{ borderBottom: "1px solid rgba(10,3,56,0.8)" }}>
               <div>
-                <h2 className="text-xl font-bold" style={{ color: "#1a1a2e" }}>
+                <h2 className="text-xl font-bold" style={{ color: "#FDFDFE" }}>
                   Devis {offre?.nom || "Confort"}
                 </h2>
-                <p className="text-sm" style={{ color: "#9ca3af" }}>
+                <p className="text-sm" style={{ color: "rgba(155,150,218,0.6)" }}>
                   {new Date().toLocaleDateString("fr-FR")} • Valable 30 jours
                 </p>
               </div>
@@ -148,8 +148,8 @@ Reste à charge: ${resteACharge}€`;
                       offre.nom === "Essentiel"
                         ? "#22c55e"
                         : offre.nom === "Confort"
-                        ? "#1e3a8a"
-                        : "#7e22ce",
+                        ? "#5331D0"
+                        : "#5331D0",
                   }}
                 >
                   {offre.nom}
@@ -160,14 +160,14 @@ Reste à charge: ${resteACharge}€`;
             {/* Client */}
             {(client.nom || client.prenom) && (
               <div className="mb-4">
-                <p className="text-xs font-medium mb-1" style={{ color: "#9ca3af" }}>
+                <p className="text-xs font-medium mb-1" style={{ color: "rgba(155,150,218,0.6)" }}>
                   CLIENT
                 </p>
-                <p className="font-semibold" style={{ color: "#1a1a2e" }}>
+                <p className="font-semibold" style={{ color: "#FDFDFE" }}>
                   {client.prenom} {client.nom}
                 </p>
                 {client.mutuelle && (
-                  <p className="text-sm" style={{ color: "#6b7280" }}>
+                  <p className="text-sm" style={{ color: "#9B96DA" }}>
                     {client.mutuelle} — {client.niveauGarantie}
                   </p>
                 )}
@@ -178,16 +178,16 @@ Reste à charge: ${resteACharge}€`;
             {ordonnance.odSphere && (
               <div
                 className="mb-4 p-3 rounded-xl"
-                style={{ background: "#f8fafc", border: "1px solid #e5e7eb" }}
+                style={{ background: "rgba(10,3,56,0.6)", border: "1px solid rgba(83,49,208,0.35)" }}
               >
-                <p className="text-xs font-medium mb-1" style={{ color: "#9ca3af" }}>
+                <p className="text-xs font-medium mb-1" style={{ color: "rgba(155,150,218,0.6)" }}>
                   ORDONNANCE
                 </p>
-                <p className="text-sm font-mono" style={{ color: "#374151" }}>
+                <p className="text-sm font-mono" style={{ color: "#FDFDFE" }}>
                   OD : {ordonnance.odSphere} ({ordonnance.odCylindre}) {ordonnance.odAxe}°
                   {ordonnance.odAddition && ` ADD ${ordonnance.odAddition}`}
                 </p>
-                <p className="text-sm font-mono" style={{ color: "#374151" }}>
+                <p className="text-sm font-mono" style={{ color: "#FDFDFE" }}>
                   OG : {ordonnance.ogSphere} ({ordonnance.ogCylindre}) {ordonnance.ogAxe}°
                   {ordonnance.ogAddition && ` ADD ${ordonnance.ogAddition}`}
                 </p>
@@ -207,7 +207,7 @@ Reste à charge: ${resteACharge}€`;
                 value={`${totalVerres}€`}
                 sub={offre ? `Indice ${offre.indice} • Classe ${offre.classe100ps}` : undefined}
               />
-              <div className="pt-2" style={{ borderTop: "1px solid #f3f4f6" }} />
+              <div className="pt-2" style={{ borderTop: "1px solid rgba(10,3,56,0.8)" }} />
               <DevisLigne
                 label="Sous-total"
                 value={`${totalDevis}€`}
@@ -225,12 +225,12 @@ Reste à charge: ${resteACharge}€`;
               />
               <div
                 className="flex items-center justify-between p-4 rounded-xl mt-1"
-                style={{ background: "linear-gradient(135deg, #1e3a8a08, #3b5fc015)" }}
+                style={{ background: "linear-gradient(135deg, rgba(83,49,208,0.06), rgba(83,49,208,0.12))" }}
               >
-                <p className="text-base font-bold" style={{ color: "#1a1a2e" }}>
+                <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>
                   Reste à Charge
                 </p>
-                <p className="text-3xl font-black" style={{ color: "#1e3a8a" }}>
+                <p className="text-3xl font-black" style={{ color: "#5331D0" }}>
                   {resteACharge}€
                 </p>
               </div>
@@ -238,12 +238,12 @@ Reste à charge: ${resteACharge}€`;
 
             {/* Verre détail */}
             {offre && (
-              <div className="mt-4 pt-4" style={{ borderTop: "1px solid #f3f4f6" }}>
-                <p className="text-xs font-medium mb-2" style={{ color: "#9ca3af" }}>
+              <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(10,3,56,0.8)" }}>
+                <p className="text-xs font-medium mb-2" style={{ color: "rgba(155,150,218,0.6)" }}>
                   INCLUS DANS L'OFFRE
                 </p>
                 {offre.argumentaire.map((arg, i) => (
-                  <p key={i} className="text-xs py-0.5" style={{ color: "#6b7280" }}>
+                  <p key={i} className="text-xs py-0.5" style={{ color: "#9B96DA" }}>
                     {arg}
                   </p>
                 ))}
@@ -253,7 +253,7 @@ Reste à charge: ${resteACharge}€`;
             {/* Mentions légales */}
             <p
               className="text-xs mt-4 pt-3"
-              style={{ borderTop: "1px solid #f3f4f6", color: "#9ca3af" }}
+              style={{ borderTop: "1px solid rgba(10,3,56,0.8)", color: "rgba(155,150,218,0.6)" }}
             >
               Devis établi conformément aux articles L. 441-2 et suivants du Code de la consommation.
               Valable 30 jours à compter de la date d'émission. Les remboursements mutuelles sont
@@ -272,7 +272,7 @@ Reste à charge: ${resteACharge}€`;
           {sent ? (
             <div
               className="py-4 rounded-2xl text-center font-semibold"
-              style={{ background: "#f0fdf4", color: "#15803d", border: "2px solid #22c55e" }}
+              style={{ background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "2px solid #22c55e" }}
             >
               ✓ Devis envoyé par email !
             </div>
@@ -283,8 +283,8 @@ Reste à charge: ${resteACharge}€`;
               disabled={sending}
               className="py-4 rounded-2xl text-white font-semibold flex items-center justify-center gap-2"
               style={{
-                background: "linear-gradient(135deg, #1e3a8a, #3b5fc0)",
-                boxShadow: "0 4px 20px rgba(30,58,138,0.35)",
+                background: "linear-gradient(135deg, #5331D0, #9B96DA)",
+                boxShadow: "0 4px 20px rgba(83,49,208,0.5)",
               }}
             >
               {sending ? (
@@ -305,7 +305,7 @@ Reste à charge: ${resteACharge}€`;
               whileTap={{ scale: 0.97 }}
               onClick={exporterPDF}
               className="flex-1 py-4 rounded-2xl font-medium flex items-center justify-center gap-2"
-              style={{ background: "white", color: "#374151", border: "2px solid #e5e7eb" }}
+              style={{ background: "#0A0338", color: "#FDFDFE", border: "2px solid rgba(83,49,208,0.35)" }}
             >
               📄 Exporter PDF
             </motion.button>
@@ -313,7 +313,7 @@ Reste à charge: ${resteACharge}€`;
               whileTap={{ scale: 0.97 }}
               onClick={copierDonnees}
               className="flex-1 py-4 rounded-2xl font-medium flex items-center justify-center gap-2"
-              style={{ background: "white", color: "#374151", border: "2px solid #e5e7eb" }}
+              style={{ background: "#0A0338", color: "#FDFDFE", border: "2px solid rgba(83,49,208,0.35)" }}
             >
               📋 Copier données
             </motion.button>
@@ -325,7 +325,7 @@ Reste à charge: ${resteACharge}€`;
             onClick={() => router.push("/offre-complementaire")}
             className="py-4 rounded-2xl font-semibold flex items-center justify-center gap-2"
             style={{
-              background: "linear-gradient(135deg, #7e22ce, #a855f7)",
+              background: "linear-gradient(135deg, #5331D0, #9B96DA)",
               color: "white",
             }}
           >
@@ -336,7 +336,7 @@ Reste à charge: ${resteACharge}€`;
             whileTap={{ scale: 0.97 }}
             onClick={() => router.push("/dashboard")}
             className="py-3.5 rounded-2xl font-medium"
-            style={{ background: "#f3f4f6", color: "#6b7280" }}
+            style={{ background: "rgba(10,3,56,0.8)", color: "#9B96DA" }}
           >
             Retour à l'accueil
           </motion.button>
@@ -370,14 +370,14 @@ function DevisLigne({
         <p
           className="text-sm"
           style={{
-            color: bold ? "#1a1a2e" : "#6b7280",
+            color: bold ? "#FDFDFE" : "#9B96DA",
             fontWeight: bold ? 700 : 400,
           }}
         >
           {label}
         </p>
         {sub && (
-          <p className="text-xs" style={{ color: "#9ca3af" }}>
+          <p className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
             {sub}
           </p>
         )}
@@ -389,14 +389,14 @@ function DevisLigne({
             defaultValue={parseInt(value)}
             onChange={(e) => onEdit?.(e.target.value)}
             className="w-20 text-right text-sm font-semibold px-2 py-1 rounded-lg border outline-none"
-            style={{ color: "#1a1a2e", borderColor: "#e5e7eb" }}
+            style={{ color: "#FDFDFE", borderColor: "rgba(83,49,208,0.35)" }}
           />
-          <span className="text-sm" style={{ color: "#6b7280" }}>€</span>
+          <span className="text-sm" style={{ color: "#9B96DA" }}>€</span>
         </div>
       ) : (
         <p
           className="text-sm font-semibold"
-          style={{ color: green ? "#15803d" : bold ? "#1a1a2e" : "#374151" }}
+          style={{ color: green ? "#22c55e" : bold ? "#FDFDFE" : "#FDFDFE" }}
         >
           {value}
         </p>

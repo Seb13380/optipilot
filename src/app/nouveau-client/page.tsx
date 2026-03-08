@@ -54,13 +54,13 @@ export default function NouveauClientPage() {
   const inputClass =
     "w-full px-4 py-4 rounded-2xl text-base border-2 outline-none transition-all";
   const inputStyle = {
-    borderColor: "#e5e7eb",
-    background: "#f9fafb",
-    color: "#1a1a2e",
+    borderColor: "rgba(83,49,208,0.35)",
+    background: "rgba(2,0,23,0.7)",
+    color: "#FDFDFE",
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#f0f4f8" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
       <OptiPilotHeader
         title="Nouveau Client"
         showBack
@@ -72,19 +72,19 @@ export default function NouveauClientPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl p-6 shadow-sm"
-          style={{ background: "white" }}
+          style={{ background: "#0A0338" }}
         >
-          <h2 className="text-xl font-bold mb-1" style={{ color: "#1a1a2e" }}>
+          <h2 className="text-xl font-bold mb-1" style={{ color: "#FDFDFE" }}>
             Informations client
           </h2>
-          <p className="text-sm mb-6" style={{ color: "#6b7280" }}>
+          <p className="text-sm mb-6" style={{ color: "#9B96DA" }}>
             Ces données seront liées au devis
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: "#374151" }}>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: "#FDFDFE" }}>
                   Prénom *
                 </label>
                 <input
@@ -94,13 +94,13 @@ export default function NouveauClientPage() {
                   className={inputClass}
                   style={inputStyle}
                   placeholder="Marie"
-                  onFocus={(e) => (e.target.style.borderColor = "#1e3a8a")}
-                  onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
+                  onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                  onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: "#374151" }}>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: "#FDFDFE" }}>
                   Nom *
                 </label>
                 <input
@@ -110,15 +110,15 @@ export default function NouveauClientPage() {
                   className={inputClass}
                   style={inputStyle}
                   placeholder="Dupont"
-                  onFocus={(e) => (e.target.style.borderColor = "#1e3a8a")}
-                  onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
+                  onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                  onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: "#374151" }}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: "#FDFDFE" }}>
                 Date de naissance
               </label>
               <input
@@ -127,13 +127,13 @@ export default function NouveauClientPage() {
                 onChange={(e) => update("dateNaissance", e.target.value)}
                 className={inputClass}
                 style={{ ...inputStyle, colorScheme: "light" }}
-                onFocus={(e) => (e.target.style.borderColor = "#1e3a8a")}
-                onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
+                onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: "#374151" }}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: "#FDFDFE" }}>
                 Email
               </label>
               <input
@@ -143,13 +143,13 @@ export default function NouveauClientPage() {
                 className={inputClass}
                 style={inputStyle}
                 placeholder="marie.dupont@exemple.fr"
-                onFocus={(e) => (e.target.style.borderColor = "#1e3a8a")}
-                onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
+                onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: "#374151" }}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: "#FDFDFE" }}>
                 Téléphone
               </label>
               <input
@@ -159,8 +159,8 @@ export default function NouveauClientPage() {
                 className={inputClass}
                 style={inputStyle}
                 placeholder="06 12 34 56 78"
-                onFocus={(e) => (e.target.style.borderColor = "#1e3a8a")}
-                onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
+                onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
               />
             </div>
 
@@ -170,7 +170,7 @@ export default function NouveauClientPage() {
                 type="button"
                 onClick={() => router.push("/scanner")}
                 className="flex-1 py-4 rounded-2xl font-medium"
-                style={{ background: "#f3f4f6", color: "#6b7280" }}
+                style={{ background: "rgba(10,3,56,0.8)", color: "#9B96DA" }}
               >
                 Passer
               </motion.button>
@@ -182,9 +182,9 @@ export default function NouveauClientPage() {
                 style={{
                   background:
                     !form.nom || !form.prenom
-                      ? "#9ca3af"
-                      : "linear-gradient(135deg, #1e3a8a, #3b5fc0)",
-                  boxShadow: !form.nom || !form.prenom ? "none" : "0 4px 20px rgba(30,58,138,0.35)",
+                      ? "rgba(155,150,218,0.6)"
+                      : "linear-gradient(135deg, #5331D0, #9B96DA)",
+                  boxShadow: !form.nom || !form.prenom ? "none" : "0 4px 20px rgba(83,49,208,0.5)",
                 }}
               >
                 {loading ? "Enregistrement..." : "Continuer →"}

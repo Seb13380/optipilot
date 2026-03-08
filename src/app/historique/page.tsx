@@ -65,16 +65,16 @@ const DEMO_DEVIS: DevisItem[] = [
 ];
 
 const STATUT_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  accepté: { bg: "#f0fdf4", color: "#15803d", label: "✓ Accepté" },
-  en_cours: { bg: "#eff6ff", color: "#1e3a8a", label: "⏳ En cours" },
+  accepté: { bg: "rgba(34,197,94,0.12)", color: "#22c55e", label: "✓ Accepté" },
+  en_cours: { bg: "rgba(83,49,208,0.15)", color: "#5331D0", label: "⏳ En cours" },
   refusé: { bg: "#fef2f2", color: "#dc2626", label: "✗ Refusé" },
-  expiré: { bg: "#f9fafb", color: "#6b7280", label: "⌛ Expiré" },
+  expiré: { bg: "rgba(2,0,23,0.7)", color: "#9B96DA", label: "⌛ Expiré" },
 };
 
 const OFFRE_COLORS: Record<string, string> = {
   essentiel: "#22c55e",
-  confort: "#1e3a8a",
-  premium: "#7e22ce",
+  confort: "#5331D0",
+  premium: "#5331D0",
 };
 
 export default function HistoriquePage() {
@@ -120,7 +120,7 @@ export default function HistoriquePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#f0f4f8" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
       <OptiPilotHeader
         title="Historique"
         showBack
@@ -136,34 +136,34 @@ export default function HistoriquePage() {
         >
           <div
             className="rounded-2xl p-4 text-center"
-            style={{ background: "white" }}
+            style={{ background: "#0A0338" }}
           >
-            <p className="text-2xl font-black" style={{ color: "#1e3a8a" }}>
+            <p className="text-2xl font-black" style={{ color: "#5331D0" }}>
               {stats.total}
             </p>
-            <p className="text-xs mt-1" style={{ color: "#9ca3af" }}>
+            <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>
               Devis total
             </p>
           </div>
           <div
             className="rounded-2xl p-4 text-center"
-            style={{ background: "white" }}
+            style={{ background: "#0A0338" }}
           >
-            <p className="text-2xl font-black" style={{ color: "#15803d" }}>
+            <p className="text-2xl font-black" style={{ color: "#22c55e" }}>
               {stats.acceptes}
             </p>
-            <p className="text-xs mt-1" style={{ color: "#9ca3af" }}>
+            <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>
               Acceptés
             </p>
           </div>
           <div
             className="rounded-2xl p-4 text-center"
-            style={{ background: "white" }}
+            style={{ background: "#0A0338" }}
           >
-            <p className="text-2xl font-black" style={{ color: "#7e22ce" }}>
+            <p className="text-2xl font-black" style={{ color: "#5331D0" }}>
               {stats.ca}€
             </p>
-            <p className="text-xs mt-1" style={{ color: "#9ca3af" }}>
+            <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>
               CA total
             </p>
           </div>
@@ -178,8 +178,8 @@ export default function HistoriquePage() {
               onClick={() => setFilterStatut(f)}
               className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0"
               style={{
-                background: filterStatut === f ? "#1e3a8a" : "white",
-                color: filterStatut === f ? "white" : "#6b7280",
+                background: filterStatut === f ? "#5331D0" : "white",
+                color: filterStatut === f ? "white" : "#9B96DA",
               }}
             >
               {f === "tous"
@@ -205,14 +205,14 @@ export default function HistoriquePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 className="rounded-2xl p-4 shadow-sm"
-                style={{ background: "white" }}
+                style={{ background: "#0A0338" }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-semibold" style={{ color: "#1a1a2e" }}>
+                    <p className="font-semibold" style={{ color: "#FDFDFE" }}>
                       {nomClient}
                     </p>
-                    <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>
                       {formatDate(d.createdAt)}
                     </p>
                   </div>
@@ -231,24 +231,24 @@ export default function HistoriquePage() {
                         className="px-2.5 py-1 rounded-full text-xs font-bold text-white capitalize"
                         style={{
                           background:
-                            OFFRE_COLORS[d.offreChoisie] || "#6b7280",
+                            OFFRE_COLORS[d.offreChoisie] || "#9B96DA",
                         }}
                       >
                         {d.offreChoisie}
                       </span>
                     )}
                     {d.totalConfort && (
-                      <span className="text-sm font-medium" style={{ color: "#374151" }}>
+                      <span className="text-sm font-medium" style={{ color: "#FDFDFE" }}>
                         {d.totalConfort}€
                       </span>
                     )}
                   </div>
                   {d.racConfort !== undefined && (
                     <div className="text-right">
-                      <p className="text-xs" style={{ color: "#9ca3af" }}>
+                      <p className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
                         RAC
                       </p>
-                      <p className="text-sm font-bold" style={{ color: "#1e3a8a" }}>
+                      <p className="text-sm font-bold" style={{ color: "#5331D0" }}>
                         {d.racConfort}€
                       </p>
                     </div>
@@ -259,7 +259,7 @@ export default function HistoriquePage() {
           })}
 
           {filtered.length === 0 && (
-            <div className="text-center py-16" style={{ color: "#9ca3af" }}>
+            <div className="text-center py-16" style={{ color: "rgba(155,150,218,0.6)" }}>
               <p className="text-4xl mb-3">📋</p>
               <p className="font-medium">Aucun devis trouvé</p>
             </div>
