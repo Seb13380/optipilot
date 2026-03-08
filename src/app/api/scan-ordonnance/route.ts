@@ -1,12 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+
+const PROMPT = `Tu es un assistant optométriste expert.
+Analyse cette ordonnance optique et extrais UNIQUEMENT les données suivantes au format JSON strict.
+
+Retourne UNIQUEMENT ce JSON, sans texte avant ou après :
+{
+  "odSphere": "valeur avec signe (+/-) ou null",
+  "odCylindre": "valeur avec signe (+/-) ou null",
+  "odAxe": "valeur numérique ou null",
+  "odAddition": "valeur avec signe (+/-) ou null",
+  "ogSphere": "valeur avec signe (+/-) ou null",
+  "ogCylindre": "valeur avec signe (+/-) ou null",
+  "ogAxe": "valeur numérique ou null",
+  "ogAddition": "valeur avec signe (+/-) ou null",
+  "ecartPupillaire": "valeur ou null",
+  "prescripteur": "nom du médecin ou null",
+  "dateOrdonnance": "YYYY-MM-DD ou null",
+  "validiteMois": 36
+}
+
+Règles :
+- OD = Œil Droit (Right / R)
+- OG = Œil Gauche (Left / L)
+- Sphères et cylindres incluent toujours le signe + ou -
+- ADD = Addition (presbytie)
+- Si une valeur est illisible ou absente, mettre null`;
 
 export async function POST(request: NextRequest) {
   try {
     const { image } = await request.json();
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
 
-    // Si pas de clé API → retourner des données démo
+    // Si pas de clé API → données démo
     if (!apiKey) {
       return NextResponse.json({
         ordonnance: {
@@ -26,80 +53,49 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Appel Claude Vision
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-opus-4-5",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: "image/jpeg",
-                  data: image.replace(/^data:image\/\w+;base64,/, ""),
-                },
-              },
-              {
-                type: "text",
-                text: `Analysez cette ordonnance optique et extrayez UNIQUEMENT les données suivantes au format JSON strict.
-                
-Retournez UNIQUEMENT ce JSON, sans texte avant ou après :
-{
-  "odSphere": "valeur ou null",
-  "odCylindre": "valeur ou null",
-  "odAxe": "valeur numérique ou null",
-  "odAddition": "valeur ou null",
-  "ogSphere": "valeur ou null",
-  "ogCylindre": "valeur ou null",
-  "ogAxe": "valeur numérique ou null",
-  "ogAddition": "valeur ou null",
-  "ecartPupillaire": "valeur ou null",
-  "prescripteur": "nom du médecin ou null",
-  "dateOrdonnance": "YYYY-MM-DD ou null",
-  "validiteMois": 36
-}
+    const openai = new OpenAI({ apiKey });
 
-Règles :
-- OD = Œil Droit (Right)
-- OG = Œil Gauche (Left)
-- Les sphères et cylindres incluent le signe + ou -
-- ADD = Addition (presbytie)
-- Si une valeur n'est pas lisible, mettre null`,
+    // Nettoyage du base64
+    const base64 = image.replace(/^data:image\/\w+;base64,/, "");
+    const mimeMatch = image.match(/^data:(image\/\w+);base64,/);
+    const mimeType = (mimeMatch?.[1] || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp";
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      max_tokens: 800,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${base64}`,
+                detail: "high",
               },
-            ],
-          },
-        ],
-      }),
+            },
+            {
+              type: "text",
+              text: PROMPT,
+            },
+          ],
+        },
+      ],
     });
 
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
-    }
+    const content = response.choices[0]?.message?.content || "{}";
 
-    const data = await response.json();
-    const content = data.content[0]?.text || "{}";
-
-    // Parser le JSON retourné par Claude
+    // Parser le JSON retourné par GPT-4o
     const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Format JSON invalide");
+    if (!jsonMatch) throw new Error("Format JSON invalide retourné par GPT-4o");
 
     const ordonnance = JSON.parse(jsonMatch[0]);
 
-    return NextResponse.json({ ordonnance, source: "claude" });
+    return NextResponse.json({ ordonnance, source: "gpt-4o" });
   } catch (error) {
-    console.error("Scan ordonnance error:", error);
+    console.error("Scan ordonnance error (GPT-4o):", error);
 
-    // En cas d'erreur → données démo
+    // En cas d'erreur → données démo pour ne pas bloquer le flux
     return NextResponse.json({
       ordonnance: {
         odSphere: "-2.50",
