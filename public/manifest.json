@@ -1,0 +1,20 @@
+{
+  "name": "OptiPilot",
+  "short_name": "OptiPilot",
+  "description": "Copilote IA pour opticiens",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/assets/images/logo-OptiPilot.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["medical", "productivity"],
+  "lang": "fr"
+}

@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Magasin {
+  id             String   @id @default(uuid())
+  nom            String
+  adresse        String?
+  email          String?
+  telephone      String?
+  reseauMutuelle String?
+  loginMutuelle  String?
+  mdpMutuelle    String?
+  createdAt      DateTime @default(now())
+
+  utilisateurs Utilisateur[]
+  clients      Client[]
+  devis        Devis[]
+  configTarifs ConfigTarif[]
+
+  @@map("magasins")
+}
+
+model Utilisateur {
+  id         String   @id @default(uuid())
+  magasinId  String
+  nom        String
+  email      String   @unique
+  motDePasse String
+  role       String   @default("vendeur")
+  createdAt  DateTime @default(now())
+
+  magasin Magasin @relation(fields: [magasinId], references: [id])
+
+  @@map("utilisateurs")
+}
+
+model Client {
+  id                  String    @id @default(uuid())
+  magasinId           String
+  nom                 String
+  prenom              String
+  dateNaissance       DateTime?
+  email               String?
+  telephone           String?
+  mutuelle            String?
+  niveauGarantie      String?
+  numAdherent         String?
+  consentementRgpd    Boolean   @default(false)
+  consentementRelance Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+
+  magasin        Magasin         @relation(fields: [magasinId], references: [id])
+  ordonnances    Ordonnance[]
+  devis          Devis[]
+  questionnaires Questionnaire[]
+
+  @@map("clients")
+}
+
+model Ordonnance {
+  id              String    @id @default(uuid())
+  clientId        String
+  dateOrdonnance  DateTime?
+  validiteMois    Int?      @default(36)
+  odSphere        Decimal?
+  odCylindre      Decimal?
+  odAxe           Int?
+  odAddition      Decimal?
+  ogSphere        Decimal?
+  ogCylindre      Decimal?
+  ogAxe           Int?
+  ogAddition      Decimal?
+  ecartPupillaire Int?
+  prescripteur    String?
+  imageUrl        String?
+  createdAt       DateTime  @default(now())
+
+  client Client  @relation(fields: [clientId], references: [id])
+  devis  Devis[]
+
+  @@map("ordonnances")
+}
+
+model Verre {
+  id               String   @id @default(uuid())
+  verrier          String
+  gamme            String
+  type             String
+  indice           Decimal?
+  traitement       String?
+  classe100ps      String?
+  prixTarif        Decimal
+  caracteristiques Json?
+
+  configTarifs ConfigTarif[]
+
+  @@map("verres")
+}
+
+model ConfigTarif {
+  id          String   @id @default(uuid())
+  magasinId   String
+  verreId     String
+  coefficient Decimal?
+  prixVente   Decimal
+
+  magasin Magasin @relation(fields: [magasinId], references: [id])
+  verre   Verre   @relation(fields: [verreId], references: [id])
+
+  @@map("config_tarifs")
+}
+
+model Mutuelle {
+  id                      String   @id @default(uuid())
+  nom                     String
+  reseau                  String
+  niveau                  String
+  remboursementUnifocal   Decimal?
+  remboursementProgressif Decimal?
+  remboursementSolaire    Decimal?
+
+  @@map("mutuelles")
+}
+
+model Devis {
+  id             String    @id @default(uuid())
+  clientId       String
+  magasinId      String
+  ordonnanceId   String?
+  statut         String    @default("en_cours")
+  offreChoisie   String?
+  totalEssentiel Decimal?
+  racEssentiel   Decimal?
+  totalConfort   Decimal?
+  racConfort     Decimal?
+  totalPremium   Decimal?
+  racPremium     Decimal?
+  racConfirme    Boolean   @default(false)
+  racReel        Decimal?
+  pdfUrl         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  client     Client      @relation(fields: [clientId], references: [id])
+  magasin    Magasin     @relation(fields: [magasinId], references: [id])
+  ordonnance Ordonnance? @relation(fields: [ordonnanceId], references: [id])
+
+  @@map("devis")
+}
+
+model Questionnaire {
+  id                 String   @id @default(uuid())
+  clientId           String
+  profession         String?
+  tempsEcran         Int?
+  sport              Boolean  @default(false)
+  conduiteNuit       Boolean  @default(false)
+  photophobie        Boolean  @default(false)
+  secheresseOculaire Boolean  @default(false)
+  preferenceMonture  String?
+  budget             String?
+  createdAt          DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@map("questionnaires")
+}

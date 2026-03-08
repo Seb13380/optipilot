@@ -1,26 +1,91 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #020017;
+  --foreground: #FDFDFE;
+  --card: #0A0338;
+  --card-alt: #0F0545;
+  --primary: #5331D0;
+  --primary-light: #9B96DA;
+  --primary-dark: #1C0B62;
+  --accent: #9B96DA;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --text-muted: #9B96DA;
+  --border: rgba(83,49,208,0.35);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
 }
+
+/* iPad touch optimization */
+button,
+a {
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #1C0B62;
+  border-radius: 2px;
+}
+
+/* Card base */
+.card {
+  background: #0A0338;
+  border-radius: 20px;
+  box-shadow: 0 2px 24px rgba(83,49,208,0.25);
+  border: 1px solid rgba(83,49,208,0.2);
+}
+
+/* Gradient violet OptiPilot */
+.gradient-primary {
+  background: linear-gradient(135deg, #5331D0 0%, #9B96DA 100%);
+}
+
+/* Animation douce */
+.fade-in {
+  animation: fadeIn 0.35s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bounce léger pour les press */
+.bounce-press:active {
+  transform: scale(0.97);
+  transition: transform 0.1s;
+}
+
