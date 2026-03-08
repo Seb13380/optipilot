@@ -210,7 +210,7 @@ export default function ScannerPage() {
                   <div className="flex flex-col items-center justify-center p-10 gap-3" style={{ minHeight: 280 }}>
                     <span className="text-6xl">📄</span>
                     <p className="text-gray-500 font-medium">Ordonnance démo chargée</p>
-                    <p className="text-gray-400 text-sm">Les valeurs seront pré-remplies automatiquement</p>
+                    <p className="text-gray-400 text-base">Les valeurs seront pré-remplies automatiquement</p>
                   </div>
                 )}
               </div>
@@ -263,7 +263,7 @@ export default function ScannerPage() {
                     <p className="text-lg font-semibold" style={{ color: "#FDFDFE" }}>
                       Analyse en cours...
                     </p>
-                    <p className="text-sm mt-1" style={{ color: "#9B96DA" }}>
+                    <p className="text-base mt-1" style={{ color: "#9B96DA" }}>
                       L'IA extrait les données optiques
                     </p>
                   </div>
@@ -273,12 +273,12 @@ export default function ScannerPage() {
                   <div className="rounded-2xl p-5 shadow-sm" style={{ background: "#0A0338" }}>
                     <div className="flex items-center gap-2 mb-4">
                       <span
-                        className="px-2.5 py-1 rounded-full text-xs font-semibold text-white"
+                        className="px-2.5 py-1 rounded-full text-sm font-semibold text-white"
                         style={{ background: "#22c55e" }}
                       >
                         ✓ Extrait
                       </span>
-                      <h2 className="text-base font-semibold" style={{ color: "#FDFDFE" }}>
+                      <h2 className="text-lg font-semibold" style={{ color: "#FDFDFE" }}>
                         Résultats de l'ordonnance
                       </h2>
                     </div>
@@ -371,7 +371,7 @@ function OrdonnanceSection({
       className="rounded-xl p-3.5"
       style={{ background: "rgba(10,3,56,0.6)", border: `2px solid ${color}20` }}
     >
-      <p className="text-xs font-bold mb-3" style={{ color }}>
+      <p className="text-base font-bold mb-3" style={{ color }}>
         {label}
       </p>
       {[
@@ -381,14 +381,14 @@ function OrdonnanceSection({
         ...(addition ? [{ field: "addition", label: "Addition", value: addition }] : []),
       ].map((row) => (
         <div key={row.field} className="flex items-center justify-between mb-1.5">
-          <span className="text-xs" style={{ color: "#9B96DA" }}>
+          <span className="text-base" style={{ color: "#9B96DA" }}>
             {row.label}
           </span>
           <input
             type="text"
             value={row.value || ""}
             onChange={(e) => onChange(row.field, e.target.value)}
-            className="text-sm font-bold text-right w-20 px-2 py-1 rounded-lg border outline-none"
+            className="text-base font-bold text-right w-20 px-2 py-1 rounded-lg border outline-none"
             style={{ color, borderColor: `${color}30`, background: "#0A0338" }}
           />
         </div>

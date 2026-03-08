@@ -16,7 +16,7 @@ export default function OptiPilotHeader({
 }: OptiPilotHeaderProps) {
   return (
     <header
-      className="flex items-center justify-between px-6 py-4"
+      className="flex items-center justify-between px-6 py-5"
       style={{ background: "#0A0338", borderBottom: "1px solid rgba(83,49,208,0.35)" }}
     >
       {/* Left */}
@@ -25,10 +25,10 @@ export default function OptiPilotHeader({
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onBack}
-            className="flex items-center gap-1 font-medium text-base"
+            className="flex items-center gap-2 font-bold text-xl"
             style={{ color: "#9B96DA" }}
           >
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <path
                 d="M15 19l-7-7 7-7"
                 stroke="#9B96DA"
@@ -50,12 +50,12 @@ export default function OptiPilotHeader({
               <img
                 src="/assets/images/logo-OptiPilot.png"
                 alt="OptiPilot"
-                className="h-8 w-auto object-contain"
+                className="h-12 w-auto object-contain"
               />
             </div>
           </>
         ) : (
-          <span className="text-lg font-semibold" style={{ color: "#FDFDFE" }}>
+          <span className="text-2xl font-bold" style={{ color: "#FDFDFE" }}>
             {title}
           </span>
         )}
@@ -65,7 +65,7 @@ export default function OptiPilotHeader({
       <div className="min-w-[80px] flex justify-end">
         {rightAction || (
           <button className="p-2 rounded-xl" style={{ color: "#9B96DA" }}>
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+            <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
               <path
                 d="M4 6h16M4 12h16M4 18h16"
                 stroke="currentColor"

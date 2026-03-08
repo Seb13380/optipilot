@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import OptiPilotHeader from "@/components/OptiPilotHeader";
 
 interface QuestionnaireData {
   tempsEcran?: number;
@@ -19,12 +18,12 @@ interface QuestionnaireData {
 }
 
 const PROFESSIONS = [
-  { id: "bureautique", label: "Bureautique\n/ Bureau", icon: "💻" },
-  { id: "artisan", label: "Artisan\n/ Chantier", icon: "🔧" },
-  { id: "sante", label: "Santé\n/ Médical", icon: "🏥" },
-  { id: "conduite", label: "Transport\n/ Conduite", icon: "🚗" },
-  { id: "exterieur", label: "Extérieur\n/ Sport", icon: "⛰️" },
-  { id: "autre", label: "Autre", icon: "👤" },
+  { id: "bureautique", label: "Bureautique", sub: "Bureau & écrans" },
+  { id: "artisan", label: "Artisan", sub: "Chantier & atelier" },
+  { id: "sante", label: "Santé", sub: "Médical & paramédical" },
+  { id: "conduite", label: "Transport", sub: "Conduite & livraison" },
+  { id: "exterieur", label: "Extérieur", sub: "Sport & plein air" },
+  { id: "autre", label: "Autre", sub: "Autre activité" },
 ];
 
 const MUTUELLES = [
@@ -75,214 +74,233 @@ export default function QuestionnairePage() {
     setData((prev) => ({ ...prev, ...patch }));
   }
 
-  return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
-      <OptiPilotHeader title="Profil Client" showBack onBack={back} />
+  const progress = (step / TOTAL_STEPS) * 100;
 
-      {/* Barre de progression */}
-      <div className="px-5 pt-4 pb-2">
-        <div className="flex gap-1.5">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="h-1.5 rounded-full flex-1"
-              animate={{
-                background: i < step ? "#5331D0" : "rgba(83,49,208,0.35)",
-              }}
-              transition={{ duration: 0.3 }}
-            />
-          ))}
-        </div>
-        <p className="text-xs mt-2" style={{ color: "rgba(155,150,218,0.6)" }}>
-          Question {step}/{TOTAL_STEPS}
-        </p>
+  return (
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "linear-gradient(160deg, #020017 0%, #0A0338 45%, #1C0B62 100%)" }}
+    >
+      {/* Header retour + compteur */}
+      <div className="flex items-center justify-between px-6 pt-8 pb-4">
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={back}
+          className="flex items-center gap-2 font-semibold text-xl"
+          style={{ color: "#9B96DA" }}
+        >
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <path d="M15 19l-7-7 7-7" stroke="#9B96DA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Retour
+        </motion.button>
+        <span className="text-lg font-medium" style={{ color: "rgba(155,150,218,0.55)" }}>
+          {step} / {TOTAL_STEPS}
+        </span>
       </div>
 
-      <main className="flex-1 flex flex-col px-6 pb-8 pt-3 w-full">
+      {/* Logo */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex justify-center mb-6"
+      >
+        <img
+          src="/assets/images/logo-OptiPilot.png"
+          alt="OptiPilot"
+          className="h-16 w-auto object-contain drop-shadow-2xl"
+        />
+      </motion.div>
+
+      {/* Barre de progression fine */}
+      <div className="px-6 mb-8">
+        <div
+          className="w-full h-1 rounded-full overflow-hidden"
+          style={{ background: "rgba(83,49,208,0.25)" }}
+        >
+          <motion.div
+            className="h-full rounded-full"
+            style={{ background: "linear-gradient(90deg, #5331D0, #9B96DA)" }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          />
+        </div>
+      </div>
+
+      <main className="flex-1 px-6 pb-10">
         <AnimatePresence mode="wait">
           {step === 1 && (
-            <StepWrapper key="s1">
-              <QuestionTitle>
-                Quel est votre type d'activité principale ?
-              </QuestionTitle>
-              <div className="grid grid-cols-3 gap-3 mt-6">
+            <StepCard key="s1">
+              <QuestionTitle>Quelle est votre activité principale ?</QuestionTitle>
+              <p className="text-lg mt-2 mb-8" style={{ color: "#9B96DA" }}>
+                Cela nous aide à vous recommander les traitements adaptés.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
                 {PROFESSIONS.map((p) => (
                   <motion.button
                     key={p.id}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      update({ profession: p.id });
-                      next();
-                    }}
-                    className="rounded-2xl py-5 px-2 flex flex-col items-center gap-2 border-2 transition-all"
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => { update({ profession: p.id }); next(); }}
+                    className="rounded-2xl py-6 px-5 text-left border-2 transition-all"
                     style={{
-                      background: data.profession === p.id ? "rgba(83,49,208,0.15)" : "white",
-                      borderColor: data.profession === p.id ? "#5331D0" : "rgba(83,49,208,0.35)",
+                      background: data.profession === p.id ? "rgba(83,49,208,0.2)" : "rgba(10,3,56,0.6)",
+                      borderColor: data.profession === p.id ? "#5331D0" : "rgba(155,150,218,0.2)",
                     }}
                   >
-                    <span className="text-3xl">{p.icon}</span>
-                    <span
-                      className="text-xs font-semibold text-center leading-tight"
-                      style={{
-                        color: data.profession === p.id ? "#5331D0" : "#FDFDFE",
-                        whiteSpace: "pre-line",
-                      }}
-                    >
+                    <p className="text-xl font-bold" style={{ color: data.profession === p.id ? "#9B96DA" : "#FDFDFE" }}>
                       {p.label}
-                    </span>
+                    </p>
+                    <p className="text-base mt-1" style={{ color: "rgba(155,150,218,0.55)" }}>
+                      {p.sub}
+                    </p>
                   </motion.button>
                 ))}
               </div>
-            </StepWrapper>
+            </StepCard>
           )}
 
           {step === 2 && (
-            <StepWrapper key="s2">
-              <QuestionTitle>
-                Combien de temps passez-vous sur l'ordinateur ?
-              </QuestionTitle>
-              <div className="flex flex-col gap-3 mt-6">
+            <StepCard key="s2">
+              <QuestionTitle>Temps quotidien sur écran ?</QuestionTitle>
+              <p className="text-lg mt-2 mb-8" style={{ color: "#9B96DA" }}>
+                Ordinateur, tablette, smartphone confondus.
+              </p>
+              <div className="flex flex-col gap-4">
                 {[
-                  { value: 2, label: "Moins de 3h", sub: "Utilisation occasionnelle", icon: "🌿" },
-                  { value: 4, label: "3 à 6h", sub: "Utilisation modérée", icon: "💼" },
-                  { value: 8, label: "Plus de 6h", sub: "Utilisation intensive", icon: "⚡" },
+                  { value: 2, label: "Moins de 3h", sub: "Utilisation légère" },
+                  { value: 4, label: "3 à 6h", sub: "Utilisation modérée" },
+                  { value: 8, label: "Plus de 6h", sub: "Utilisation intensive" },
                 ].map((opt) => (
                   <ChoiceButton
                     key={opt.value}
                     label={opt.label}
                     sub={opt.sub}
-                    icon={opt.icon}
                     selected={data.tempsEcran === opt.value}
-                    onClick={() => {
-                      update({ tempsEcran: opt.value });
-                      next();
-                    }}
+                    onClick={() => { update({ tempsEcran: opt.value }); next(); }}
                   />
                 ))}
               </div>
-            </StepWrapper>
+            </StepCard>
           )}
 
           {step === 3 && (
-            <StepWrapper key="s3">
-              <QuestionTitle>Pratiquez-vous un sport régulièrement ?</QuestionTitle>
-              <div className="flex flex-col gap-3 mt-6">
-                <YesNoButtons
-                  onYes={() => { update({ sport: true }); next(); }}
-                  onNo={() => { update({ sport: false }); next(); }}
-                  selected={data.sport}
-                  yesLabel="Oui, régulièrement"
-                  yesIcon="🏃"
-                  noLabel="Non / Occasionnel"
-                  noIcon="🛋️"
-                />
+            <StepCard key="s3">
+              <QuestionTitle>Pratiquez-vous un sport régulièrement ?</QuestionTitle>
+              <p className="text-lg mt-2 mb-8" style={{ color: "#9B96DA" }}>
+                Sport en salle, plein air, natation, vélo…
+              </p>
+              <div className="flex flex-col gap-4">
+                <ChoiceButton label="Oui, régulièrement" selected={data.sport === true}
+                  onClick={() => { update({ sport: true }); next(); }} />
+                <ChoiceButton label="Non / Occasionnel" selected={data.sport === false}
+                  onClick={() => { update({ sport: false }); next(); }} />
               </div>
-            </StepWrapper>
+            </StepCard>
           )}
 
           {step === 4 && (
-            <StepWrapper key="s4">
-              <QuestionTitle>Conduisez-vous souvent la nuit ?</QuestionTitle>
-              <div className="flex flex-col gap-3 mt-6">
-                <YesNoButtons
-                  onYes={() => { update({ conduiteNuit: true }); next(); }}
-                  onNo={() => { update({ conduiteNuit: false }); next(); }}
-                  selected={data.conduiteNuit}
-                  yesLabel="Oui, souvent"
-                  yesIcon="🌙"
-                  noLabel="Rarement ou jamais"
-                  noIcon="☀️"
-                />
+            <StepCard key="s4">
+              <QuestionTitle>Conduisez-vous souvent la nuit ?</QuestionTitle>
+              <p className="text-lg mt-2 mb-8" style={{ color: "#9B96DA" }}>
+                Halos et éblouissements nocturnes peuvent être corrigés.
+              </p>
+              <div className="flex flex-col gap-4">
+                <ChoiceButton label="Oui, souvent" selected={data.conduiteNuit === true}
+                  onClick={() => { update({ conduiteNuit: true }); next(); }} />
+                <ChoiceButton label="Rarement ou jamais" selected={data.conduiteNuit === false}
+                  onClick={() => { update({ conduiteNuit: false }); next(); }} />
               </div>
-            </StepWrapper>
+            </StepCard>
           )}
 
           {step === 5 && (
-            <StepWrapper key="s5">
-              <QuestionTitle>
-                Êtes-vous sensible à la lumière ou souffrez-vous de sécheresse oculaire ?
-              </QuestionTitle>
-              <div className="flex flex-col gap-4 mt-6">
+            <StepCard key="s5">
+              <QuestionTitle>Votre confort visuel</QuestionTitle>
+              <p className="text-lg mt-2 mb-8" style={{ color: "#9B96DA" }}>
+                Ces informations orientent le choix de traitements spécifiques.
+              </p>
+              <div className="flex flex-col gap-6">
                 <div>
-                  <p className="text-sm font-medium mb-2" style={{ color: "#9B96DA" }}>
+                  <p className="text-lg font-semibold mb-3" style={{ color: "#FDFDFE" }}>
                     Sensibilité à la lumière
                   </p>
-                  <YesNoButtons
-                    onYes={() => update({ photophobie: true })}
-                    onNo={() => update({ photophobie: false })}
-                    selected={data.photophobie}
-                    yesLabel="Oui, photophobie"
-                    yesIcon="😎"
-                    noLabel="Non"
-                    noIcon="👁️"
-                    compact
-                  />
+                  <div className="flex flex-col gap-3">
+                    <ChoiceButton label="Oui, je suis photosensible" selected={data.photophobie === true}
+                      onClick={() => update({ photophobie: true })} compact />
+                    <ChoiceButton label="Non" selected={data.photophobie === false}
+                      onClick={() => update({ photophobie: false })} compact />
+                  </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium mb-2" style={{ color: "#9B96DA" }}>
+                  <p className="text-lg font-semibold mb-3" style={{ color: "#FDFDFE" }}>
                     Sécheresse oculaire
                   </p>
-                  <YesNoButtons
-                    onYes={() => update({ secheresseOculaire: true })}
-                    onNo={() => update({ secheresseOculaire: false })}
-                    selected={data.secheresseOculaire}
-                    yesLabel="Oui, souvent"
-                    yesIcon="💧"
-                    noLabel="Non"
-                    noIcon="✓"
-                    compact
-                  />
+                  <div className="flex flex-col gap-3">
+                    <ChoiceButton label="Oui, souvent" selected={data.secheresseOculaire === true}
+                      onClick={() => update({ secheresseOculaire: true })} compact />
+                    <ChoiceButton label="Non" selected={data.secheresseOculaire === false}
+                      onClick={() => update({ secheresseOculaire: false })} compact />
+                  </div>
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={next}
-                  className="py-4 rounded-2xl text-white font-semibold mt-2"
-                  style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
+                  className="w-full py-5 rounded-2xl text-white font-bold text-xl mt-2"
+                  style={{
+                    background: "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)",
+                    boxShadow: "0 4px 24px rgba(83,49,208,0.5)",
+                  }}
                 >
-                  Suivant →
+                  Continuer
                 </motion.button>
               </div>
-            </StepWrapper>
+            </StepCard>
           )}
 
           {step === 6 && (
-            <StepWrapper key="s6">
-              <QuestionTitle>Quelle est votre mutuelle ?</QuestionTitle>
-              <div className="mt-4">
-                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
-                  {MUTUELLES.map((m) => (
-                    <motion.button
-                      key={m}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => update({ mutuelle: m })}
-                      className="py-3 px-3 rounded-xl text-sm font-medium border-2 text-left transition-all"
-                      style={{
-                        background: data.mutuelle === m ? "rgba(83,49,208,0.15)" : "white",
-                        borderColor: data.mutuelle === m ? "#5331D0" : "rgba(83,49,208,0.35)",
-                        color: data.mutuelle === m ? "#5331D0" : "#FDFDFE",
-                      }}
-                    >
-                      {m}
-                    </motion.button>
-                  ))}
-                </div>
-
+            <StepCard key="s6">
+              <QuestionTitle>Quelle est votre mutuelle ?</QuestionTitle>
+              <p className="text-lg mt-2 mb-6" style={{ color: "#9B96DA" }}>
+                Pour un remboursement précis et personnalisé.
+              </p>
+              <div className="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1 pb-1">
+                {MUTUELLES.map((m) => (
+                  <motion.button
+                    key={m}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => update({ mutuelle: m })}
+                    className="py-4 px-4 rounded-xl text-lg font-medium border-2 text-left transition-all"
+                    style={{
+                      background: data.mutuelle === m ? "rgba(83,49,208,0.2)" : "rgba(10,3,56,0.6)",
+                      borderColor: data.mutuelle === m ? "#5331D0" : "rgba(155,150,218,0.2)",
+                      color: data.mutuelle === m ? "#9B96DA" : "#FDFDFE",
+                    }}
+                  >
+                    {m}
+                  </motion.button>
+                ))}
+              </div>
+              <AnimatePresence>
                 {data.mutuelle && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4">
-                    <p className="text-sm font-medium mb-2" style={{ color: "#FDFDFE" }}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6"
+                  >
+                    <p className="text-lg font-semibold mb-3" style={{ color: "#FDFDFE" }}>
                       Niveau de garantie
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                       {["Base", "Confort", "Premium"].map((n) => (
                         <motion.button
                           key={n}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => update({ niveauGarantie: n.toLowerCase() })}
-                          className="flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition-all"
+                          className="flex-1 py-5 rounded-xl text-lg font-bold border-2 transition-all"
                           style={{
-                            background: data.niveauGarantie === n.toLowerCase() ? "rgba(83,49,208,0.15)" : "white",
-                            borderColor: data.niveauGarantie === n.toLowerCase() ? "#5331D0" : "rgba(83,49,208,0.35)",
-                            color: data.niveauGarantie === n.toLowerCase() ? "#5331D0" : "#FDFDFE",
+                            background: data.niveauGarantie === n.toLowerCase() ? "rgba(83,49,208,0.2)" : "rgba(10,3,56,0.6)",
+                            borderColor: data.niveauGarantie === n.toLowerCase() ? "#5331D0" : "rgba(155,150,218,0.2)",
+                            color: data.niveauGarantie === n.toLowerCase() ? "#9B96DA" : "#FDFDFE",
                           }}
                         >
                           {n}
@@ -291,87 +309,107 @@ export default function QuestionnairePage() {
                     </div>
                   </motion.div>
                 )}
-
+              </AnimatePresence>
+              <AnimatePresence>
                 {data.mutuelle && data.niveauGarantie && (
                   <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={next}
-                    className="w-full py-4 rounded-2xl text-white font-semibold mt-4"
-                    style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
+                    className="w-full py-5 rounded-2xl text-white font-bold text-xl mt-6"
+                    style={{
+                      background: "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)",
+                      boxShadow: "0 4px 24px rgba(83,49,208,0.5)",
+                    }}
                   >
-                    Suivant →
+                    Continuer
                   </motion.button>
                 )}
-              </div>
-            </StepWrapper>
+              </AnimatePresence>
+            </StepCard>
           )}
 
           {step === 7 && (
-            <StepWrapper key="s7">
-              <QuestionTitle>Quel est votre budget ?</QuestionTitle>
-              <div className="flex flex-col gap-3 mt-6">
+            <StepCard key="s7">
+              <QuestionTitle>Votre budget lunettes</QuestionTitle>
+              <p className="text-lg mt-2 mb-8" style={{ color: "#9B96DA" }}>
+                Après remboursements Sécu et mutuelle.
+              </p>
+              <div className="flex flex-col gap-4">
                 {[
-                  { value: "economique", label: "Économique", sub: "100% Santé — Reste à charge 0€", icon: "💚", color: "#22c55e" },
-                  { value: "standard", label: "Standard", sub: "Bon rapport qualité / prix", icon: "💙", color: "#5331D0" },
-                  { value: "premium", label: "Premium", sub: "Le meilleur de la technologie optique", icon: "⭐", color: "#5331D0" },
+                  { value: "economique", label: "100% Santé", sub: "Reste à charge 0€ — remboursement intégral" },
+                  { value: "standard", label: "Standard", sub: "Bon rapport qualité / prix" },
+                  { value: "premium", label: "Premium", sub: "Le meilleur de la technologie optique" },
                 ].map((opt) => (
                   <motion.button
                     key={opt.value}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => { update({ budget: opt.value }); next(); }}
-                    className="flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all"
+                    onClick={() => update({ budget: opt.value })}
+                    className="rounded-2xl py-6 px-6 text-left border-2 transition-all"
                     style={{
-                      background: data.budget === opt.value ? "rgba(10,3,56,0.6)" : "white",
-                      borderColor: data.budget === opt.value ? opt.color : "rgba(83,49,208,0.35)",
+                      background: data.budget === opt.value ? "rgba(83,49,208,0.2)" : "rgba(10,3,56,0.6)",
+                      borderColor: data.budget === opt.value ? "#5331D0" : "rgba(155,150,218,0.2)",
                     }}
                   >
-                    <span className="text-3xl">{opt.icon}</span>
-                    <div>
-                      <p className="font-semibold" style={{ color: opt.color }}>
-                        {opt.label}
-                      </p>
-                      <p className="text-sm" style={{ color: "#9B96DA" }}>
-                        {opt.sub}
-                      </p>
-                    </div>
+                    <p className="text-xl font-bold" style={{ color: data.budget === opt.value ? "#9B96DA" : "#FDFDFE" }}>
+                      {opt.label}
+                    </p>
+                    <p className="text-base mt-1" style={{ color: "rgba(155,150,218,0.55)" }}>
+                      {opt.sub}
+                    </p>
                   </motion.button>
                 ))}
               </div>
 
               {/* RGPD */}
               <div
-                className="mt-5 p-4 rounded-xl"
-                style={{ background: "#fffbeb", border: "1px solid #fde68a" }}
+                className="mt-8 p-5 rounded-2xl"
+                style={{ background: "rgba(83,49,208,0.12)", border: "1px solid rgba(83,49,208,0.3)" }}
               >
-                <p className="text-xs font-semibold mb-2" style={{ color: "#92400e" }}>
-                  🔒 Consentements RGPD
+                <p className="text-lg font-bold mb-4" style={{ color: "#9B96DA" }}>
+                  Consentements
                 </p>
-                <label className="flex items-start gap-3 mb-2">
+                <label className="flex items-start gap-4 mb-4 cursor-pointer">
                   <input
                     type="checkbox"
-                    className="mt-0.5 w-4 h-4"
+                    className="mt-1 w-6 h-6 accent-violet-600"
                     checked={data.consentementRgpd || false}
                     onChange={(e) => update({ consentementRgpd: e.target.checked })}
                   />
-                  <span className="text-xs" style={{ color: "#78350f" }}>
-                    J'accepte que mes données optiques soient utilisées pour générer mon devis personnalisé.
+                  <span className="text-lg" style={{ color: "#FDFDFE" }}>
+                    J’accepte que mes données optiques soient utilisées pour générer mon devis personnalisé.
                   </span>
                 </label>
-                <label className="flex items-start gap-3">
+                <label className="flex items-start gap-4 cursor-pointer">
                   <input
                     type="checkbox"
-                    className="mt-0.5 w-4 h-4"
+                    className="mt-1 w-6 h-6 accent-violet-600"
                     checked={data.consentementRelance || false}
                     onChange={(e) => update({ consentementRelance: e.target.checked })}
                   />
-                  <span className="text-xs" style={{ color: "#78350f" }}>
-                    J'accepte de recevoir des relances et offres personnalisées.
+                  <span className="text-lg" style={{ color: "#FDFDFE" }}>
+                    J’accepte de recevoir des relances et offres personnalisées.
                   </span>
                 </label>
               </div>
-            </StepWrapper>
+
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={next}
+                disabled={!data.budget || !data.consentementRgpd}
+                className="w-full py-5 rounded-2xl text-white font-bold text-xl mt-6"
+                style={{
+                  background: data.budget && data.consentementRgpd
+                    ? "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)"
+                    : "rgba(83,49,208,0.3)",
+                  boxShadow: data.budget && data.consentementRgpd ? "0 4px 24px rgba(83,49,208,0.5)" : "none",
+                  cursor: data.budget && data.consentementRgpd ? "pointer" : "not-allowed",
+                }}
+              >
+                Voir mes recommandations →
+              </motion.button>
+            </StepCard>
           )}
         </AnimatePresence>
       </main>
@@ -379,14 +417,21 @@ export default function QuestionnairePage() {
   );
 }
 
-function StepWrapper({ children }: { children: React.ReactNode }) {
+function StepCard({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 30 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -30 }}
-      transition={{ duration: 0.25 }}
-      className="flex flex-col flex-1 fade-in"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -24 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      className="rounded-3xl p-8 w-full"
+      style={{
+        background: "rgba(10,3,56,0.75)",
+        border: "1.5px solid rgba(83,49,208,0.4)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+      }}
     >
       {children}
     </motion.div>
@@ -395,7 +440,7 @@ function StepWrapper({ children }: { children: React.ReactNode }) {
 
 function QuestionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xl font-bold leading-snug" style={{ color: "#FDFDFE" }}>
+    <h2 className="text-3xl font-black leading-snug" style={{ color: "#FDFDFE" }}>
       {children}
     </h2>
   );
@@ -404,14 +449,12 @@ function QuestionTitle({ children }: { children: React.ReactNode }) {
 function ChoiceButton({
   label,
   sub,
-  icon,
   selected,
   onClick,
   compact = false,
 }: {
   label: string;
   sub?: string;
-  icon?: string;
   selected?: boolean;
   onClick: () => void;
   compact?: boolean;
@@ -420,66 +463,33 @@ function ChoiceButton({
     <motion.button
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="flex items-center gap-4 border-2 rounded-2xl text-left transition-all"
+      className="flex items-center justify-between border-2 rounded-2xl text-left transition-all w-full"
       style={{
-        padding: compact ? "12px 16px" : "16px 20px",
-        background: selected ? "rgba(83,49,208,0.15)" : "white",
-        borderColor: selected ? "#5331D0" : "rgba(83,49,208,0.35)",
+        padding: compact ? "16px 22px" : "22px 26px",
+        background: selected ? "rgba(83,49,208,0.2)" : "rgba(10,3,56,0.6)",
+        borderColor: selected ? "#5331D0" : "rgba(155,150,218,0.2)",
       }}
     >
-      {icon && <span className="text-2xl">{icon}</span>}
       <div>
-        <p className="font-semibold" style={{ color: selected ? "#5331D0" : "#FDFDFE" }}>
+        <p className="text-xl font-bold" style={{ color: selected ? "#9B96DA" : "#FDFDFE" }}>
           {label}
         </p>
         {sub && (
-          <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>
+          <p className="text-base mt-0.5" style={{ color: "rgba(155,150,218,0.55)" }}>
             {sub}
           </p>
         )}
       </div>
       {selected && (
-        <span className="ml-auto  font-bold text-lg">✓</span>
+        <div
+          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ml-4"
+          style={{ background: "#5331D0" }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2.5 7L5.5 10L11.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
       )}
     </motion.button>
-  );
-}
-
-function YesNoButtons({
-  onYes,
-  onNo,
-  selected,
-  yesLabel,
-  noLabel,
-  yesIcon,
-  noIcon,
-  compact = false,
-}: {
-  onYes: () => void;
-  onNo: () => void;
-  selected?: boolean;
-  yesLabel: string;
-  noLabel: string;
-  yesIcon?: string;
-  noIcon?: string;
-  compact?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-3">
-      <ChoiceButton
-        label={yesLabel}
-        icon={yesIcon}
-        selected={selected === true}
-        onClick={onYes}
-        compact={compact}
-      />
-      <ChoiceButton
-        label={noLabel}
-        icon={noIcon}
-        selected={selected === false}
-        onClick={onNo}
-        compact={compact}
-      />
-    </div>
   );
 }

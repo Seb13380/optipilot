@@ -65,14 +65,14 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col items-center mb-10"
+        className="flex flex-col items-center mb-12"
       >
         <img
           src="/assets/images/logo-OptiPilot.png"
           alt="OptiPilot"
-          className="h-24 w-auto object-contain mb-2 drop-shadow-2xl"
+          className="h-32 w-auto object-contain mb-3 drop-shadow-2xl"
         />
-        <p className="text-base mt-1 font-medium" style={{ color: "#9B96DA" }}>
+        <p className="text-xl mt-1 font-semibold" style={{ color: "#9B96DA" }}>
           Copilote IA pour opticiens
         </p>
       </motion.div>
@@ -82,29 +82,29 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="w-full max-w-sm"
+        className="w-full max-w-lg"
       >
         <div
-          className="rounded-3xl p-8 shadow-2xl"
-          style={{ background: "rgba(255,255,255,0.97)" }}
+          className="rounded-3xl p-10 shadow-2xl"
+          style={{ background: "rgba(10,3,56,0.97)", border: "2px solid rgba(83,49,208,0.5)" }}
         >
-          <h2 className="text-2xl font-bold mb-1" style={{ color: "#FDFDFE" }}>
+          <h2 className="text-4xl font-black mb-2" style={{ color: "#FDFDFE" }}>
             Connexion
           </h2>
-          <p className="text-sm mb-6" style={{ color: "#9B96DA" }}>
+          <p className="text-xl mb-8" style={{ color: "#9B96DA" }}>
             Connectez-vous à votre magasin
           </p>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <form onSubmit={handleLogin} className="flex flex-col gap-5">
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: "#9B96DA" }}>
+              <label className="block text-lg font-semibold mb-2" style={{ color: "#9B96DA" }}>
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3.5 rounded-2xl text-base border-2 outline-none transition-all"
+                className="w-full px-5 py-4 rounded-2xl text-xl border-2 outline-none transition-all"
                 style={{
                   borderColor: "rgba(83,49,208,0.4)",
                   background: "rgba(2,0,23,0.7)",
@@ -117,14 +117,14 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: "#9B96DA" }}>
+              <label className="block text-lg font-semibold mb-2" style={{ color: "#9B96DA" }}>
                 Mot de passe
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3.5 rounded-2xl text-base border-2 outline-none transition-all"
+                className="w-full px-5 py-4 rounded-2xl text-xl border-2 outline-none transition-all"
                 style={{
                   borderColor: "rgba(83,49,208,0.4)",
                   background: "rgba(2,0,23,0.7)",
@@ -140,7 +140,7 @@ export default function LoginPage() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3"
+                className="text-base text-red-600 bg-red-50 rounded-xl px-4 py-3"
               >
                 ⚠️ {error}
               </motion.div>
@@ -150,7 +150,7 @@ export default function LoginPage() {
               whileTap={{ scale: 0.97 }}
               type="submit"
               disabled={loading}
-              className="w-full py-4 rounded-2xl text-white text-base font-semibold mt-2 relative overflow-hidden"
+              className="w-full py-5 rounded-2xl text-white text-2xl font-bold mt-2 relative overflow-hidden"
               style={{
                 background: loading
                   ? "rgba(155,150,218,0.6)"
@@ -173,7 +173,7 @@ export default function LoginPage() {
 
           {/* Demo hint */}
           <div
-            className="mt-5 p-3 rounded-xl text-xs text-center"
+            className="mt-6 p-4 rounded-xl text-base text-center font-medium"
             style={{ background: "rgba(83,49,208,0.15)", color: "#9B96DA" }}
           >
             🔵 Mode démo : demo@optipilot.fr / demo1234

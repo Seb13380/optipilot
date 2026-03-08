@@ -67,16 +67,16 @@ export default function RecommandationsPage() {
 
       <main className="flex-1 px-6 pb-8 pt-5 w-full">
         {loading ? (
-          <div className="flex flex-col items-center justify-center gap-5 py-20">
+          <div className="flex flex-col items-center justify-center gap-6 py-24">
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center"
+              className="w-24 h-24 rounded-full flex items-center justify-center"
               style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
             >
-              <svg className="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <svg className="animate-spin" width="44" height="44" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" />
               </svg>
             </div>
-            <p className="text-base font-semibold" style={{ color: "#FDFDFE" }}>
+            <p className="text-2xl font-bold" style={{ color: "#FDFDFE" }}>
               Calcul des recommandations...
             </p>
           </div>
@@ -87,17 +87,17 @@ export default function RecommandationsPage() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-5 p-4 rounded-2xl"
-                style={{ background: "rgba(83,49,208,0.15)", border: "1px solid #bfdbfe" }}
+                className="mb-6 p-5 rounded-2xl"
+                style={{ background: "rgba(83,49,208,0.15)", border: "1px solid rgba(155,150,218,0.4)" }}
               >
-                <p className="text-sm font-medium" style={{ color: "#1e40af" }}>
+                <p className="text-xl font-semibold" style={{ color: "#9B96DA" }}>
                   🤖 {result.argumentaireGlobal}
                 </p>
               </motion.div>
             )}
 
             {/* Cartes des 3 offres */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {result.offres.map((offre, i) => {
                 const couleur = COULEURS[offre.nom];
                 const isSelected = selected === offre.nom;
@@ -109,9 +109,9 @@ export default function RecommandationsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.12 }}
                     onClick={() => setSelected(offre.nom)}
-                    className="rounded-2xl p-5 cursor-pointer transition-all relative overflow-hidden"
+                    className="rounded-3xl p-7 cursor-pointer transition-all relative overflow-hidden"
                     style={{
-                      background: isSelected ? couleur.bg : "white",
+                      background: isSelected ? couleur.bg : "#0A0338",
                       border: `2px solid ${isSelected ? couleur.border : "rgba(83,49,208,0.35)"}`,
                       boxShadow: isSelected ? `0 4px 24px ${couleur.border}25` : "0 2px 8px rgba(0,0,0,0.05)",
                     }}
@@ -119,7 +119,7 @@ export default function RecommandationsPage() {
                     {/* Badge recommandé */}
                     {offre.badge && (
                       <span
-                        className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-xs font-bold text-white"
+                        className="absolute top-5 right-5 px-3.5 py-1.5 rounded-full text-base font-bold text-white"
                         style={{ background: couleur.badge }}
                       >
                         ★ {offre.badge}
@@ -129,28 +129,28 @@ export default function RecommandationsPage() {
                     {/* En-tête */}
                     <div className="flex items-start gap-4 mb-4">
                       <div
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                        className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl flex-shrink-0"
                         style={{ background: `${couleur.border}15` }}
                       >
                         {GLASSES_ICONS[offre.nom]}
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold" style={{ color: couleur.text }}>
+                        <h3 className="text-2xl font-black" style={{ color: couleur.text }}>
                           {offre.nom}
                         </h3>
-                        <p className="text-sm" style={{ color: "#9B96DA" }}>
+                        <p className="text-lg" style={{ color: "#9B96DA" }}>
                           {offre.verrier} — {offre.gamme}
                         </p>
-                        <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>
+                        <p className="text-base mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>
                           Indice {offre.indice} • Classe {offre.classe100ps}
                         </p>
                       </div>
                     </div>
 
                     {/* Argumentaire */}
-                    <div className="grid grid-cols-1 gap-1 mb-4">
+                    <div className="grid grid-cols-1 gap-1.5 mb-5">
                       {offre.argumentaire.map((arg, j) => (
-                        <p key={j} className="text-xs" style={{ color: couleur.text }}>
+                        <p key={j} className="text-lg" style={{ color: couleur.text }}>
                           {arg}
                         </p>
                       ))}
@@ -158,30 +158,30 @@ export default function RecommandationsPage() {
 
                     {/* Prix */}
                     <div
-                      className="flex items-center justify-between p-3 rounded-xl"
+                      className="flex items-center justify-between p-4 rounded-2xl"
                       style={{ background: `${couleur.border}10` }}
                     >
                       <div>
-                        <p className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
+                        <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
                           Prix verres
                         </p>
-                        <p className="font-bold" style={{ color: "#FDFDFE" }}>
+                        <p className="text-xl font-bold" style={{ color: "#FDFDFE" }}>
                           {offre.prixVerres}€
                         </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
+                        <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
                           Remboursement
                         </p>
-                        <p className="font-bold text-green-600">
+                        <p className="text-xl font-bold text-green-400">
                           -{offre.remboursementSecu + offre.remboursementMutuelle}€
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
+                        <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
                           Reste à charge
                         </p>
-                        <p className="text-2xl font-black" style={{ color: couleur.text }}>
+                        <p className="text-3xl font-black" style={{ color: couleur.text }}>
                           {Math.round(offre.resteACharge)}€
                         </p>
                       </div>
@@ -199,7 +199,7 @@ export default function RecommandationsPage() {
                             e.stopPropagation();
                             handleChoix(offre);
                           }}
-                          className="w-full py-4 rounded-xl text-white font-semibold mt-3"
+                          className="w-full py-5 rounded-2xl text-white font-bold text-xl mt-4"
                           style={{ background: `linear-gradient(135deg, ${couleur.border}, ${couleur.badge})` }}
                         >
                           Choisir cette offre →

@@ -114,7 +114,7 @@ export default function OffreComplementairePage() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-sm mb-5"
+          className="text-base mb-5"
           style={{ color: "#9B96DA" }}
         >
           Complétez votre équipement avec nos offres exclusives
@@ -145,14 +145,14 @@ export default function OffreComplementairePage() {
                     <div>
                       {offre.badge && (
                         <span
-                          className="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white mb-1"
+                          className="inline-block px-2 py-0.5 rounded-full text-sm font-bold text-white mb-1"
                           style={{ background: "rgba(255,255,255,0.25)" }}
                         >
                           {offre.badge}
                         </span>
                       )}
                       <h3 className="text-lg font-bold text-white">{offre.titre}</h3>
-                      <p className="text-white opacity-80 text-sm">{offre.description}</p>
+                      <p className="text-white opacity-80 text-base">{offre.description}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -165,7 +165,7 @@ export default function OffreComplementairePage() {
                 <div className="p-4">
                   <div className="grid grid-cols-2 gap-1.5 mb-4">
                     {offre.avantages.map((av, j) => (
-                      <p key={j} className="text-xs flex items-start gap-1.5" style={{ color: "#FDFDFE" }}>
+                      <p key={j} className="text-base flex items-start gap-1.5" style={{ color: "#FDFDFE" }}>
                         <span className="text-green-500 flex-shrink-0">✓</span>
                         {av}
                       </p>
@@ -186,7 +186,7 @@ export default function OffreComplementairePage() {
                             }
                           : {
                               background: offre.gradient,
-                              color: "white",
+                              color: "#0A0338",
                             }
                       }
                     >
@@ -197,7 +197,7 @@ export default function OffreComplementairePage() {
                       onClick={() => {
                         if (!isAdded) router.back();
                       }}
-                      className="flex-1 py-3.5 rounded-xl font-medium text-sm"
+                      className="flex-1 py-3.5 rounded-xl font-medium text-base"
                       style={{ background: "rgba(10,3,56,0.8)", color: "rgba(155,150,218,0.6)" }}
                     >
                       Ignorer

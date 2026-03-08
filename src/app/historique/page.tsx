@@ -141,7 +141,7 @@ export default function HistoriquePage() {
             <p className="text-2xl font-black" style={{ color: "#5331D0" }}>
               {stats.total}
             </p>
-            <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>
+            <p className="text-base mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>
               Devis total
             </p>
           </div>
@@ -152,7 +152,7 @@ export default function HistoriquePage() {
             <p className="text-2xl font-black" style={{ color: "#22c55e" }}>
               {stats.acceptes}
             </p>
-            <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>
+            <p className="text-base mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>
               Acceptés
             </p>
           </div>
@@ -163,7 +163,7 @@ export default function HistoriquePage() {
             <p className="text-2xl font-black" style={{ color: "#5331D0" }}>
               {stats.ca}€
             </p>
-            <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>
+            <p className="text-base mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>
               CA total
             </p>
           </div>
@@ -178,7 +178,7 @@ export default function HistoriquePage() {
               onClick={() => setFilterStatut(f)}
               className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0"
               style={{
-                background: filterStatut === f ? "#5331D0" : "white",
+                background: filterStatut === f ? "#5331D0" : "#0A0338",
                 color: filterStatut === f ? "white" : "#9B96DA",
               }}
             >
@@ -212,12 +212,12 @@ export default function HistoriquePage() {
                     <p className="font-semibold" style={{ color: "#FDFDFE" }}>
                       {nomClient}
                     </p>
-                    <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>
+                    <p className="text-base mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>
                       {formatDate(d.createdAt)}
                     </p>
                   </div>
                   <span
-                    className="px-3 py-1 rounded-full text-xs font-semibold"
+                    className="px-3 py-1 rounded-full text-sm font-semibold"
                     style={{ background: statut.bg, color: statut.color }}
                   >
                     {statut.label}
@@ -228,7 +228,7 @@ export default function HistoriquePage() {
                   <div className="flex items-center gap-2">
                     {d.offreChoisie && (
                       <span
-                        className="px-2.5 py-1 rounded-full text-xs font-bold text-white capitalize"
+                        className="px-2.5 py-1 rounded-full text-sm font-bold text-white capitalize"
                         style={{
                           background:
                             OFFRE_COLORS[d.offreChoisie] || "#9B96DA",
@@ -238,17 +238,17 @@ export default function HistoriquePage() {
                       </span>
                     )}
                     {d.totalConfort && (
-                      <span className="text-sm font-medium" style={{ color: "#FDFDFE" }}>
+                      <span className="text-base font-medium" style={{ color: "#FDFDFE" }}>
                         {d.totalConfort}€
                       </span>
                     )}
                   </div>
                   {d.racConfort !== undefined && (
                     <div className="text-right">
-                      <p className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>
+                      <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
                         RAC
                       </p>
-                      <p className="text-sm font-bold" style={{ color: "#5331D0" }}>
+                      <p className="text-lg font-bold" style={{ color: "#5331D0" }}>
                         {d.racConfort}€
                       </p>
                     </div>

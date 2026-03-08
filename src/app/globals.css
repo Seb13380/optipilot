@@ -33,6 +33,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   user-select: none;
+  /* Accessibilité : taille de base large car utilisateurs porteurs de lunettes */
+  font-size: 20px;
+  line-height: 1.65;
 }
 
 /* iPad touch optimization */
@@ -87,5 +90,84 @@ a {
 .bounce-press:active {
   transform: scale(0.97);
   transition: transform 0.1s;
+}
+
+/* ==============================================
+   ACCESSIBILITÉ — Grands textes haute lisibilité
+   ============================================== */
+
+/* Label de section : capitales espacées, lisibles */
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9B96DA;
+  opacity: 0.85;
+}
+
+/* Montant RAC — très grand */
+.rac-amount {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #FDFDFE;
+  line-height: 1;
+}
+
+/* Carte RAC temps réel */
+.rac-card {
+  border-radius: 20px;
+  padding: 24px;
+  border: 2px solid rgba(83,49,208,0.5);
+  background: #0A0338;
+  box-shadow: 0 0 40px rgba(83,49,208,0.3);
+}
+
+.rac-card.confirmed {
+  border-color: #22c55e;
+  box-shadow: 0 0 40px rgba(34,197,94,0.3);
+}
+
+.rac-card.loading {
+  border-color: #f59e0b;
+  box-shadow: 0 0 40px rgba(245,158,11,0.2);
+}
+
+/* Bouton principal iPad — grand, facile à toucher */
+.btn-primary-xl {
+  width: 100%;
+  padding: 22px 28px;
+  border-radius: 20px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #FDFDFE;
+  background: linear-gradient(135deg, #5331D0, #9B96DA);
+  box-shadow: 0 6px 28px rgba(83,49,208,0.5);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.btn-primary-xl:active {
+  transform: scale(0.97);
+  box-shadow: 0 3px 14px rgba(83,49,208,0.4);
+}
+
+.btn-secondary-xl {
+  width: 100%;
+  padding: 18px 24px;
+  border-radius: 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #FDFDFE;
+  background: #0A0338;
+  border: 2px solid rgba(83,49,208,0.5);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.btn-secondary-xl:active {
+  transform: scale(0.97);
 }
 

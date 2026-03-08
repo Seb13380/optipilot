@@ -104,7 +104,7 @@ export default function DashboardPage() {
         rightAction={
           <button
             onClick={handleLogout}
-            className="text-sm font-medium px-3 py-1.5 rounded-xl"
+            className="text-base font-medium px-3 py-1.5 rounded-xl"
             style={{ color: "#9B96DA", background: "rgba(83,49,208,0.2)" }}
           >
             Quitter
@@ -119,10 +119,10 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h1 className="text-2xl font-bold" style={{ color: "#FDFDFE" }}>
+          <h1 className="text-4xl font-black" style={{ color: "#FDFDFE" }}>
             Bonjour{user?.nom ? `, ${user.nom.split(" ")[0]}` : ""} 👋
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: "#9B96DA" }}>
+          <p className="text-xl mt-2" style={{ color: "#9B96DA" }}>
             {user?.magasinNom || "Votre magasin"} • Aujourd'hui
           </p>
         </motion.div>
@@ -137,12 +137,12 @@ export default function DashboardPage() {
               transition={{ delay: i * 0.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push(item.href)}
-              className="rounded-2xl p-6 flex flex-col items-center gap-3 shadow-md"
-              style={{ background: item.gradient, minHeight: 150 }}
+              className="rounded-3xl p-7 flex flex-col items-center gap-4 shadow-md"
+              style={{ background: item.gradient, minHeight: 200 }}
             >
               <div className="opacity-95">{item.icon}</div>
               <span
-                className="text-white text-sm font-semibold text-center leading-snug"
+                className="text-white text-xl font-bold text-center leading-snug"
                 style={{ whiteSpace: "pre-line" }}
               >
                 {item.label}
@@ -161,7 +161,7 @@ export default function DashboardPage() {
           className="rounded-2xl p-5 shadow-sm"
           style={{ background: "#0A0338" }}
         >
-          <h2 className="text-base font-semibold mb-4" style={{ color: "#FDFDFE" }}>
+          <h2 className="text-2xl font-bold mb-5" style={{ color: "#FDFDFE" }}>
             📊 Statistiques du Jour
           </h2>
 
@@ -195,7 +195,7 @@ export default function DashboardPage() {
           className="rounded-2xl p-5 shadow-sm"
           style={{ background: "#0A0338" }}
         >
-          <h2 className="text-base font-semibold mb-4" style={{ color: "#FDFDFE" }}>
+          <h2 className="text-2xl font-bold mb-5" style={{ color: "#FDFDFE" }}>
             ⚡ Actions Rapides
           </h2>
           <div className="flex flex-col gap-2">
@@ -238,13 +238,13 @@ function StatCard({
 }) {
   return (
     <div
-      className="rounded-xl p-3 flex flex-col items-center text-center"
+      className="rounded-2xl p-4 flex flex-col items-center text-center"
       style={{ background: bgColor }}
     >
-      <span className="text-2xl font-bold" style={{ color }}>
+      <span className="text-4xl font-black" style={{ color }}>
         {value}
       </span>
-      <span className="text-xs font-medium mt-1 leading-tight" style={{ color: "#9B96DA" }}>
+      <span className="text-lg font-bold mt-1.5 leading-tight" style={{ color: "#9B96DA" }}>
         {label}
       </span>
     </div>
@@ -266,16 +266,16 @@ function QuickAction({
     <motion.button
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="flex items-center justify-between p-3 rounded-xl w-full text-left"
+      className="flex items-center justify-between p-4 rounded-2xl w-full text-left"
       style={{ background: "rgba(83,49,208,0.15)" }}
     >
-      <div className="flex items-center gap-3">
-        <span className="text-xl">{icon}</span>
+      <div className="flex items-center gap-4">
+        <span className="text-3xl">{icon}</span>
         <div>
-          <p className="text-sm font-semibold" style={{ color: "#FDFDFE" }}>
+          <p className="text-xl font-bold" style={{ color: "#FDFDFE" }}>
             {label}
           </p>
-          <p className="text-xs" style={{ color: "#9B96DA" }}>
+          <p className="text-lg" style={{ color: "#9B96DA" }}>
             {sub}
           </p>
         </div>

@@ -190,6 +190,63 @@ app.post("/api/questionnaires", async (req, res) => {
   }
 });
 
+// ─── RAC Mutuelle — flux temps réel ──────────────────────
+// L'agent local PC envoie le résultat ici après Playwright
+app.post("/api/rac-result", (req, res) => {
+  const { magasinId, clientId, resultat } = req.body as {
+    magasinId: string;
+    clientId: string;
+    resultat: {
+      montant: number;
+      secu: number;
+      mutuelle: number;
+      detail: string;
+      statut: string;
+    };
+  };
+
+  if (!magasinId || !resultat) {
+    return res.status(400).json({ error: "magasinId et resultat requis" });
+  }
+
+  // Mise à jour BDD asynchrone si devis existant
+  if (clientId) {
+    prisma.devis
+      .updateMany({
+        where: { magasinId, statut: "en_cours" },
+        data: { racConfirme: true, racReel: resultat.montant },
+      })
+      .catch(console.error);
+  }
+
+  // Push temps réel vers l'iPad via Socket.io
+  io.to(magasinId).emit("rac-confirme", resultat);
+
+  return res.json({ ok: true, pushed: true });
+});
+
+// L'iPad demande une cotation → le backend route vers l'agent local
+app.post("/api/rac-request", (req, res) => {
+  const { magasinId, ...cotationData } = req.body as {
+    magasinId: string;
+    clientId: string;
+    mutuelle: string;
+    niveauGarantie: string;
+    typeVerre: string;
+    totalDevis: number;
+    offre: string;
+  };
+
+  if (!magasinId) {
+    return res.status(400).json({ error: "magasinId requis" });
+  }
+
+  // Envoyer la demande à l'agent local (s'il est connecté dans la room)
+  io.to(magasinId).emit("cotation_request", { magasinId, ...cotationData });
+
+  return res.json({ ok: true, message: "Demande envoyée à l'agent local" });
+});
+
 // ─── Socket.io ────────────────────────────────────────────
 io.on("connection", (socket) => {
   console.log("Client connecté:", socket.id);
@@ -203,8 +260,16 @@ io.on("connection", (socket) => {
     socket.to(data.magasinId).emit("cotation_request", data);
   });
 
+  // L'agent local PC envoie le résultat Playwright ici
   socket.on("cotation_result", (data) => {
-    socket.to(data.magasinId).emit("cotation_result", data);
+    const resultat = {
+      montant: data.racReel,
+      secu: data.secu,
+      mutuelle: data.remboursementMutuelle,
+      detail: data.detail,
+      statut: data.statut,
+    };
+    socket.to(data.magasinId).emit("rac-confirme", resultat);
   });
 
   socket.on("questionnaire_reponse", (data) => {

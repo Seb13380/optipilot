@@ -77,7 +77,7 @@ export default function NouveauClientPage() {
           <h2 className="text-xl font-bold mb-1" style={{ color: "#FDFDFE" }}>
             Informations client
           </h2>
-          <p className="text-sm mb-6" style={{ color: "#9B96DA" }}>
+          <p className="text-base mb-6" style={{ color: "#9B96DA" }}>
             Ces données seront liées au devis
           </p>
 
