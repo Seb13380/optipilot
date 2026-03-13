@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface QuestionnaireData {
   tempsEcran?: number;
   sport?: boolean;
+  typeSport?: string;
   conduiteNuit?: boolean;
   photophobie?: boolean;
   secheresseOculaire?: boolean;
@@ -16,6 +17,15 @@ interface QuestionnaireData {
   consentementRgpd?: boolean;
   consentementRelance?: boolean;
 }
+
+const SPORTS_TYPES = [
+  { id: "nautique",   label: "Nautique",         sub: "Voile, surf, kayak, kitesurf..." },
+  { id: "velo",       label: "Cyclisme",          sub: "Route, VTT, gravel..." },
+  { id: "plein_air",  label: "Plein air",         sub: "Running, tennis, golf, rando..." },
+  { id: "neige",      label: "Sports de neige",   sub: "Ski, snowboard..." },
+  { id: "indoor",     label: "Salle / Indoor",    sub: "Muscu, natation, arts martiaux..." },
+  { id: "contact",    label: "Sports collectifs", sub: "Foot, rugby, basket..." },
+];
 
 const PROFESSIONS = [
   { id: "bureautique", label: "Bureautique", sub: "Bureau & écrans" },
@@ -67,6 +77,34 @@ export default function QuestionnairePage() {
   async function submitQuestionnaire() {
     const finalData = { ...data };
     localStorage.setItem("optipilot_questionnaire", JSON.stringify(finalData));
+
+    // Sauvegarder en BDD
+    try {
+      const client = JSON.parse(localStorage.getItem("optipilot_client") || "{}");
+      if (client.id) {
+        await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/questionnaires`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}`,
+          },
+          body: JSON.stringify({
+            clientId: client.id,
+            profession: finalData.profession,
+            tempsEcran: finalData.tempsEcran,
+            sport: finalData.sport || false,
+            typeSport: finalData.typeSport || null,
+            conduiteNuit: finalData.conduiteNuit || false,
+            photophobie: finalData.photophobie || false,
+            preferenceMonture: finalData.preferenceMonture,
+            budget: finalData.budget,
+          }),
+        });
+      }
+    } catch {
+      // Continue sans backend
+    }
+
     router.push("/recommandations");
   }
 
@@ -77,10 +115,7 @@ export default function QuestionnairePage() {
   const progress = (step / TOTAL_STEPS) * 100;
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ background: "linear-gradient(160deg, #020017 0%, #0A0338 45%, #1C0B62 100%)" }}
-    >
+    <div className="page-bg min-h-screen flex flex-col">
       {/* Header retour + compteur */}
       <div className="flex items-center justify-between px-6 pt-8 pb-4">
         <motion.button
@@ -191,10 +226,62 @@ export default function QuestionnairePage() {
               </p>
               <div className="flex flex-col gap-4">
                 <ChoiceButton label="Oui, régulièrement" selected={data.sport === true}
-                  onClick={() => { update({ sport: true }); next(); }} />
+                  onClick={() => update({ sport: true })} />
                 <ChoiceButton label="Non / Occasionnel" selected={data.sport === false}
-                  onClick={() => { update({ sport: false }); next(); }} />
+                  onClick={() => { update({ sport: false, typeSport: undefined }); next(); }} />
               </div>
+
+              <AnimatePresence>
+                {data.sport === true && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6"
+                  >
+                    <p className="text-lg font-semibold mb-3" style={{ color: "#FDFDFE" }}>
+                      Quel type de sport ?
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {SPORTS_TYPES.map((s) => (
+                        <motion.button
+                          key={s.id}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => update({ typeSport: s.id })}
+                          className="rounded-2xl py-4 px-4 text-left border-2 transition-all"
+                          style={{
+                            background: data.typeSport === s.id ? "rgba(83,49,208,0.2)" : "rgba(10,3,56,0.6)",
+                            borderColor: data.typeSport === s.id ? "#5331D0" : "rgba(155,150,218,0.2)",
+                          }}
+                        >
+                          <p className="text-base font-bold" style={{ color: data.typeSport === s.id ? "#9B96DA" : "#FDFDFE" }}>
+                            {s.label}
+                          </p>
+                          <p className="text-sm mt-0.5" style={{ color: "rgba(155,150,218,0.55)" }}>
+                            {s.sub}
+                          </p>
+                        </motion.button>
+                      ))}
+                    </div>
+                    <AnimatePresence>
+                      {data.typeSport && (
+                        <motion.button
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={next}
+                          className="w-full py-5 rounded-2xl text-white font-bold text-xl mt-5"
+                          style={{
+                            background: "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)",
+                            boxShadow: "0 4px 24px rgba(83,49,208,0.5)",
+                          }}
+                        >
+                          Continuer
+                        </motion.button>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </StepCard>
           )}
 
@@ -229,17 +316,6 @@ export default function QuestionnairePage() {
                       onClick={() => update({ photophobie: true })} compact />
                     <ChoiceButton label="Non" selected={data.photophobie === false}
                       onClick={() => update({ photophobie: false })} compact />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold mb-3" style={{ color: "#FDFDFE" }}>
-                    Sécheresse oculaire
-                  </p>
-                  <div className="flex flex-col gap-3">
-                    <ChoiceButton label="Oui, souvent" selected={data.secheresseOculaire === true}
-                      onClick={() => update({ secheresseOculaire: true })} compact />
-                    <ChoiceButton label="Non" selected={data.secheresseOculaire === false}
-                      onClick={() => update({ secheresseOculaire: false })} compact />
                   </div>
                 </div>
                 <motion.button
@@ -482,7 +558,7 @@ function ChoiceButton({
       </div>
       {selected && (
         <div
-          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ml-4"
+          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ml-4"
           style={{ background: "#5331D0" }}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

@@ -7,9 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "seed": "npx ts-node --project tsconfig.backend.json prisma/seed.ts",
     "backend": "npx ts-node --project tsconfig.backend.json backend/server.ts",
     "backend:dev": "npx ts-node-dev --project tsconfig.backend.json backend/server.ts",
     "dev:all": "concurrently \"npm run dev\" \"npm run backend:dev\""
+  },
+  "prisma": {
+    "seed": "npx ts-node --project tsconfig.backend.json prisma/seed.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -31,7 +35,8 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.2",
     "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "stripe": "^20.4.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

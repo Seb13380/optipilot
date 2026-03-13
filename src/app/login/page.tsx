@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,23 +17,6 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Mode démo — connexion directe sans backend
-      if (email === "demo@optipilot.fr" && password === "demo1234") {
-        localStorage.setItem(
-          "optipilot_user",
-          JSON.stringify({
-            id: "demo-user",
-            nom: "Dr. Martin",
-            email,
-            role: "admin",
-            magasinId: "demo-magasin",
-            magasinNom: "Optique Lumière",
-          })
-        );
-        router.push("/dashboard");
-        return;
-      }
-
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login`,
         {
@@ -43,13 +27,26 @@ export default function LoginPage() {
       );
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erreur connexion");
+      if (!res.ok) throw new Error(data.error || "Identifiants incorrects");
 
       localStorage.setItem("optipilot_token", data.token);
       localStorage.setItem("optipilot_user", JSON.stringify(data.user));
-      router.push("/dashboard");
+      router.push(data.user.onboardingDone ? "/dashboard" : "/onboarding");
     } catch (err: unknown) {
-      setError((err as Error).message);
+      const message = (err as Error).message;
+      // Fallback offline démo si le backend est inaccessible
+      if (message.includes("fetch") || message.includes("network") || message.includes("Failed")) {
+        if (email === "demo@optipilot.fr" && password === "demo1234") {
+          localStorage.setItem("optipilot_user", JSON.stringify({
+            id: "demo-user", nom: "Dr. Martin", email,
+            role: "admin", magasinId: "demo-magasin", magasinNom: "Optique Lumière",
+            onboardingDone: true,
+          }));
+          router.push("/dashboard");
+          return;
+        }
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -57,8 +54,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-6"
-      style={{ background: "linear-gradient(160deg, #020017 0%, #0A0338 40%, #5331D0 100%)" }}
+      className="page-bg min-h-screen flex flex-col items-center justify-center px-6"
     >
       {/* Logo */}
       <motion.div
@@ -70,7 +66,7 @@ export default function LoginPage() {
         <img
           src="/assets/images/logo-OptiPilot.png"
           alt="OptiPilot"
-          className="h-32 w-auto object-contain mb-3 drop-shadow-2xl"
+          className="w-80 h-auto object-contain mb-3 drop-shadow-2xl"
         />
         <p className="text-xl mt-1 font-semibold" style={{ color: "#9B96DA" }}>
           Copilote IA pour opticiens
@@ -178,6 +174,14 @@ export default function LoginPage() {
           >
             🔵 Mode démo : demo@optipilot.fr / demo1234
           </div>
+
+          {/* Lien inscription */}
+          <p className="mt-5 text-center text-base" style={{ color: "#9B96DA" }}>
+            Pas encore de compte ?{" "}
+            <Link href="/register" className="font-bold underline" style={{ color: "#FDFDFE" }}>
+              Créer un compte gratuitement →
+            </Link>
+          </p>
         </div>
       </motion.div>
     </div>

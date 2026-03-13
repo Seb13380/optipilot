@@ -15,60 +15,14 @@ interface DevisItem {
   createdAt: string;
 }
 
-// Données de démo
-const DEMO_DEVIS: DevisItem[] = [
-  {
-    id: "1",
-    clientNom: "Marie Dupont",
-    statut: "accepté",
-    offreChoisie: "premium",
-    totalConfort: 580,
-    racConfort: 110,
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "2",
-    clientNom: "Jean Martin",
-    statut: "en_cours",
-    offreChoisie: "confort",
-    totalConfort: 420,
-    racConfort: 90,
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "3",
-    clientNom: "Sophie Bernard",
-    statut: "accepté",
-    offreChoisie: "confort",
-    totalConfort: 390,
-    racConfort: 70,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "4",
-    clientNom: "Pierre Leblanc",
-    statut: "refusé",
-    offreChoisie: "essentiel",
-    totalConfort: 280,
-    racConfort: 0,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "5",
-    clientNom: "Camille Moreau",
-    statut: "expiré",
-    offreChoisie: "premium",
-    totalConfort: 720,
-    racConfort: 260,
-    createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
+
 
 const STATUT_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  accepté: { bg: "rgba(34,197,94,0.12)", color: "#22c55e", label: "✓ Accepté" },
-  en_cours: { bg: "rgba(83,49,208,0.15)", color: "#5331D0", label: "⏳ En cours" },
-  refusé: { bg: "#fef2f2", color: "#dc2626", label: "✗ Refusé" },
-  expiré: { bg: "rgba(2,0,23,0.7)", color: "#9B96DA", label: "⌛ Expiré" },
+  accepté:  { bg: "rgba(34,197,94,0.12)",   color: "#22c55e", label: "Accepté" },
+  en_cours: { bg: "rgba(83,49,208,0.15)",   color: "#9B96DA", label: "En cours" },
+  relance:  { bg: "rgba(244,114,182,0.12)", color: "#f472b6", label: "Relancé" },
+  refusé:   { bg: "rgba(239,68,68,0.1)",    color: "#ef4444", label: "Refusé" },
+  expiré:   { bg: "rgba(155,150,218,0.1)",  color: "#9B96DA", label: "Expiré" },
 };
 
 const OFFRE_COLORS: Record<string, string> = {
@@ -79,24 +33,24 @@ const OFFRE_COLORS: Record<string, string> = {
 
 export default function HistoriquePage() {
   const router = useRouter();
-  const [devis, setDevis] = useState<DevisItem[]>(DEMO_DEVIS);
+  const [devis, setDevis] = useState<DevisItem[]>([]);
   const [filterStatut, setFilterStatut] = useState<string>("tous");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const user = localStorage.getItem("optipilot_user");
-    if (!user) return;
+    if (!user) { router.replace("/login"); return; }
     const userData = JSON.parse(user);
+    const token = localStorage.getItem("optipilot_token") || "";
 
-    setLoading(true);
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${userData.magasinId}`)
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${userData.magasinId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) setDevis(data);
-      })
+      .then((data) => { if (Array.isArray(data)) setDevis(data); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   const filtered =
     filterStatut === "tous"
@@ -120,7 +74,7 @@ export default function HistoriquePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
+    <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         title="Historique"
         showBack
@@ -176,7 +130,7 @@ export default function HistoriquePage() {
               key={f}
               whileTap={{ scale: 0.95 }}
               onClick={() => setFilterStatut(f)}
-              className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0"
+              className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shrink-0"
               style={{
                 background: filterStatut === f ? "#5331D0" : "#0A0338",
                 color: filterStatut === f ? "white" : "#9B96DA",
@@ -258,10 +212,21 @@ export default function HistoriquePage() {
             );
           })}
 
-          {filtered.length === 0 && (
-            <div className="text-center py-16" style={{ color: "rgba(155,150,218,0.6)" }}>
-              <p className="text-4xl mb-3">📋</p>
-              <p className="font-medium">Aucun devis trouvé</p>
+          {loading && (
+            <div className="col-span-2 flex justify-center py-16">
+              <div className="w-10 h-10 rounded-full border-4 animate-spin" style={{ borderColor: "#5331D0", borderTopColor: "transparent" }} />
+            </div>
+          )}
+          {!loading && filtered.length === 0 && (
+            <div className="col-span-2 text-center py-16" style={{ color: "rgba(155,150,218,0.6)" }}>
+              <svg width="48" height="48" fill="none" viewBox="0 0 24 24" style={{ margin: "0 auto 12px", color: "rgba(155,150,218,0.35)" }}>
+                <rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" strokeWidth="2" />
+                <path d="M3 9h18" stroke="currentColor" strokeWidth="2" />
+                <path d="M8 2v4M16 2v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M7 14h5M7 17h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              <p className="font-semibold text-lg">Aucun devis trouvé</p>
+              <p className="text-base mt-1">Les devis créés apparaîtront ici.</p>
             </div>
           )}
         </div>

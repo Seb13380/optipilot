@@ -4,19 +4,29 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url  = env("DATABASE_URL")
 }
 
 model Magasin {
-  id             String   @id @default(uuid())
-  nom            String
-  adresse        String?
-  email          String?
-  telephone      String?
-  reseauMutuelle String?
-  loginMutuelle  String?
-  mdpMutuelle    String?
-  createdAt      DateTime @default(now())
+  id               String   @id @default(uuid())
+  nom              String
+  siret            String?  @unique
+  adresse          String?
+  ville            String?
+  codePostal       String?
+  email            String?
+  telephone        String?
+  reseauMutuelle   String?
+  loginMutuelle    String?
+  mdpMutuelle      String?
+  // Abonnement
+  plan             String   @default("trial")  // trial | standard | premium
+  trialEndsAt      DateTime?
+  stripeCustomerId String?
+  stripeSubId      String?
+  // Setup
+  onboardingDone   Boolean  @default(false)
+  createdAt        DateTime @default(now())
 
   utilisateurs Utilisateur[]
   clients      Client[]
@@ -51,6 +61,7 @@ model Client {
   mutuelle            String?
   niveauGarantie      String?
   numAdherent         String?
+  adresse             String?
   consentementRgpd    Boolean   @default(false)
   consentementRelance Boolean   @default(false)
   createdAt           DateTime  @default(now())
@@ -117,13 +128,16 @@ model ConfigTarif {
 }
 
 model Mutuelle {
-  id                      String   @id @default(uuid())
+  id                      String    @id @default(uuid())
   nom                     String
   reseau                  String
   niveau                  String
   remboursementUnifocal   Decimal?
   remboursementProgressif Decimal?
   remboursementSolaire    Decimal?
+  // Grille détaillée par type de correction et réseau (parVerre = true → ×2 pour la paire)
+  tarifsDetail            Json?
+  updatedAt               DateTime? @updatedAt
 
   @@map("mutuelles")
 }

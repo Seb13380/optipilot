@@ -57,6 +57,12 @@ a {
   border-radius: 2px;
 }
 
+/* Background principal des pages */
+.page-bg {
+  background:
+    url('/assets/images/BackGround-OptiPilot.png') center / cover no-repeat fixed;
+}
+
 /* Card base */
 .card {
   background: #0A0338;

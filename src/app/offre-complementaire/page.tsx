@@ -9,11 +9,41 @@ interface OffreCompl {
   titre: string;
   description: string;
   prix: number;
-  icon: string;
+  icon: React.ReactNode;
   gradient: string;
   avantages: string[];
   badge?: string;
 }
+
+// ── Icônes SVG dans la palette ────────────────────────────────────────────────
+const IconSolaire = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="2" />
+    <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="white" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+const IconEcran = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+    <rect x="2" y="3" width="20" height="14" rx="2" stroke="white" strokeWidth="2" />
+    <path d="M8 21h8M12 17v4" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    <circle cx="12" cy="10" r="2" stroke="white" strokeWidth="1.5" />
+  </svg>
+);
+const IconSport = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+    <path d="M3 12c0-2 1.5-3 3-3h12c1.5 0 3 1 3 3s-1.5 3-3 3H6c-1.5 0-3-1-3-3Z" stroke="white" strokeWidth="2" />
+    <path d="M9 12h6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    <path d="M3 12H1M23 12h-2" stroke="white" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+const IconKit = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+    <rect x="5" y="3" width="14" height="18" rx="2" stroke="white" strokeWidth="2" />
+    <path d="M9 7h6M9 11h4" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    <circle cx="16" cy="17" r="3" stroke="white" strokeWidth="1.5" />
+    <path d="M18.5 19.5l2 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
 
 const OFFRES_COMPLEMENTAIRES: OffreCompl[] = [
   {
@@ -21,8 +51,8 @@ const OFFRES_COMPLEMENTAIRES: OffreCompl[] = [
     titre: "Seconde Paire Solaire",
     description: "avec Verres Polarisés",
     prix: 59,
-    icon: "😎",
-    gradient: "linear-gradient(135deg, #1a3a6b 0%, #2563eb 100%)",
+    icon: <IconSolaire />,
+    gradient: "linear-gradient(135deg, #1C0B62 0%, #5331D0 100%)",
     avantages: [
       "Verres polarisés haute définition",
       "Protection UV 400 catégorie 3",
@@ -36,8 +66,8 @@ const OFFRES_COMPLEMENTAIRES: OffreCompl[] = [
     titre: "Lunettes Écran",
     description: "Protection lumière bleue",
     prix: 39,
-    icon: "💻",
-    gradient: "linear-gradient(135deg, #166534 0%, #22c55e 100%)",
+    icon: <IconEcran />,
+    gradient: "linear-gradient(135deg, #2D1B78 0%, #7B5CE5 100%)",
     avantages: [
       "Filtre lumière bleue anti-fatigue",
       "Optimisée distance écran 60cm",
@@ -51,7 +81,7 @@ const OFFRES_COMPLEMENTAIRES: OffreCompl[] = [
     titre: "Lunettes Sport",
     description: "Masque correcteur",
     prix: 79,
-    icon: "🏊",
+    icon: <IconSport />,
     gradient: "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)",
     avantages: [
       "Résistante aux chocs (norme EN 166)",
@@ -65,8 +95,8 @@ const OFFRES_COMPLEMENTAIRES: OffreCompl[] = [
     titre: "Kit Entretien Premium",
     description: "Étui rigide + nettoyant",
     prix: 19,
-    icon: "🧴",
-    gradient: "linear-gradient(135deg, #9a3412 0%, #f97316 100%)",
+    icon: <IconKit />,
+    gradient: "linear-gradient(135deg, #0A0338 0%, #3B24A8 100%)",
     avantages: [
       "Étui rigide protection maximale",
       "Spray nettoyant 60ml anti-grippe",
@@ -103,7 +133,7 @@ export default function OffreComplementairePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
+    <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         title="Offre Complémentaire"
         showBack
@@ -129,9 +159,11 @@ export default function OffreComplementairePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="rounded-2xl overflow-hidden shadow-sm"
+                className="rounded-2xl overflow-hidden"
                 style={{
-                  border: isAdded ? "2px solid #22c55e" : "2px solid rgba(83,49,208,0.35)",
+                  border: isAdded
+                    ? "2px solid rgba(155,150,218,0.9)"
+                    : "2px solid rgba(83,49,208,0.35)",
                   background: "#0A0338",
                 }}
               >
@@ -141,22 +173,22 @@ export default function OffreComplementairePage() {
                   style={{ background: offre.gradient }}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{offre.icon}</span>
+                    <div className="opacity-90">{offre.icon}</div>
                     <div>
                       {offre.badge && (
                         <span
                           className="inline-block px-2 py-0.5 rounded-full text-sm font-bold text-white mb-1"
-                          style={{ background: "rgba(255,255,255,0.25)" }}
+                          style={{ background: "rgba(255,255,255,0.2)" }}
                         >
                           {offre.badge}
                         </span>
                       )}
                       <h3 className="text-lg font-bold text-white">{offre.titre}</h3>
-                      <p className="text-white opacity-80 text-base">{offre.description}</p>
+                      <p className="text-white opacity-75 text-base">{offre.description}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-white opacity-70 text-xs">seulement</p>
+                    <p className="text-white opacity-60 text-xs">seulement</p>
                     <p className="text-white text-2xl font-black">+{offre.prix}€</p>
                   </div>
                 </div>
@@ -165,8 +197,10 @@ export default function OffreComplementairePage() {
                 <div className="p-4">
                   <div className="grid grid-cols-2 gap-1.5 mb-4">
                     {offre.avantages.map((av, j) => (
-                      <p key={j} className="text-base flex items-start gap-1.5" style={{ color: "#FDFDFE" }}>
-                        <span className="text-green-500 flex-shrink-0">✓</span>
+                      <p key={j} className="text-base flex items-start gap-1.5" style={{ color: "#DDDAF5" }}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0 mt-0.5">
+                          <path d="M3 8l3.5 3.5L13 5" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                         {av}
                       </p>
                     ))}
@@ -176,21 +210,22 @@ export default function OffreComplementairePage() {
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={() => toggleOffre(offre.id)}
-                      className="flex-[2] py-3.5 rounded-xl font-semibold text-sm transition-all"
+                      className="flex-2 py-3.5 rounded-xl font-semibold text-sm transition-all"
                       style={
                         isAdded
                           ? {
-                              background: "rgba(34,197,94,0.12)",
-                              color: "#22c55e",
-                              border: "2px solid #22c55e",
+                              background: "rgba(155,150,218,0.15)",
+                              color: "#C4C1EA",
+                              border: "1.5px solid rgba(155,150,218,0.6)",
                             }
                           : {
                               background: offre.gradient,
-                              color: "#0A0338",
+                              color: "#FDFDFE",
+                              border: "none",
                             }
                       }
                     >
-                      {isAdded ? "✓ Ajouté au devis" : "Ajouter au Devis"}
+                      {isAdded ? "Ajouté au devis" : "Ajouter au Devis"}
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.95 }}
@@ -198,7 +233,7 @@ export default function OffreComplementairePage() {
                         if (!isAdded) router.back();
                       }}
                       className="flex-1 py-3.5 rounded-xl font-medium text-base"
-                      style={{ background: "rgba(10,3,56,0.8)", color: "rgba(155,150,218,0.6)" }}
+                      style={{ background: "rgba(10,3,56,0.8)", color: "rgba(155,150,218,0.5)" }}
                     >
                       Ignorer
                     </motion.button>
@@ -217,10 +252,13 @@ export default function OffreComplementairePage() {
             initial={{ opacity: 0, y: 80 }}
             animate={{ opacity: 1, y: 0 }}
             className="fixed bottom-0 left-0 right-0 p-5"
-            style={{ background: "rgba(34,197,94,0.12)", borderTop: "2px solid #22c55e" }}
+            style={{
+              background: "rgba(8,2,40,0.98)",
+              borderTop: "1.5px solid rgba(155,150,218,0.5)",
+            }}
           >
-            <p className="text-center font-semibold text-green-700 text-lg">
-              ✓ Ajouté au devis ! Finalisation...
+            <p className="text-center font-semibold text-lg" style={{ color: "#C4C1EA" }}>
+              Ajouté au devis — finalisation en cours…
             </p>
           </motion.div>
         ) : (
@@ -228,7 +266,11 @@ export default function OffreComplementairePage() {
             initial={{ opacity: 0, y: 80 }}
             animate={{ opacity: 1, y: 0 }}
             className="fixed bottom-0 left-0 right-0 p-5"
-            style={{ background: "#0A0338", borderTop: "1px solid rgba(83,49,208,0.35)", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}
+            style={{
+              background: "#0A0338",
+              borderTop: "1px solid rgba(83,49,208,0.35)",
+              boxShadow: "0 -4px 24px rgba(0,0,0,0.4)",
+            }}
           >
             {added.size > 0 && (
               <p className="text-center text-sm mb-3" style={{ color: "#9B96DA" }}>
@@ -248,8 +290,8 @@ export default function OffreComplementairePage() {
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={valider}
-                  className="flex-[2] py-4 rounded-2xl text-white font-semibold"
-                  style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
+                  className="flex-2 py-4 rounded-2xl font-semibold"
+                  style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", color: "#FDFDFE" }}
                 >
                   Valider +{totalAjouts}€ →
                 </motion.button>

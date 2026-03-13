@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: optipilot-backend
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: optipilot
+    buildCommand: npm install && npx prisma generate && npx tsc --project tsconfig.backend.json
+    startCommand: node dist/backend/backend/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_PORT
+        value: 4000
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false

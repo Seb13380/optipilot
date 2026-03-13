@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { io, Socket } from "socket.io-client";
@@ -15,6 +16,7 @@ interface ClientInfo {
 }
 
 type RacStatut = "idle" | "loading" | "confirmed" | "error";
+type OptimumStatut = "idle" | "sending" | "sent" | "waiting_cotation" | "cotation_received" | "error";
 
 interface RacResult {
   montant: number;
@@ -28,6 +30,7 @@ export default function DevisPage() {
   const router = useRouter();
   const devisRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
+  const bridgeWsRef = useRef<WebSocket | null>(null);
   const [offre, setOffre] = useState<OffreVerre | null>(null);
   const [client, setClient] = useState<ClientInfo>({});
   const [ordonnance, setOrdonnance] = useState<Record<string, string>>({});
@@ -40,6 +43,13 @@ export default function DevisPage() {
 
   // Prix monture (saisie opticien)
   const [prixMonture, setPrixMonture] = useState(120);
+  const [questionnaire, setQuestionnaire] = useState<Record<string, unknown>>({});
+  const [conseillerOpen, setConseillerOpen] = useState(true);
+
+  // Bridge Optimum
+  const [bridgeUrl, setBridgeUrl] = useState<string | null>(null);
+  const [optimumStatut, setOptimumStatut] = useState<OptimumStatut>("idle");
+  const [optimumError, setOptimumError] = useState<string | null>(null);
 
   useEffect(() => {
     const offreRaw = localStorage.getItem("optipilot_offre_selectionnee");
@@ -52,8 +62,12 @@ export default function DevisPage() {
     if (ordoRaw) setOrdonnance(JSON.parse(ordoRaw));
     if (questRaw) {
       const q = JSON.parse(questRaw);
+      setQuestionnaire(q);
       if (!clientRaw) setClient({ mutuelle: q.mutuelle, niveauGarantie: q.niveauGarantie });
     }
+
+    const savedBridgeUrl = localStorage.getItem("optipilot_bridge_url");
+    if (savedBridgeUrl) setBridgeUrl(savedBridgeUrl);
 
     // Connexion Socket.io pour récupérer RAC réel en temps réel
     const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000", {
@@ -79,6 +93,7 @@ export default function DevisPage() {
 
     return () => {
       socket.disconnect();
+      bridgeWsRef.current?.close();
     };
   }, []);
 
@@ -154,6 +169,104 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
     });
   }
 
+  async function envoyerVersOptimum() {
+    const url = bridgeUrl || localStorage.getItem("optipilot_bridge_url") || "http://localhost:5174";
+    const token = localStorage.getItem("optipilot_bridge_token") || "";
+    setOptimumStatut("sending");
+    setOptimumError(null);
+
+    try {
+      // 1. Créer/trouver le client dans Optimum
+      const clientRes = await fetch(`${url}/api/clients`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-bridge-token": token },
+        body: JSON.stringify({
+          civilite: "",
+          nom: client.nom || "",
+          prenom: client.prenom || "",
+          email: client.email || "",
+          mutuelle: client.mutuelle || "",
+        }),
+      });
+      if (!clientRes.ok) throw new Error(`Erreur client (${clientRes.status})`);
+      const { id: clientId } = await clientRes.json();
+
+      // 2. Créer l'ordonnance
+      const ordoRes = await fetch(`${url}/api/ordonnances`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-bridge-token": token },
+        body: JSON.stringify({
+          clientId,
+          odSphere: ordonnance.odSphere,
+          odCylindre: ordonnance.odCylindre,
+          odAxe: ordonnance.odAxe,
+          odAddition: ordonnance.odAddition,
+          ogSphere: ordonnance.ogSphere,
+          ogCylindre: ordonnance.ogCylindre,
+          ogAxe: ordonnance.ogAxe,
+          ogAddition: ordonnance.ogAddition,
+        }),
+      });
+      if (!ordoRes.ok) throw new Error(`Erreur ordonnance (${ordoRes.status})`);
+      const { id: ordoId } = await ordoRes.json();
+
+      // 3. Créer le devis et lancer la cotation automatiquement
+      const devisRes = await fetch(`${url}/api/devis`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-bridge-token": token },
+        body: JSON.stringify({
+          clientId,
+          ordonnanceId: ordoId,
+          monture: prixMonture,
+          verrier: offre?.verrier || "",
+          gamme: offre?.gamme || "",
+          offre: offre?.nom || "",
+          prixVerres: totalVerres,
+          totalDevis,
+          resteACharge,
+          remboursementSecu: offre?.remboursementSecu || 0,
+          remboursementMutuelle: offre?.remboursementMutuelle || 0,
+        }),
+      });
+      if (!devisRes.ok) throw new Error(`Erreur devis (${devisRes.status})`);
+      const { id: devisId } = await devisRes.json();
+
+      setOptimumStatut("waiting_cotation");
+
+      // 4. Connexion WebSocket pour recevoir le résultat de cotation en temps réel
+      const wsUrl = url.replace(/^http/, "ws");
+      const ws = new WebSocket(`${wsUrl}/ws?token=${encodeURIComponent(token)}`);
+      bridgeWsRef.current = ws;
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.event === "cotation_result" && msg.data?.devisId === devisId) {
+            const cot = msg.data;
+            setRacResult({
+              montant: cot.resteACharge ?? resteACharge,
+              secu: offre?.remboursementSecu || 0,
+              mutuelle: cot.montantMutuelle || 0,
+              detail: `${client.mutuelle || "Mutuelle"} — cotation Optimum confirmée`,
+              statut: "accordé",
+            });
+            setRacStatut("confirmed");
+            setOptimumStatut("cotation_received");
+            ws.close();
+          }
+        } catch { /* message non-JSON ignoré */ }
+      };
+
+      ws.onerror = () => {
+        // WS non bloquant — le devis est déjà dans Optimum, la cotation peut être récupérée manuellement
+        setOptimumStatut("sent");
+      };
+    } catch (err) {
+      setOptimumStatut("error");
+      setOptimumError(err instanceof Error ? err.message : "Erreur bridge");
+    }
+  }
+
   async function confirmerRACReel() {
     setRacStatut("loading");
     const userRaw = localStorage.getItem("optipilot_user");
@@ -190,7 +303,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#020017" }}>
+      <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         title="Votre Devis"
         showBack
@@ -288,12 +401,12 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               />
               <DevisLigne
                 label="Remboursement Sécurité Sociale"
-                value={`-${offre?.remboursementSecu || 0}€`}
+                value={`${offre?.remboursementSecu || 0}€`}
                 green
               />
               <DevisLigne
                 label={`Remboursement Mutuelle (${client.mutuelle || "—"})`}
-                value={`-${offre?.remboursementMutuelle || 0}€`}
+                value={`${offre?.remboursementMutuelle || 0}€`}
                 green
               />
               <div
@@ -380,7 +493,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                       transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
                     >
                       <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="10" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="50" strokeDashoffset="15" />
+                        <circle cx="12" cy="12" r="10" stroke="#ec4899" strokeWidth="2.5" strokeDasharray="50" strokeDashoffset="15" />
                       </svg>
                     </motion.div>
                     <div className="text-center">
@@ -401,7 +514,9 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   className="rac-card confirmed w-full"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <span style={{ fontSize: "2rem" }}>✅</span>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.15)", border: "2px solid rgba(34,197,94,0.5)" }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
                     <div>
                       <p className="text-xl font-bold" style={{ color: "#22c55e" }}>Remboursement confirmé</p>
                       <p className="text-base" style={{ color: "#9B96DA" }}>{racResult.detail}</p>
@@ -421,7 +536,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                       className="flex justify-between items-center p-3 rounded-xl mt-1"
                       style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.4)" }}
                     >
-                      <span className="text-lg font-bold" style={{ color: "#FDFDFE" }}>Votre RAC réel 🎯</span>
+                      <span className="text-lg font-bold" style={{ color: "#FDFDFE" }}>Votre RAC réel</span>
                       <span className="text-4xl font-black" style={{ color: "#FDFDFE" }}>{racResult.montant}€</span>
                     </div>
                   </div>
@@ -454,7 +569,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   animate={{ opacity: 1 }}
                   className="rac-card w-full"
                 >
-                  <p className="text-lg font-bold mb-2" style={{ color: "#ef4444" }}>⚠️ Erreur de connexion mutuelle</p>
+                  <p className="text-lg font-bold mb-2" style={{ color: "#ef4444" }}>Erreur de connexion mutuelle</p>
                   <p className="text-base" style={{ color: "#9B96DA" }}>Le RAC estimé reste valable. Relancez manuellement.</p>
                   <button
                     onClick={() => setRacStatut("idle")}
@@ -494,7 +609,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   Envoi...
                 </>
               ) : (
-                "📧 Envoyer le Devis par email"
+                "Envoyer le Devis par email"
               )}
             </motion.button>
           ) : null}
@@ -506,7 +621,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               className="flex-1 py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2"
               style={{ background: "#0A0338", color: "#FDFDFE", border: "2px solid rgba(83,49,208,0.45)" }}
             >
-              📄 Exporter PDF
+              Exporter PDF
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -514,9 +629,136 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               className="flex-1 py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2"
               style={{ background: "#0A0338", color: "#FDFDFE", border: "2px solid rgba(83,49,208,0.45)" }}
             >
-              📋 Copier données
+              Copier données
             </motion.button>
           </div>
+
+          {/* ─── SYNCHRONISATION OPTIMUM ─── */}
+          {bridgeUrl && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl overflow-hidden"
+              style={{ border: "1.5px solid rgba(83,49,208,0.4)", background: "rgba(10,3,56,0.7)" }}
+            >
+              <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(83,49,208,0.2)" }}>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{
+                      background:
+                        optimumStatut === "cotation_received" || optimumStatut === "sent"
+                          ? "#22c55e"
+                          : optimumStatut === "error"
+                          ? "#ef4444"
+                          : optimumStatut === "sending" || optimumStatut === "waiting_cotation"
+                          ? "#a78bfa"
+                          : "rgba(155,150,218,0.5)",
+                      boxShadow:
+                        optimumStatut === "sending" || optimumStatut === "waiting_cotation"
+                          ? "0 0 8px rgba(167,139,250,0.6)"
+                          : "none",
+                    }}
+                  />
+                  <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Synchroniser Optimum</p>
+                </div>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(83,49,208,0.25)", color: "#9B96DA" }}>
+                  PC connecté
+                </span>
+              </div>
+
+              <div className="px-5 py-4">
+                {optimumStatut === "idle" && (
+                  <>
+                    <p className="text-sm mb-3" style={{ color: "#9B96DA" }}>
+                      Envoie le client, l&apos;ordonnance et le devis directement dans Optimum. La cotation mutuelle revient automatiquement.
+                    </p>
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={envoyerVersOptimum}
+                      className="w-full py-3.5 rounded-xl font-bold text-white text-base flex items-center justify-center gap-2"
+                      style={{
+                        background: "linear-gradient(135deg, #5331D0, #7c3aed)",
+                        boxShadow: "0 4px 20px rgba(83,49,208,0.45)",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Envoyer vers Optimum
+                    </motion.button>
+                  </>
+                )}
+
+                {optimumStatut === "sending" && (
+                  <div className="flex items-center gap-3 py-1">
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="#a78bfa" strokeWidth="2.5" strokeDasharray="50" strokeDashoffset="15" />
+                      </svg>
+                    </motion.div>
+                    <p className="text-base font-semibold" style={{ color: "#a78bfa" }}>Envoi vers Optimum...</p>
+                  </div>
+                )}
+
+                {optimumStatut === "waiting_cotation" && (
+                  <div className="flex flex-col gap-2 py-1">
+                    <div className="flex items-center gap-3">
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="#a78bfa" strokeWidth="2.5" strokeDasharray="50" strokeDashoffset="15" />
+                        </svg>
+                      </motion.div>
+                      <div>
+                        <p className="text-base font-semibold" style={{ color: "#a78bfa" }}>Devis envoyé — cotation en attente</p>
+                        <p className="text-sm" style={{ color: "#9B96DA" }}>L&apos;opticien lance la cotation dans Optimum</p>
+                      </div>
+                    </div>
+                    <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>Le résultat apparaîtra ici automatiquement (jusqu&apos;à 3 min)</p>
+                  </div>
+                )}
+
+                {(optimumStatut === "sent" || optimumStatut === "cotation_received") && (
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.15)", border: "2px solid rgba(34,197,94,0.5)" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold" style={{ color: "#22c55e" }}>
+                        {optimumStatut === "cotation_received" ? "Cotation reçue d'Optimum" : "Envoyé dans Optimum"}
+                      </p>
+                      <p className="text-sm" style={{ color: "#9B96DA" }}>
+                        {optimumStatut === "cotation_received" ? "RAC mis à jour avec le montant réel" : "Visible dans la liste des devis"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {optimumStatut === "error" && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-semibold" style={{ color: "#ef4444" }}>Erreur de connexion bridge</p>
+                    {optimumError && <p className="text-xs" style={{ color: "rgba(239,68,68,0.8)" }}>{optimumError}</p>}
+                    <div className="flex gap-2 mt-1">
+                      <button
+                        onClick={() => setOptimumStatut("idle")}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
+                        style={{ background: "rgba(83,49,208,0.2)", color: "#9B96DA" }}
+                      >
+                        Réessayer
+                      </button>
+                      <button
+                        onClick={() => window.open("/bridge", "_blank")}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
+                        style={{ background: "rgba(10,3,56,0.8)", color: "#9B96DA", border: "1px solid rgba(83,49,208,0.3)" }}
+                      >
+                        Config bridge
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
 
           {/* Offre complémentaire */}
           <motion.button
@@ -528,7 +770,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               color: "#FDFDFE",
             }}
           >
-            ⭐ Voir l’offre complémentaire
+            Voir l'offre complémentaire
           </motion.button>
 
           <motion.button
@@ -539,10 +781,200 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
           >
             Retour à l’accueil
           </motion.button>
-        </motion.div>
+          {/* ─── CONSEILLER IA ─── */}
+          <ConseillerIA
+            questionnaire={questionnaire}
+            offre={offre}
+            open={conseillerOpen}
+            onToggle={() => setConseillerOpen((v) => !v)}
+            onUpgrade={() => router.push("/recommandations")}
+          />        </motion.div>
         </div>
       </main>
     </div>
+  );
+}
+
+// ─── Conseiller IA ─────────────────────────────────────────
+
+interface Tip {
+  phrase: string;
+  isUpsell?: boolean;
+}
+
+function genererTips(questionnaire: Record<string, unknown>, offre: OffreVerre | null): Tip[] {
+  const tips: Tip[] = [];
+  const ecran = Number(questionnaire.tempsEcran) || 0;
+  const profession = String(questionnaire.profession || "");
+  const conduiteNuit = Boolean(questionnaire.conduiteNuit);
+  const photophobie = Boolean(questionnaire.photophobie);
+  const isProgressif = offre?.type?.toLowerCase().includes("progressif");
+
+  if (ecran >= 6) {
+    tips.push({
+      phrase: `"Avec ${ecran}h/jour sur écran, ce filtre lumière bleue va vraiment réduire votre fatigue visuelle dès le soir — c'est le retour que tous nos clients bureau me font."`,
+    });
+  } else if (ecran >= 3) {
+    tips.push({
+      phrase: `"Le filtre anti-lumière bleue est inclus — idéal pour vos ${ecran}h sur écran, vous sentirez la différence après une semaine."`,
+    });
+  }
+
+  if (conduiteNuit) {
+    tips.push({
+      phrase: `"L'antireflet premium élimine 99% des reflets des phares la nuit. C'est souvent la raison n°1 qui fait choisir cette offre pour les conducteurs."`,
+    });
+  }
+
+  if (photophobie) {
+    tips.push({
+      phrase: `"Avec votre sensibilité à la lumière, ces verres photochromiques s'adaptent automatiquement — plus besoin d'une paire de soleil séparée pour sortir."`,
+    });
+  }
+
+  if (isProgressif) {
+    tips.push({
+      phrase: `"Pour les progressifs, le temps d'adaptation est de 3 à 7 jours en général. Mais la grande majorité de nos clients oublient qu'ils en portent au bout de 2 semaines."`,
+    });
+  }
+
+  if (profession === "bureautique") {
+    tips.push({
+      phrase: `"Pour un usage bureau, l'antireflet élimine aussi les reflets des néons et de la vitre de votre écran — vos yeux fatiguent beaucoup moins."`,
+    });
+  } else if (profession === "conduite" || profession === "transport") {
+    tips.push({
+      phrase: `"Pour les conducteurs professionnels, la clarté visuelle est critique. Ces verres sont taillés exactement pour ça."`,
+    });
+  } else if (profession === "sante") {
+    tips.push({
+      phrase: `"En milieu médical vous alternez entre écran, dossiers et patients — ce profil de verre est optimisé pour ces changements constants."`,
+    });
+  }
+
+  if (offre?.nom === "Essentiel") {
+    tips.push({
+      phrase: `"Je vous signale que pour ${offre ? Math.round((offre.resteACharge * 0.3)) : 30}€ de plus environ, l'offre Confort inclut un indice plus mince et un antireflet premium — c'est l'offre que choisissent la moitié de nos clients."`,
+      isUpsell: true,
+    });
+  }
+
+  if (offre?.nom === "Confort") {
+    tips.push({
+      phrase: `"Si vous avez un budget un peu plus flexible, l'offre Premium inclut la garantie 2 ans casse + rayure — pour des lunettes que vous portez tous les jours, ça peut valoir le coup."`,
+      isUpsell: true,
+    });
+  }
+
+  // Si pas de tips spécifiques
+  if (tips.length === 0) {
+    tips.push({
+      phrase: `"Ce choix correspond parfaitement à votre profil. Les verres ${offre?.gamme || ""} sont une référence dans cette gamme."`,
+    });
+  }
+
+  return tips;
+}
+
+function ConseillerIA({
+  questionnaire,
+  offre,
+  open,
+  onToggle,
+  onUpgrade,
+}: {
+  questionnaire: Record<string, unknown>;
+  offre: OffreVerre | null;
+  open: boolean;
+  onToggle: () => void;
+  onUpgrade: () => void;
+}) {
+  const tips = genererTips(questionnaire, offre);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5 }}
+      className="rounded-2xl overflow-hidden"
+      style={{ border: "1.5px solid rgba(167,139,250,0.35)", background: "rgba(83,49,208,0.1)" }}
+    >
+      {/* Header */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-5 py-4"
+      >
+        <div className="flex items-center gap-3">
+          <div className="shrink-0 w-10 h-10 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(167,139,250,0.4)" }}>
+            <Image src="/assets/images/IA_Optipilot.png" alt="OptiPilot IA" width={40} height={40} className="w-full h-full object-cover" />
+          </div>
+          <div className="text-left">
+            <p className="text-base font-bold" style={{ color: "#a78bfa" }}>Conseiller IA</p>
+            <p className="text-sm" style={{ color: "#9B96DA" }}>Phrases à dire au client</p>
+          </div>
+        </div>
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          viewBox="0 0 24 24"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+        >
+          <path d="M6 9l6 6 6-6" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      {/* Contenu */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-5 flex flex-col gap-3">
+              {tips.map((tip, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.07 }}
+                  className="rounded-xl p-4"
+                  style={{
+                    background: tip.isUpsell
+                      ? "rgba(20,5,40,0.92)"
+                      : "rgba(10,3,56,0.6)",
+                    border: tip.isUpsell
+                      ? "1px solid rgba(236,72,153,0.5)"
+                      : "1px solid rgba(83,49,208,0.2)",
+                    backdropFilter: "blur(8px)",
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <p
+                      className="text-sm italic leading-relaxed"
+                      style={{ color: tip.isUpsell ? "#f472b6" : "#FDFDFE" }}
+                    >
+                      {tip.phrase}
+                    </p>
+                  </div>
+                  {tip.isUpsell && (
+                    <button
+                      onClick={onUpgrade}
+                      className="mt-2 text-xs font-bold px-3 py-1.5 rounded-lg"
+                      style={{ background: "rgba(236,72,153,0.15)", color: "#f472b6" }}
+                    >
+                      Voir l&apos;offre supérieure →
+                    </button>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
