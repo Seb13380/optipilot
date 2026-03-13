@@ -3,6 +3,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import { analyserOrdonnance } from "@/lib/analyseOrdonnance";
 
 interface OrdonnanceData {
   civilite?: string;
@@ -401,6 +402,75 @@ export default function ScannerPage() {
                       </span>
                       <h2 className="text-xl font-bold" style={{ color: "#FDFDFE" }}>Résultats de l'ordonnance</h2>
                     </div>
+
+                    {/* ─── Analyse clinique ─── */}
+                    {!editMode && (ordonnance.odSphere || ordonnance.ogSphere) && (() => {
+                      const analyse = analyserOrdonnance(ordonnance);
+                      return (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mb-4 rounded-2xl p-4"
+                          style={{ background: `${analyse.couleur}12`, border: `1.5px solid ${analyse.couleur}45` }}
+                        >
+                          {/* Titre */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${analyse.couleur}20` }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <circle cx="11" cy="11" r="8" stroke={analyse.couleur} strokeWidth="2"/>
+                                <path d="M21 21l-4.35-4.35" stroke={analyse.couleur} strokeWidth="2" strokeLinecap="round"/>
+                                <path d="M11 8v6M8 11h6" stroke={analyse.couleur} strokeWidth="1.5" strokeLinecap="round"/>
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: analyse.couleur }}>Analyse OptiPilot</p>
+                              <p className="text-base font-black" style={{ color: "#FDFDFE" }}>
+                                {analyse.typeCorrection}
+                                <span className="ml-2 text-sm font-semibold px-2 py-0.5 rounded-full" style={{ background: `${analyse.couleur}20`, color: analyse.couleur }}>
+                                  {analyse.intensiteLabel}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Message naturel */}
+                          <p className="text-sm leading-relaxed mb-3" style={{ color: "rgba(253,253,254,0.85)" }}>
+                            {analyse.message.split(/\*\*(.+?)\*\*/g).map((part, i) =>
+                              i % 2 === 1
+                                ? <strong key={i} style={{ color: analyse.couleur }}>{part}</strong>
+                                : <span key={i}>{part}</span>
+                            )}
+                          </p>
+
+                          {/* Détails */}
+                          {analyse.details.length > 0 && (
+                            <div className="flex flex-col gap-1.5">
+                              {analyse.details.map((d, i) => (
+                                <div key={i} className="flex items-start gap-2">
+                                  <div className="shrink-0 w-1.5 h-1.5 rounded-full mt-1.5" style={{ background: analyse.couleur }} />
+                                  <p className="text-xs leading-relaxed" style={{ color: "rgba(155,150,218,0.85)" }}>{d}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Indice + Type verre */}
+                          <div className="flex gap-3 mt-3">
+                            <div className="flex-1 rounded-xl p-2.5 text-center" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.25)" }}>
+                              <p className="text-xs font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Indice recommandé</p>
+                              <p className="text-sm font-bold mt-0.5" style={{ color: "#FDFDFE" }}>{analyse.indiceRecommande}</p>
+                            </div>
+                            <div className="flex-1 rounded-xl p-2.5 text-center" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.25)" }}>
+                              <p className="text-xs font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Type de verre</p>
+                              <p className="text-sm font-bold mt-0.5" style={{ color: "#FDFDFE" }}>
+                                {analyse.typeVerre === "progressif" ? "Progressif" : "Unifocal"}
+                                {analyse.presbytie && <span className="text-xs ml-1" style={{ color: analyse.couleur }}>({analyse.presbytie})</span>}
+                              </p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })()}
 
                     {/* Bienvenue + édition patient en mode correction */}
                     {editMode ? (
