@@ -31,6 +31,7 @@ const MENU_ITEMS = [
   {
     id: "scanner",
     label: "Scanner\nOrdonnance",
+    description: "Extraction auto des données",
     icon: (
       <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
         <rect x="3" y="3" width="7" height="7" rx="1" stroke="white" strokeWidth="2" />
@@ -45,6 +46,7 @@ const MENU_ITEMS = [
   {
     id: "nouveau-client",
     label: "Nouveau\nClient",
+    description: "Fiche · Mutuelle · Antécédents",
     icon: (
       <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
         <circle cx="12" cy="8" r="4" stroke="white" strokeWidth="2" />
@@ -58,6 +60,7 @@ const MENU_ITEMS = [
   {
     id: "historique",
     label: "Historique",
+    description: "Devis, ventes et stats",
     icon: (
       <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
         <rect x="3" y="4" width="18" height="17" rx="2" stroke="white" strokeWidth="2" />
@@ -68,6 +71,19 @@ const MENU_ITEMS = [
     ),
     gradient: "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)",
     href: "/historique",
+  },
+  {
+    id: "relances",
+    label: "Relances",
+    description: "Clients sans réponse",
+    icon: (
+      <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
+        <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    gradient: "linear-gradient(135deg, #2D0B62 0%, #5331D0 100%)",
+    href: "/relances",
   },
 ];
 
@@ -190,7 +206,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Boutons d'action */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-2 gap-4 mb-4">
           {MENU_ITEMS.map((item, i) => (
             <motion.button
               key={item.id}
@@ -199,12 +215,15 @@ export default function DashboardPage() {
               transition={{ delay: i * 0.08 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push(item.href)}
-              className="rounded-3xl p-6 flex flex-col items-center gap-3 shadow-md"
-              style={{ background: item.gradient, minHeight: 160 }}
+              className="rounded-3xl p-6 flex flex-col items-center gap-2 shadow-md"
+              style={{ background: item.gradient, minHeight: 155 }}
             >
               <div className="opacity-95">{item.icon}</div>
               <span className="text-white text-xl font-bold text-center leading-snug" style={{ whiteSpace: "pre-line" }}>
                 {item.label}
+              </span>
+              <span className="text-white text-sm font-medium text-center" style={{ opacity: 0.6 }}>
+                {item.description}
               </span>
             </motion.button>
           ))}

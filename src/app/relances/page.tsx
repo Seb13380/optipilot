@@ -176,6 +176,28 @@ export default function RelancesPage() {
 
       <main className="flex-1 px-6 pb-10 pt-6 w-full">
 
+        {/* Stratégie de relance */}
+        <div className="mb-6 p-4 rounded-2xl flex items-start gap-4" style={{ background: "rgba(83,49,208,0.12)", border: "1px solid rgba(83,49,208,0.3)" }}>
+          <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(83,49,208,0.25)", marginTop: 2 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold mb-2" style={{ color: "#9B96DA" }}>Stratégie de relance recommandée</p>
+            <div className="flex gap-3">
+              {[{ j: "J+5", label: "1ère relance", desc: "SMS ou appel" }, { j: "J+10", label: "2ème relance", desc: "Appel personnalisé" }, { j: "J+15", label: "Clôture", desc: "Dernière chance" }].map((item) => (
+                <div key={item.j} className="flex-1 rounded-xl p-2 text-center" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.2)" }}>
+                  <p className="text-sm font-black" style={{ color: "#7B5CE5" }}>{item.j}</p>
+                  <p className="text-xs font-semibold mt-0.5" style={{ color: "#FDFDFE" }}>{item.label}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[

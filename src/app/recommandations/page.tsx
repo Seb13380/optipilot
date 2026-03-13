@@ -153,7 +153,13 @@ export default function RecommandationsPage() {
     router.push("/devis");
   }
 
-  const COULEURS: Record<string, { bg: string; border: string; badge: string; text: string }> = {
+  const PROFILS: Record<string, string> = {
+  Essentiel: "100% Santé · budget maîtrisé · correction simple",
+  Confort:   "Quotidien · écrans · conduite · meilleur rapport qualité/prix",
+  Premium:   "Forte correction · exigence visuelle maximale · précision",
+};
+
+const COULEURS: Record<string, { bg: string; border: string; badge: string; text: string }> = {
     Essentiel: { bg: "#071a0e", border: "#22c55e", badge: "#22c55e", text: "#22c55e" },
     Confort:   { bg: "#0e0b2c", border: "#7c5fec", badge: "#5331D0", text: "#a89cf7" },
     Premium:   { bg: "#0e0b2c", border: "#9c5ff7", badge: "#5331D0", text: "#c084fc" },
@@ -273,6 +279,11 @@ export default function RecommandationsPage() {
                         <p className="text-base mt-0.5" style={{ color: "rgba(155,150,218,0.6)" }}>
                           Indice {offre.indice} • Classe {offre.classe100ps}
                         </p>
+                        {PROFILS[offre.nom] && (
+                          <p className="text-xs mt-1.5 font-semibold px-2 py-0.5 rounded-full inline-block" style={{ background: `${couleur.border}18`, color: couleur.text, border: `1px solid ${couleur.border}40` }}>
+                            {PROFILS[offre.nom]}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -339,6 +350,23 @@ export default function RecommandationsPage() {
                 );
               })}
             </div>
+
+            {/* Bouton comparateur */}
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => router.push("/comparateur")}
+              className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 mt-2"
+              style={{ background: "rgba(83,49,208,0.14)", border: "1.5px solid rgba(83,49,208,0.35)" }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="8" height="18" rx="2" stroke="#9B96DA" strokeWidth="2"/>
+                <rect x="13" y="7" width="8" height="14" rx="2" stroke="#9B96DA" strokeWidth="2"/>
+              </svg>
+              <span className="text-base font-semibold" style={{ color: "#9B96DA" }}>Comparer visuellement les verres →</span>
+            </motion.button>
 
             {/* ─── Seconde paire sport ─── */}
             {result.secondePaire && (

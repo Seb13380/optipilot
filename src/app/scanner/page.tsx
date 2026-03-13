@@ -250,6 +250,20 @@ export default function ScannerPage() {
           {step === "camera" && (
             <motion.div key="camera" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
 
+              {/* Conseils de scan */}
+              <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: "rgba(83,49,208,0.15)", border: "1px solid rgba(83,49,208,0.3)" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+                  <circle cx="12" cy="12" r="10" stroke="#9B96DA" strokeWidth="2"/>
+                  <path d="M12 8v4M12 16h.01" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: "#9B96DA" }}>Conseils pour un scan réussi</p>
+                  <p className="text-sm mt-1 leading-relaxed" style={{ color: "rgba(155,150,218,0.8)" }}>
+                    Posez l&apos;ordonnance sur une surface plane · bonne lumière (pas de reflet) · la capture est automatique dès que l&apos;image est stable
+                  </p>
+                </div>
+              </div>
+
               {/* Viewfinder */}
               <div className="rounded-2xl overflow-hidden relative shadow-lg" style={{ background: "#000", minHeight: 300 }}>
                 <video ref={videoRef} className="w-full object-cover" style={{ minHeight: 300, display: cameraStarted ? "block" : "none" }} playsInline muted />

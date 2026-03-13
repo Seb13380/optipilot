@@ -44,7 +44,7 @@ export default function DevisPage() {
   // Prix monture (saisie opticien)
   const [prixMonture, setPrixMonture] = useState(120);
   const [questionnaire, setQuestionnaire] = useState<Record<string, unknown>>({});
-  const [conseillerOpen, setConseillerOpen] = useState(true);
+  const [conseillerOpen, setConseillerOpen] = useState(false);
 
   // Bridge Optimum
   const [bridgeUrl, setBridgeUrl] = useState<string | null>(null);
