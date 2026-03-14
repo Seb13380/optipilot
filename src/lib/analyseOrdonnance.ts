@@ -164,11 +164,11 @@ export function analyserOrdonnance(
 
   if (presbytie) {
     const ages: Record<string, string> = {
-      débutante: "débuts de presbytie (vers 40-45 ans)",
-      confirmée: "presbytie confirmée",
-      avancée: "presbytie avancée",
+      débutante: "des débuts de presbytie (vers 40-45 ans)",
+      confirmée: "une presbytie confirmée",
+      avancée: "une presbytie avancée",
     };
-    message += `, avec des **${ages[presbytie]}**`;
+    message += `, avec **${ages[presbytie]}**`;
   }
 
   message += ".";

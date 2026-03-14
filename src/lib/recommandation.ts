@@ -46,7 +46,7 @@ export interface RecommandationResult {
   indiceMin: number;
   traitements: string[];
   offres: OffreVerre[];
-  argumentaireGlobal: string;
+  argumentaireGlobal: string[];
   secondePaire?: {
     titre: string;
     description: string;
@@ -109,28 +109,41 @@ export function calculerRecommandations(
   const traitements: string[] = [];
   const argumentaireGlobal: string[] = [];
 
+  // Premier item : type de verre + indice
+  const indiceLabel = indiceMin >= 1.67
+    ? `${indiceMin} (verres très fins et légers)`
+    : indiceMin >= 1.6
+    ? `${indiceMin} (verres fins et légers)`
+    : `${indiceMin}`;
+  argumentaireGlobal.push(
+    progressive
+      ? `Des verres progressifs d'indice ${indiceLabel} — une seule paire pour voir de loin, à l'écran et de près`
+      : `Des verres unifocaux d'indice ${indiceLabel} — adaptés à votre correction`
+  );
+
   // Antireflet
   if (questionnaire.conduiteNuit) {
     traitements.push("antireflet_premium");
-    argumentaireGlobal.push("Nous vous conseillons un antireflet haut de gamme antisalissure, hydrophobe et oléophobe avec protection lumière bleue pour éliminer les reflets de nuit");
+    argumentaireGlobal.push("Un antireflet haut de gamme antisalissures, hydrophobe et oléophobe — élimine les reflets de nuit pour une conduite plus sûre et confortable");
   } else {
     traitements.push("antireflet_standard");
+    argumentaireGlobal.push("Un antireflet de qualité antisalissures — réduit les reflets, facilite l'entretien et améliore le confort visuel au quotidien");
   }
 
   // Photochromique
   if (questionnaire.photophobie) {
     traitements.push("photochromique");
-    argumentaireGlobal.push("Nous vous conseillons des verres photochromiques pour soulager votre sensibilité à la lumière");
+    argumentaireGlobal.push("Des verres photochromiques (qui s'assombrissent automatiquement au soleil et redeviennent clairs en intérieur) — idéaux pour soulager votre sensibilité à la lumière");
   }
 
   // Digital / Écran
   if (tempsEcran >= 6) {
     traitements.push("filtre_bleu");
-    argumentaireGlobal.push("Nous vous conseillons un filtre lumière bleue adapté à votre temps d’écran important");
+    argumentaireGlobal.push("Un traitement anti-lumière bleue — protège vos yeux de la lumière bleue nocive des écrans et réduit la fatigue visuelle en fin de journée");
   }
 
   if (progressive && tempsEcran >= 4) {
-    argumentaireGlobal.push("Nous vous conseillons un progressif digital optimisé pour votre confort visuel de près et de loin");
+    argumentaireGlobal.push("Un progressif digital optimisé — des couloirs de vision plus larges pour passer confortablement de l'écran à la lecture et à la distance");
   }
 
   const typeVerre = progressive ? "Progressif" : "Unifocal";
@@ -281,7 +294,7 @@ export function calculerRecommandations(
     indiceMin,
     traitements,
     offres,
-    argumentaireGlobal: argumentaireGlobal.join(" | "),
+    argumentaireGlobal,
     secondePaire,
   };
 }

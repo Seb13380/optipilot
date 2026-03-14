@@ -67,6 +67,7 @@ const TABS = [
   { id: "reseaux",  label: "Réseaux" },
   { id: "verriers", label: "Verriers" },
   { id: "relances", label: "Relances" },
+  { id: "bridge",   label: "Bridge" },
   { id: "compte",   label: "Compte" },
 ];
 
@@ -78,6 +79,31 @@ export default function ConfigPage() {
   const [clientPin, setClientPin] = useState(() => {
     try { return localStorage.getItem("optipilot_client_pin") || "1234"; } catch { return "1234"; }
   });
+
+  const [bridgeIp, setBridgeIp] = useState(() => {
+    try { return localStorage.getItem("optipilot_bridge_ip") || ""; } catch { return ""; }
+  });
+  const [bridgeToken, setBridgeToken] = useState(() => {
+    try { return localStorage.getItem("optipilot_bridge_token") || ""; } catch { return ""; }
+  });
+  const [bridgePort, setBridgePort] = useState(() => {
+    try { return localStorage.getItem("optipilot_bridge_port") || "5174"; } catch { return "5174"; }
+  });
+  const [bridgeStatus, setBridgeStatus] = useState<"idle" | "ok" | "error">("idle");
+  const [bridgeTesting, setBridgeTesting] = useState(false);
+
+  async function testerBridge() {
+    setBridgeTesting(true);
+    setBridgeStatus("idle");
+    try {
+      const res = await fetch(`http://${bridgeIp}:${bridgePort}/health`, { signal: AbortSignal.timeout(5000) });
+      setBridgeStatus(res.ok ? "ok" : "error");
+    } catch {
+      setBridgeStatus("error");
+    } finally {
+      setBridgeTesting(false);
+    }
+  }
 
   useEffect(() => {
     try {
@@ -629,6 +655,72 @@ export default function ConfigPage() {
                 >
                   Se déconnecter
                 </motion.button>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* ── ONGLET BRIDGE ── */}
+          {tab === "bridge" && (
+            <motion.div key="bridge" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <Card>
+                <CardTitle>Connexion bridge magasin</CardTitle>
+                <p className="text-base mt-2 mb-6" style={{ color: "rgba(155,150,218,0.65)" }}>
+                  Le bridge est un petit programme installé sur le PC du magasin. Il permet à OptiPilot de lire les données de votre logiciel opticien (Optimum, etc.) via le réseau Wi-Fi local.
+                </p>
+                <div className="flex flex-col gap-5">
+                  {([
+                    { label: "IP du bridge", placeholder: "ex: 192.168.1.42", value: bridgeIp, set: setBridgeIp, key: "optipilot_bridge_ip" },
+                    { label: "Token secret", placeholder: "ex: optipilot-violette-2026", value: bridgeToken, set: setBridgeToken, key: "optipilot_bridge_token" },
+                    { label: "Port", placeholder: "5174", value: bridgePort, set: setBridgePort, key: "optipilot_bridge_port" },
+                  ] as const).map(({ label, placeholder, value, set, key }) => (
+                    <div key={key}>
+                      <label className="block text-base font-semibold mb-2" style={{ color: "#9B96DA" }}>{label}</label>
+                      <input
+                        type="text"
+                        value={value}
+                        placeholder={placeholder}
+                        onChange={(e) => set(e.target.value)}
+                        className="w-full px-5 py-4 rounded-xl text-xl border-2 outline-none transition-all"
+                        style={{ background: "rgba(2,0,23,0.7)", borderColor: "rgba(83,49,208,0.35)", color: "#FDFDFE" }}
+                        onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                        onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Statut test */}
+                {bridgeStatus === "ok" && (
+                  <div className="mt-4 px-5 py-3 rounded-xl text-base font-bold" style={{ background: "rgba(34,197,94,0.12)", border: "1.5px solid rgba(34,197,94,0.4)", color: "#4ade80" }}>
+                    ✓ Bridge connecté — communication OK
+                  </div>
+                )}
+                {bridgeStatus === "error" && (
+                  <div className="mt-4 px-5 py-3 rounded-xl text-base font-bold" style={{ background: "rgba(239,68,68,0.1)", border: "1.5px solid rgba(239,68,68,0.35)", color: "#f87171" }}>
+                    ✗ Impossible de joindre le bridge — vérifiez l&apos;IP, le port et que le PC est allumé
+                  </div>
+                )}
+
+                <div className="flex gap-3 mt-8">
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={testerBridge}
+                    disabled={bridgeTesting || !bridgeIp}
+                    className="flex-1 py-5 rounded-2xl text-xl font-bold border-2"
+                    style={{ background: "rgba(83,49,208,0.15)", borderColor: "rgba(83,49,208,0.5)", color: "#9B96DA", opacity: (!bridgeIp || bridgeTesting) ? 0.5 : 1 }}
+                  >
+                    {bridgeTesting ? "Test en cours…" : "Tester la connexion"}
+                  </motion.button>
+                  <SaveButton
+                    onClick={() => {
+                      localStorage.setItem("optipilot_bridge_ip", bridgeIp);
+                      localStorage.setItem("optipilot_bridge_token", bridgeToken);
+                      localStorage.setItem("optipilot_bridge_port", bridgePort);
+                      showToast("Bridge configuré ✓");
+                    }}
+                    label="Sauvegarder"
+                  />
+                </div>
               </Card>
             </motion.div>
           )}

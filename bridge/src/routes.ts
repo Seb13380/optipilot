@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { getPool, discoverSchema, sql } from "./db";
-import { SCHEMA } from "./schema-map";
+import { SCHEMA, reloadSchema } from "./schema-map";
+import { autoDetectSchema, saveSchemaOverride, deleteSchemaOverride, hasSchemaOverride, loadSchemaOverride } from "./auto-map";
 import { broadcast } from "../server";
 
 export const router = Router();
@@ -458,4 +459,78 @@ router.get("/montures/:id", async (req: Request, res: Response) => {
   } catch (err) {
     res.status(500).json({ ok: false, error: (err as Error).message });
   }
+});
+
+// =============================================================================
+// SETUP — Détection automatique du schéma SQL
+// =============================================================================
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/setup/detect
+// 1. Scanne toutes les tables/colonnes de la base SQL
+// 2. Détecte automatiquement les correspondances avec les concepts OptiPilot
+// 3. Sauvegarde le résultat dans schema-override.json
+// 4. Recharge immédiatement le schéma — plus besoin de redémarrer
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/setup/detect", async (_req: Request, res: Response) => {
+  try {
+    // Étape 1 — Découvrir le schéma réel de la base
+    const tables = await discoverSchema();
+
+    // Étape 2 — Détection automatique
+    const { schema, confidence, warnings } = autoDetectSchema(tables);
+
+    // Étape 3 — Persistance
+    saveSchemaOverride(schema);
+
+    // Étape 4 — Rechargement à chaud (sans redémarrage du bridge)
+    reloadSchema();
+
+    console.log("[Setup] Détection terminée — confidence:", confidence);
+
+    res.json({
+      ok: true,
+      message: "Schéma détecté et appliqué — le bridge utilise maintenant les vrais noms de tables.",
+      tablesScannees: tables.length,
+      confidence,
+      warnings: warnings.length > 0 ? warnings : undefined,
+      schema,
+    });
+  } catch (err) {
+    res.status(500).json({
+      ok: false,
+      error: (err as Error).message,
+      conseil: "Vérifiez que SQL Server est connecté via /diagnostic avant de lancer la détection.",
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/setup/status
+// Retourne le schéma actif + indique si un override est en place
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/setup/status", (_req: Request, res: Response) => {
+  const overrideActif = hasSchemaOverride();
+  res.json({
+    ok: true,
+    overrideActif,
+    source: overrideActif ? "schema-override.json (auto-détecté)" : "valeurs par défaut (estimations)",
+    conseil: overrideActif
+      ? "Le schéma a été auto-détecté. Utilisez DELETE /api/setup/reset pour revenir aux défauts."
+      : "Appelez POST /api/setup/detect pour détecter automatiquement le vrai schéma SQL.",
+    schema: SCHEMA,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/setup/reset
+// Supprime l'override et revient aux valeurs par défaut
+// ─────────────────────────────────────────────────────────────────────────────
+router.delete("/setup/reset", (_req: Request, res: Response) => {
+  deleteSchemaOverride();
+  reloadSchema();
+  res.json({
+    ok: true,
+    message: "Override supprimé — schéma par défaut rechargé.",
+  });
 });

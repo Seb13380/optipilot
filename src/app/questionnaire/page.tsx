@@ -11,12 +11,20 @@ interface QuestionnaireData {
   photophobie?: boolean;
   secheresseOculaire?: boolean;
   profession?: string;
+  preferenceMonture?: string;
   budget?: string;
   mutuelle?: string;
   niveauGarantie?: string;
   consentementRgpd?: boolean;
   consentementRelance?: boolean;
 }
+
+const MONTURES = [
+  { id: "plastique", label: "Plastique", sub: "Mode, tendance, solide — une infinité de couleurs et de modèles", icon: "M3 7h18v2H3zM5 5h14v2H5z" },
+  { id: "metal", label: "Métal", sub: "Fine, discrète, très solide", icon: "M3 12h18M3 8h18M3 16h6" },
+  { id: "nylon", label: "Nylon (demi-cerclée)", sub: "Verre tenu par un fil en bas (le plus souvent) — légère", icon: "M3 10h18M3 14h18" },
+  { id: "percee", label: "Percée (invisible)", sub: "Sans monture autour du verre — ultra-légère et très discrète", icon: "M12 4v16M4 12h16" },
+];
 
 const SPORTS_TYPES = [
   { id: "nautique",   label: "Nautique",         sub: "Voile, surf, kayak, kitesurf..." },
@@ -57,7 +65,7 @@ const MUTUELLES = [
   "Aucune",
 ];
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 export default function QuestionnairePage() {
   const router = useRouter();
@@ -334,8 +342,50 @@ export default function QuestionnairePage() {
           )}
 
           {step === 6 && (
-            <StepCard key="s6">
-              <QuestionTitle>Quelle est votre mutuelle ?</QuestionTitle>
+            <StepCard key="s6">              <QuestionTitle>Quel type de monture vous attire ?</QuestionTitle>
+              <p className="text-lg mt-2 mb-8" style={{ color: "#9B96DA" }}>
+                Cela nous aide à orienter nos conseils. Vous pourrez toujours changer en magasin.
+              </p>
+              <div className="flex flex-col gap-4">
+                {MONTURES.map((m) => (
+                  <motion.button
+                    key={m.id}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => { update({ preferenceMonture: m.id }); next(); }}
+                    className="flex items-center gap-5 rounded-2xl py-5 px-6 text-left border-2 transition-all"
+                    style={{
+                      background: data.preferenceMonture === m.id ? "rgba(83,49,208,0.2)" : "rgba(10,3,56,0.6)",
+                      borderColor: data.preferenceMonture === m.id ? "#5331D0" : "rgba(155,150,218,0.2)",
+                    }}
+                  >
+                    <div className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: data.preferenceMonture === m.id ? "rgba(83,49,208,0.3)" : "rgba(83,49,208,0.1)" }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="9" width="8" height="6" rx="3" stroke={data.preferenceMonture === m.id ? "#9B96DA" : "rgba(155,150,218,0.6)"} strokeWidth="2"/>
+                        <rect x="14" y="9" width="8" height="6" rx="3" stroke={data.preferenceMonture === m.id ? "#9B96DA" : "rgba(155,150,218,0.6)"} strokeWidth="2"/>
+                        <path d="M10 12h4" stroke={data.preferenceMonture === m.id ? "#9B96DA" : "rgba(155,150,218,0.6)"} strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M2 12H1M22 12h1" stroke={data.preferenceMonture === m.id ? "#9B96DA" : "rgba(155,150,218,0.6)"} strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold" style={{ color: data.preferenceMonture === m.id ? "#9B96DA" : "#FDFDFE" }}>{m.label}</p>
+                      <p className="text-base mt-0.5" style={{ color: "rgba(155,150,218,0.55)" }}>{m.sub}</p>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={next}
+                className="w-full py-4 rounded-2xl font-semibold text-lg mt-5"
+                style={{ background: "rgba(83,49,208,0.2)", color: "#9B96DA", border: "1px solid rgba(83,49,208,0.35)" }}
+              >
+                Passer cette étape
+              </motion.button>
+            </StepCard>
+          )}
+
+          {step === 7 && (
+            <StepCard key="s7">              <QuestionTitle>Quelle est votre mutuelle ?</QuestionTitle>
               <p className="text-lg mt-2 mb-6" style={{ color: "#9B96DA" }}>
                 Pour un remboursement précis et personnalisé.
               </p>
@@ -406,8 +456,8 @@ export default function QuestionnairePage() {
             </StepCard>
           )}
 
-          {step === 7 && (
-            <StepCard key="s7">
+          {step === 8 && (
+            <StepCard key="s8">
               <QuestionTitle>Votre budget lunettes</QuestionTitle>
               <p className="text-lg mt-2 mb-8" style={{ color: "#9B96DA" }}>
                 Après remboursements Sécu et mutuelle.

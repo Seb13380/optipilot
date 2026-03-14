@@ -1,11 +1,13 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
 import type { OffreVerre, RecommandationResult } from "@/lib/recommandation";
 import { calculerRecommandations, getCategorieCorrection } from "@/lib/recommandation";
+import { repondreQuestion, questionsSuggerees, type ContexteClient, type ReponseConseiller } from "@/lib/conseillerOpticien";
+import { analyserOrdonnance } from "@/lib/analyseOrdonnance";
 
 // Correspondance réseau opticien → réseau mutuelle (doit rester coté opticien — jamais exposé au client)
 const RESEAU_MUTUELLE_MAP: Record<string, string[]> = {
@@ -32,6 +34,14 @@ export default function RecommandationsPage() {
   const [selected, setSelected] = useState<"Essentiel" | "Confort" | "Premium" | null>("Confort");
   const [loading, setLoading] = useState(true);
   const [magasinNom, setMagasinNom] = useState("");
+  const [clientCivilite, setClientCivilite] = useState("");
+  const [clientPrenom, setClientPrenom] = useState("");
+  const [clientNom, setClientNom] = useState("");
+  const [contexteConseiller, setContexteConseiller] = useState<ContexteClient>({});
+  const [chatMessages, setChatMessages] = useState<{ from: "user" | "bot"; texte: string; conseils?: string[]; attention?: string }[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("optipilot_user") || "{}");
@@ -47,6 +57,33 @@ export default function RecommandationsPage() {
       const ordo = ordoRaw ? JSON.parse(ordoRaw) : {};
       const quest = questRaw ? JSON.parse(questRaw) : {};
       const client = clientRaw ? JSON.parse(clientRaw) : {};
+
+      setClientCivilite(ordo.civilite || client.civilite || "");
+      setClientPrenom(ordo.prenomPatient || client.prenomPatient || "");
+      setClientNom(ordo.nomPatient || client.nomPatient || "");
+
+      // Construire le contexte du conseiller
+      const analyse = analyserOrdonnance({
+        odSphere: ordo.odSphere || "0",
+        ogSphere: ordo.ogSphere || "0",
+        odCylindre: ordo.odCylindre || "0",
+        ogCylindre: ordo.ogCylindre || "0",
+        odAddition: ordo.odAddition || "0",
+        ogAddition: ordo.ogAddition || "0",
+      });
+      setContexteConseiller({
+        typeCorrection: analyse.typeCorrection,
+        intensite: analyse.intensite,
+        presbytie: analyse.presbytie,
+        indiceRecommande: String(analyse.indiceRecommande),
+        typeVerre: analyse.typeVerre,
+        tempsEcran: quest.tempsEcran,
+        conduiteNuit: quest.conduiteNuit,
+        photophobie: quest.photophobie,
+        sport: quest.sport,
+        preferenceMonture: quest.preferenceMonture,
+        budget: quest.budget,
+      });
 
       // Conversion string → number pour l'ordonnance
       const ordonnance = {
@@ -105,8 +142,19 @@ export default function RecommandationsPage() {
     load();
   }, []);
 
-  async function handleChoix(offre: OffreVerre) {
-    localStorage.setItem("optipilot_offre_selectionnee", JSON.stringify(offre));
+  function envoyerQuestion(question: string) {
+    if (!question.trim()) return;
+    const reponse: ReponseConseiller = repondreQuestion(question, contexteConseiller);
+    setChatMessages((prev) => [
+      ...prev,
+      { from: "user", texte: question },
+      { from: "bot", texte: reponse.texte, conseils: reponse.conseils, attention: reponse.attention },
+    ]);
+    setChatInput("");
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+  }
+
+  async function handleChoix(offre: OffreVerre) {    localStorage.setItem("optipilot_offre_selectionnee", JSON.stringify(offre));
     localStorage.setItem("optipilot_offre_nom", offre.nom);
 
     // Sauvegarder le devis en BDD
@@ -213,18 +261,33 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
             })()}
 
             {/* Conseil personnalisé */}
-            {result.argumentaireGlobal && (
+            {result.argumentaireGlobal && result.argumentaireGlobal.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6 p-5 rounded-2xl"
-                style={{ background: "rgba(83,49,208,0.15)", border: "1px solid rgba(155,150,218,0.4)" }}
-              >                
-                <p className="text-xl font-semibold" style={{ color: "#9B96DA" }}>
-                  {result.argumentaireGlobal}
+                style={{ background: "rgba(83,49,208,0.30)", border: "1.5px solid rgba(155,150,218,0.6)" }}
+              >
+                {/* Intro personnalisée */}
+                <p className="text-xl font-bold mb-5" style={{ color: "#FDFDFE" }}>
+                  {clientCivilite && clientNom
+                    ? <>{clientCivilite} <span style={{ color: "#a89cf7" }}>{clientNom}</span>, d&apos;après </>
+                    : "D'après "}
+                  l&apos;analyse de votre correction et vos réponses au questionnaire, nous vous recommandons&nbsp;:
                 </p>
-                <p className="text-base mt-2 font-medium" style={{ color: "rgba(155,150,218,0.7)" }}>
-                  Demandez à votre opticien{magasinNom ? <> <span className="font-bold" style={{ color: "#a89cf7" }}>{magasinNom}</span></> : ""} pour plus d’informations.
+                {/* Liste des conseils */}
+                <ul className="flex flex-col gap-4">
+                  {result.argumentaireGlobal.map((conseil, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="shrink-0 mt-1 w-8 h-8 rounded-full flex items-center justify-center text-base font-black" style={{ background: "rgba(83,49,208,0.6)", color: "#a89cf7" }}>
+                        {i + 1}
+                      </span>
+                      <span className="text-xl leading-relaxed" style={{ color: "#FDFDFE" }}>{conseil}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-base mt-4 font-medium" style={{ color: "rgba(155,150,218,0.6)" }}>
+                  Demandez à votre opticien{magasinNom ? <> <span className="font-bold" style={{ color: "#a89cf7" }}>{magasinNom}</span></> : ""} pour plus d&apos;informations.
                 </p>
               </motion.div>
             )}
@@ -242,7 +305,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.12 }}
                     onClick={() => setSelected(offre.nom)}
-                    className="rounded-3xl p-7 cursor-pointer transition-all relative overflow-hidden"
+                    className="rounded-3xl p-7 cursor-pointer transition-all overflow-hidden"
                     style={{
                       background: isSelected ? couleur.bg : "#0A0338",
                       border: `2px solid ${isSelected ? couleur.border : "rgba(83,49,208,0.35)"}`,
@@ -251,12 +314,14 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   >
                     {/* Badge recommandé */}
                     {offre.badge && (
-                      <span
-                        className="absolute top-5 right-5 px-3.5 py-1.5 rounded-full text-base font-bold text-white"
-                        style={{ background: couleur.badge }}
-                      >
-                        ★ {offre.badge}
-                      </span>
+                      <div className="flex justify-end mb-3">
+                        <span
+                          className="px-3.5 py-1.5 rounded-full text-base font-bold text-white"
+                          style={{ background: couleur.badge }}
+                        >
+                          ★ {offre.badge}
+                        </span>
+                      </div>
                     )}
 
                     {/* En-tête */}
@@ -358,15 +423,147 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
               transition={{ delay: 0.45 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => router.push("/comparateur")}
-              className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 mt-2"
-              style={{ background: "rgba(83,49,208,0.14)", border: "1.5px solid rgba(83,49,208,0.35)" }}
+              className="w-full py-5 rounded-2xl flex items-center justify-center gap-3 mt-2"
+              style={{ background: "rgba(83,49,208,0.35)", border: "2px solid rgba(155,150,218,0.6)" }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="3" width="8" height="18" rx="2" stroke="#9B96DA" strokeWidth="2"/>
-                <rect x="13" y="7" width="8" height="14" rx="2" stroke="#9B96DA" strokeWidth="2"/>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="8" height="18" rx="2" stroke="#FDFDFE" strokeWidth="2"/>
+                <rect x="13" y="7" width="8" height="14" rx="2" stroke="#FDFDFE" strokeWidth="2"/>
               </svg>
-              <span className="text-base font-semibold" style={{ color: "#9B96DA" }}>Comparer visuellement les verres →</span>
+              <span className="text-xl font-bold" style={{ color: "#FDFDFE" }}>Comparer visuellement les verres →</span>
             </motion.button>
+
+            {/* ─── Conseiller OptiPilot — Chat Expert ─── */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mt-4 rounded-2xl overflow-hidden"
+              style={{ border: "1.5px solid rgba(83,49,208,0.45)", background: "rgba(10,3,56,0.7)" }}
+            >
+              {/* En-tête cliquable */}
+              <button
+                className="w-full flex items-center gap-4 p-5"
+                onClick={() => setChatOpen((v) => !v)}
+              >
+                <div className="shrink-0 w-12 h-12 rounded-xl overflow-hidden" style={{ border: "1.5px solid rgba(124,95,236,0.5)" }}>
+                  <Image src="/assets/images/IA_Optipilot.png" alt="Conseiller" width={48} height={48} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-base font-black" style={{ color: "#FDFDFE" }}>Conseiller OptiPilot</p>
+                  <p className="text-sm" style={{ color: "#9B96DA" }}>Posez vos questions — je connais votre ordonnance et vos besoins</p>
+                </div>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0 transition-transform" style={{ transform: chatOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  <path d="M6 9l6 6 6-6" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+
+              <AnimatePresence>
+                {chatOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="px-5 pb-5"
+                  >
+                    {/* Questions suggérées */}
+                    {chatMessages.length === 0 && (
+                      <div className="mb-4">
+                        <p className="text-sm font-semibold mb-3" style={{ color: "rgba(155,150,218,0.7)" }}>Questions fréquentes pour votre profil :</p>
+                        <div className="flex flex-wrap gap-2">
+                          {questionsSuggerees(contexteConseiller).map((q, i) => (
+                            <button
+                              key={i}
+                              onClick={() => envoyerQuestion(q)}
+                              className="text-sm px-3 py-2 rounded-xl font-medium transition-all"
+                              style={{ background: "rgba(83,49,208,0.2)", color: "#a89cf7", border: "1px solid rgba(83,49,208,0.4)" }}
+                            >
+                              {q}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Historique du chat */}
+                    {chatMessages.length > 0 && (
+                      <div className="flex flex-col gap-4 mb-4 max-h-96 overflow-y-auto">
+                        {chatMessages.map((msg, i) => (
+                          <div key={i} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}>
+                            {msg.from === "user" ? (
+                              <div className="max-w-xs px-4 py-3 rounded-2xl rounded-tr-sm text-base" style={{ background: "rgba(83,49,208,0.4)", color: "#FDFDFE" }}>
+                                {msg.texte}
+                              </div>
+                            ) : (
+                              <div className="max-w-lg rounded-2xl rounded-tl-sm p-4" style={{ background: "rgba(10,3,56,0.8)", border: "1px solid rgba(83,49,208,0.3)" }}>
+                                <p className="text-base leading-relaxed" style={{ color: "#FDFDFE" }}>{msg.texte}</p>
+                                {msg.conseils && msg.conseils.length > 0 && (
+                                  <ul className="mt-3 flex flex-col gap-1.5">
+                                    {msg.conseils.map((c, j) => (
+                                      <li key={j} className="flex items-start gap-2">
+                                        <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full" style={{ background: "#5331D0" }} />
+                                        <span className="text-sm" style={{ color: "#9B96DA" }}>{c}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                                {msg.attention && (
+                                  <div className="mt-3 px-3 py-2 rounded-xl text-sm" style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24" }}>
+                                    ⚠ {msg.attention}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        <div ref={chatEndRef} />
+                      </div>
+                    )}
+
+                    {/* Input */}
+                    <div className="flex gap-2">
+                      <input
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") envoyerQuestion(chatInput); }}
+                        placeholder="Posez votre question…"
+                        className="flex-1 px-4 py-3 rounded-xl text-base outline-none"
+                        style={{ background: "rgba(83,49,208,0.12)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.35)" }}
+                      />
+                      <button
+                        onClick={() => envoyerQuestion(chatInput)}
+                        className="px-4 py-3 rounded-xl font-bold text-white"
+                        style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Re-suggestions après échange */}
+                    {chatMessages.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {questionsSuggerees(contexteConseiller).slice(0, 3).map((q, i) => (
+                          <button
+                            key={i}
+                            onClick={() => envoyerQuestion(q)}
+                            className="text-xs px-3 py-1.5 rounded-xl font-medium"
+                            style={{ background: "rgba(83,49,208,0.15)", color: "#9B96DA", border: "1px solid rgba(83,49,208,0.25)" }}
+                          >
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <p className="text-xs mt-3 text-center" style={{ color: "rgba(155,150,218,0.4)" }}>
+                      Conseils généraux uniquement — votre opticien est votre référence pour les décisions finales.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
 
             {/* ─── Seconde paire sport ─── */}
             {result.secondePaire && (

@@ -423,10 +423,10 @@ export default function ScannerPage() {
                               </svg>
                             </div>
                             <div className="flex-1">
-                              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: analyse.couleur }}>Analyse OptiPilot</p>
-                              <p className="text-base font-black" style={{ color: "#FDFDFE" }}>
+                              <p className="text-base font-bold uppercase tracking-wider" style={{ color: analyse.couleur }}>Analyse OptiPilot</p>
+                              <p className="text-2xl font-black" style={{ color: "#FDFDFE" }}>
                                 {analyse.typeCorrection}
-                                <span className="ml-2 text-sm font-semibold px-2 py-0.5 rounded-full" style={{ background: `${analyse.couleur}20`, color: analyse.couleur }}>
+                                <span className="ml-2 text-lg font-semibold px-3 py-1 rounded-full" style={{ background: `${analyse.couleur}20`, color: analyse.couleur }}>
                                   {analyse.intensiteLabel}
                                 </span>
                               </p>
@@ -434,7 +434,7 @@ export default function ScannerPage() {
                           </div>
 
                           {/* Message naturel */}
-                          <p className="text-sm leading-relaxed mb-3" style={{ color: "rgba(253,253,254,0.85)" }}>
+                          <p className="text-lg leading-relaxed mb-4" style={{ color: "rgba(253,253,254,0.85)" }}>
                             {analyse.message.split(/\*\*(.+?)\*\*/g).map((part, i) =>
                               i % 2 === 1
                                 ? <strong key={i} style={{ color: analyse.couleur }}>{part}</strong>
@@ -448,7 +448,7 @@ export default function ScannerPage() {
                               {analyse.details.map((d, i) => (
                                 <div key={i} className="flex items-start gap-2">
                                   <div className="shrink-0 w-1.5 h-1.5 rounded-full mt-1.5" style={{ background: analyse.couleur }} />
-                                  <p className="text-xs leading-relaxed" style={{ color: "rgba(155,150,218,0.85)" }}>{d}</p>
+                                  <p className="text-base leading-relaxed" style={{ color: "rgba(155,150,218,0.85)" }}>{d}</p>
                                 </div>
                               ))}
                             </div>
@@ -457,14 +457,14 @@ export default function ScannerPage() {
                           {/* Indice + Type verre */}
                           <div className="flex gap-3 mt-3">
                             <div className="flex-1 rounded-xl p-2.5 text-center" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.25)" }}>
-                              <p className="text-xs font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Indice recommandé</p>
-                              <p className="text-sm font-bold mt-0.5" style={{ color: "#FDFDFE" }}>{analyse.indiceRecommande}</p>
+                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Indice recommandé</p>
+                              <p className="text-lg font-bold mt-1" style={{ color: "#FDFDFE" }}>{analyse.indiceRecommande}</p>
                             </div>
                             <div className="flex-1 rounded-xl p-2.5 text-center" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.25)" }}>
-                              <p className="text-xs font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Type de verre</p>
-                              <p className="text-sm font-bold mt-0.5" style={{ color: "#FDFDFE" }}>
+                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Type de verre</p>
+                              <p className="text-lg font-bold mt-1" style={{ color: "#FDFDFE" }}>
                                 {analyse.typeVerre === "progressif" ? "Progressif" : "Unifocal"}
-                                {analyse.presbytie && <span className="text-xs ml-1" style={{ color: analyse.couleur }}>({analyse.presbytie})</span>}
+                                {analyse.presbytie && <span className="text-base ml-1" style={{ color: analyse.couleur }}>({analyse.presbytie})</span>}
                               </p>
                             </div>
                           </div>
@@ -530,7 +530,7 @@ export default function ScannerPage() {
                       ) : (
                         <>
                           {ordonnance.prescripteur && (
-                            <p className="text-base font-semibold" style={{ color: "#9B96DA" }}>🩺 {ordonnance.prescripteur}</p>
+                            <p className="text-lg font-semibold" style={{ color: "#9B96DA" }}>🩺 {ordonnance.prescripteur}</p>
                           )}
                           {ordonnance.dateOrdonnance && (() => {
                             const raw = ordonnance.dateOrdonnance!;
@@ -543,10 +543,10 @@ export default function ScannerPage() {
                               const d = new Date(raw);
                               label = isNaN(d.getTime()) ? raw : d.toLocaleDateString("fr-FR", { timeZone: "UTC" });
                             }
-                            return <p className="text-base" style={{ color: "rgba(155,150,218,0.8)" }}>📅 {label}</p>;
+                            return <p className="text-lg" style={{ color: "rgba(155,150,218,0.8)" }}>📅 {label}</p>;
                           })()}
                           {ordonnance.ecartPupillaire && (
-                            <p className="text-base" style={{ color: "rgba(155,150,218,0.8)" }}>EP : {ordonnance.ecartPupillaire} mm</p>
+                            <p className="text-lg" style={{ color: "rgba(155,150,218,0.8)" }}>EP : {ordonnance.ecartPupillaire} mm</p>
                           )}
                         </>
                       )}
@@ -593,7 +593,7 @@ function OrdonnanceSection({ label, sphere, cylindre, axe, addition, color, onCh
 }) {
   return (
     <div className="rounded-xl p-4" style={{ background: "rgba(10,3,56,0.6)", border: `2px solid ${color}30` }}>
-      <p className="text-base font-bold mb-3" style={{ color }}>{label}</p>
+      <p className="text-xl font-bold mb-3" style={{ color }}>{label}</p>
       {[
         { field: "sphere", label: "Sphère", value: sphere },
         { field: "cylindre", label: "Cyl.", value: cylindre },
@@ -601,9 +601,9 @@ function OrdonnanceSection({ label, sphere, cylindre, axe, addition, color, onCh
         ...(addition ? [{ field: "addition", label: "Add.", value: addition }] : []),
       ].map((row) => (
         <div key={row.field} className="flex items-center justify-between mb-2">
-          <span className="text-base font-medium" style={{ color: "#9B96DA" }}>{row.label}</span>
+          <span className="text-lg font-medium" style={{ color: "#9B96DA" }}>{row.label}</span>
           <input type="text" value={row.value || ""} onChange={(e) => onChange(row.field, e.target.value)}
-            className="text-base font-bold text-right w-20 px-2 py-1 rounded-lg border outline-none"
+            className="text-lg font-bold text-right w-24 px-2 py-1 rounded-lg border outline-none"
             style={{ color, borderColor: `${color}30`, background: "#0A0338" }} />
         </div>
       ))}
