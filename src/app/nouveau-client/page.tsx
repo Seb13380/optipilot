@@ -433,7 +433,7 @@ export default function NouveauClientPage() {
                       background: (form as Record<string, unknown>)[key] ? "linear-gradient(135deg,#5331D0,#9B96DA)" : "rgba(83,49,208,0.15)",
                       border: "2px solid " + ((form as Record<string, unknown>)[key] ? "#5331D0" : "rgba(83,49,208,0.35)"),
                     }}>
-                    {(form as Record<string, unknown>)[key] && <span className="text-white text-sm font-bold">✓</span>}
+                    {!!(form as Record<string, unknown>)[key] && <span className="text-white text-sm font-bold">✓</span>}
                   </div>
                   <span className="text-sm" style={{ color: "#9B96DA" }}>{label}</span>
                 </label>

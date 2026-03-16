@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
@@ -98,7 +98,7 @@ const STATUT_LABELS: Record<string, string> = {
   "refusé": "Refusé",
 };
 
-export default function DashboardPage() {
+function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
@@ -121,7 +121,9 @@ export default function DashboardPage() {
     const userData = JSON.parse(stored);
     setUser(userData);
 
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/${userData.magasinId}`)
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/${userData.magasinId}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
+    })
       .then((r) => r.json())
       .then((data) => { if (!data.error) setStats(data); })
       .catch(() => {})
@@ -560,5 +562,13 @@ function OpportunitesSansStats({
         })}
       </div>
     </motion.div>
+  );
+}
+
+export default function DashboardPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardPage />
+    </Suspense>
   );
 }

@@ -1,10 +1,10 @@
 import "dotenv/config";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
-import { hashPassword, comparePassword, signToken } from "../src/lib/auth";
+import { hashPassword, comparePassword, signToken, verifyToken, TokenPayload } from "../src/lib/auth";
 
 const app = express();
 const httpServer = createServer(app);
@@ -24,6 +24,31 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// ─── Auth Middleware ──────────────────────────────────────
+interface AuthRequest extends Request { user?: TokenPayload; }
+
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  // Routes publiques — pas de JWT
+  if (
+    req.path === "/health" ||
+    req.path.startsWith("/api/auth/") ||
+    (req.method === "POST" && req.path === "/api/noemie/push")
+  ) return next();
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Authentification requise" });
+  }
+  try {
+    (req as AuthRequest).user = verifyToken(authHeader.slice(7));
+    next();
+  } catch {
+    return res.status(401).json({ error: "Token invalide ou expiré" });
+  }
+}
+
+app.use(requireAuth);
 
 // ─── Health Check ─────────────────────────────────────────
 app.get("/health", (_req, res) => {
@@ -219,9 +244,14 @@ app.get("/api/clients/search", async (req, res) => {
 
 app.put("/api/clients/:id", async (req, res) => {
   try {
+    const { nom, prenom, email, telephone, adresse, mutuelle, niveauGarantie, numAdherent, consentementRelance } = req.body as {
+      nom?: string; prenom?: string; email?: string | null; telephone?: string | null;
+      adresse?: string | null; mutuelle?: string | null; niveauGarantie?: string | null;
+      numAdherent?: string | null; consentementRelance?: boolean;
+    };
     const client = await prisma.client.update({
       where: { id: req.params.id },
-      data: req.body,
+      data: { nom, prenom, email, telephone, adresse, mutuelle, niveauGarantie, numAdherent, consentementRelance },
     });
     res.json(client);
   } catch (err) {
@@ -700,7 +730,7 @@ app.get("/api/relances/:magasinId", async (req, res) => {
 app.post("/api/noemie/push", async (req, res) => {
   const bridgeToken = req.headers["x-bridge-token"];
   const expectedToken = process.env.BRIDGE_TOKEN;
-  if (expectedToken && bridgeToken !== expectedToken) {
+  if (!expectedToken || bridgeToken !== expectedToken) {
     return res.status(401).json({ error: "Token bridge invalide" });
   }
 
