@@ -63,11 +63,21 @@ export default function LoginPage() {
         transition={{ duration: 0.6 }}
         className="flex flex-col items-center mb-12"
       >
-        <img
-          src="/assets/images/logo-OptiPilot.png"
-          alt="OptiPilot"
-          className="w-80 h-auto object-contain mb-3 drop-shadow-2xl"
-        />
+        <div className="relative flex items-center justify-center mb-3">
+          <div
+            className="absolute rounded-full"
+            style={{
+              inset: "-40px",
+              background: "radial-gradient(ellipse at center, rgba(244,114,182,0.25) 0%, rgba(167,139,250,0.14) 55%, transparent 78%)",
+              filter: "blur(18px)",
+            }}
+          />
+          <img
+            src="/assets/images/logo-OptiPilot.png"
+            alt="OptiPilot"
+            className="relative w-80 h-auto object-contain drop-shadow-2xl"
+          />
+        </div>
         <p className="text-xl mt-1 font-semibold" style={{ color: "#9B96DA" }}>
           Copilote IA pour opticiens
         </p>

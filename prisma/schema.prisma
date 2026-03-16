@@ -158,6 +158,17 @@ model Devis {
   racConfirme    Boolean   @default(false)
   racReel        Decimal?
   pdfUrl         String?
+  // Rapprochement tiers payant
+  statutPaiementSS        String?   // null | "en_attente" | "recu" | "partiel" | "rejete"
+  montantAttenduSS        Decimal?
+  montantRecuSS           Decimal?
+  datePaiementSS          DateTime?
+  motifRejetSS            String?
+  statutPaiementMutuelle  String?   // null | "en_attente" | "recu" | "partiel" | "rejete"
+  montantAttenduMutuelle  Decimal?
+  montantRecuMutuelle     Decimal?
+  datePaiementMutuelle    DateTime?
+  motifRejetMutuelle      String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

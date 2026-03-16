@@ -85,6 +85,29 @@ const SCHEMA_DEFAULT: SchemaMap = {
     detail:        "DETAIL_JSON",    // réponse complète en JSON si dispo
   },
 
+  // ─── Table des retours NOEMIE / règlements tiers payant ───────────────────
+  //
+  // Optimum reçoit les DRE (Demandes de Remboursement Électronique) de la CPAM
+  // et les retours mutuelle (TP direct). Ces flux sont stockés ici.
+  //
+  // Noms courants dans Optimum :
+  //   REGLEMENT_TP / RETOUR_NOEMIE / VIREMENT_TP / REGLEMENT_SS
+  //   ou directement sur la table DEVIS via un champ STATUT_PAIEMENT
+  //
+  // ⚠️  Vérifiez avec GET /api/schema après connexion à votre base Optimum
+  // ─────────────────────────────────────────────────────────────────────────
+  reglements: {
+    table:          "REGLEMENT_TP",     // ou "RETOUR_NOEMIE", "VIREMENT_TP"
+    id:             "ID_REGLEMENT",
+    idDevis:        "ID_DEVIS",         // lien vers la vente
+    organisme:      "ORGANISME",        // "SS" ou "MUTUELLE" (ou "CPAM")
+    montant:        "MONTANT_REGLE",
+    dateReglement:  "DATE_REGLEMENT",
+    statut:         "STATUT",           // "REGLE", "REJETE", "PARTIEL"
+    motifRejet:     "MOTIF_REJET",      // code retour NOEMIE si rejet
+    reference:      "REFERENCE_VIREMENT", // numéro de virement si dispo
+  },
+
   // ─── Table des montures / articles en stock ───────────────────────────────
   //
   // ⚠️  Noms estimés — à ajuster avec GET /api/schema une fois connecté.

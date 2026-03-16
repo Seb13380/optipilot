@@ -27,6 +27,10 @@ export interface SchemaMap {
     table: string; id: string; idDevis: string; dateReponse: string; statut: string;
     montantSS: string; montantMutuelle: string; resteACharge: string; detail: string;
   };
+  reglements: {
+    table: string; id: string; idDevis: string; organisme: string; montant: string;
+    dateReglement: string; statut: string; motifRejet: string; reference: string;
+  };
   montures: {
     table: string; id: string; reference: string; codeEAN: string;
     marque: string; modele: string; couleur: string; matiere: string;
@@ -288,8 +292,29 @@ export function autoDetectSchema(tables: TableInfo[]): DetectionResult {
   checkFallback("devis", devis as unknown as Record<string, string>);
   checkFallback("montures", montures as unknown as Record<string, string>);
 
+  // ── REGLEMENTS NOEMIE ──────────────────────────────────────────────────────
+  const reglT = findBestTable(tables,
+    ["REGLEMENT_TP","RETOUR_NOEMIE","VIREMENT_TP","REGLEMENT_SS","PAIEMENT_TP","REMISE_NOEMIE"],
+    ["ORGANISME","MONTANT_REGLE","DATE_REGLEMENT","MOTIF_REJET"]);
+
+  const reglements: SchemaMap["reglements"] = reglT ? {
+    table:         reglT.table,
+    id:            matchCol(reglT.columns, ["ID_REGLEMENT","IDREGLEMENT"], ["ID"]),
+    idDevis:       matchCol(reglT.columns, ["ID_DEVIS","IDDEVIS","FK_DEVIS"], ["NO_DEVIS"]),
+    organisme:     matchCol(reglT.columns, ["ORGANISME","TYPE_ORGANISME","CAISSE"], ["SS","MUTUELLE"]),
+    montant:       matchCol(reglT.columns, ["MONTANT_REGLE","MONTANT_PAYE","MONTANT"], ["VIREMENT"]),
+    dateReglement: matchCol(reglT.columns, ["DATE_REGLEMENT","DATE_VIREMENT","DATE_PAIEMENT"], ["DATE"]),
+    statut:        matchCol(reglT.columns, ["STATUT","ETAT","STATUS"]),
+    motifRejet:    matchCol(reglT.columns, ["MOTIF_REJET","CODE_REJET","LIBELLE_REJET"], ["REJET","ERREUR"]),
+    reference:     matchCol(reglT.columns, ["REFERENCE_VIREMENT","NO_VIREMENT","REF"], ["REFERENCE"]),
+  } : {
+    table: "REGLEMENT_TP", id: "ID_REGLEMENT", idDevis: "ID_DEVIS",
+    organisme: "ORGANISME", montant: "MONTANT_REGLE", dateReglement: "DATE_REGLEMENT",
+    statut: "STATUT", motifRejet: "MOTIF_REJET", reference: "REFERENCE_VIREMENT",
+  };
+
   return {
-    schema: { clients, ordonnances, devis, cotations, montures },
+    schema: { clients, ordonnances, devis, cotations, reglements, montures },
     confidence: {
       clients: clientConf,
       ordonnances: ordoConf,

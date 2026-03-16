@@ -36,6 +36,9 @@ export default function DevisPage() {
   const [ordonnance, setOrdonnance] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [devisId, setDevisId] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   // RAC temps réel
   const [racStatut, setRacStatut] = useState<RacStatut>("idle");
@@ -105,24 +108,61 @@ export default function DevisPage() {
   async function envoyerDevis() {
     setSending(true);
     try {
-      // Enregistrer le devis
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis`, {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const userRaw = localStorage.getItem("optipilot_user");
+      const magasin = userRaw ? JSON.parse(userRaw).magasinId : "demo-magasin";
+      const clientId = localStorage.getItem("optipilot_client_id") || "demo";
+
+      const montantSS  = racResult ? racResult.secu  : (offre?.remboursementSecu  ?? 0);
+      const montantMut = racResult ? racResult.mutuelle : (offre?.remboursementMutuelle ?? 0);
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          clientId: client.nom || "demo",
-          magasinId: "demo-magasin",
+          clientId,
+          magasinId: magasin,
           statut: "en_cours",
           offreChoisie: offre?.nom?.toLowerCase(),
           totalConfort: totalDevis,
           racConfort: resteACharge,
+          remboursementSS:  montantSS,
+          remboursementMutuelle: montantMut,
         }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        setDevisId(data.id ?? null);
+      }
     } catch {
       // Mode démo
     }
     setSent(true);
     setSending(false);
+  }
+
+  async function confirmerVente() {
+    if (!devisId) return;
+    setConfirming(true);
+    try {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const montantSS  = racResult ? racResult.secu  : (offre?.remboursementSecu  ?? 0);
+      const montantMut = racResult ? racResult.mutuelle : (offre?.remboursementMutuelle ?? 0);
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${devisId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          statut: "accept\u00e9",
+          remboursementSS:  montantSS,
+          remboursementMutuelle: montantMut,
+        }),
+      });
+      setConfirmed(true);
+    } catch {
+      // Mode démo
+    } finally {
+      setConfirming(false);
+    }
   }
 
   async function exporterPDF() {
@@ -582,8 +622,56 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               )}
             </AnimatePresence>
 
-            {/* Envoi email */}
-          {sent ? (
+            {/* Envoi + confirmation vente */}
+          {confirmed ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="py-5 rounded-2xl text-center space-y-1"
+              style={{ background: "rgba(34,197,94,0.12)", border: "2px solid rgba(34,197,94,0.5)" }}
+            >
+              <p className="text-2xl">✅</p>
+              <p className="font-bold text-xl" style={{ color: "#22c55e" }}>Vente confirmée !</p>
+              <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+                Le suivi des remboursements SS &amp; mutuelle a été initialisé automatiquement.
+              </p>
+            </motion.div>
+          ) : sent && devisId ? (
+            <AnimatePresence>
+              <motion.button
+                key="confirmer-vente"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={confirmerVente}
+                disabled={confirming}
+                className="w-full py-5 rounded-2xl text-white font-bold text-xl flex items-center justify-center gap-3"
+                style={{
+                  background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                  boxShadow: "0 6px 28px rgba(34,197,94,0.4)",
+                }}
+              >
+                {confirming ? (
+                  <>
+                    <svg className="animate-spin" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" />
+                    </svg>
+                    Confirmation…
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: "1.5rem" }}>✅</span>
+                    <div className="text-left">
+                      <div>Confirmer la vente</div>
+                      <div style={{ fontSize: "0.85rem", opacity: 0.85, fontWeight: 500 }}>
+                        Lance le suivi SS &amp; mutuelle
+                      </div>
+                    </div>
+                  </>
+                )}
+              </motion.button>
+            </AnimatePresence>
+          ) : sent ? (
             <div
               className="py-4 rounded-2xl text-center font-semibold text-lg"
               style={{ background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "2px solid #22c55e" }}

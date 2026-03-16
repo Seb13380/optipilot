@@ -75,7 +75,11 @@ export default function ConfigPage() {
   const router = useRouter();
   const [tab, setTab] = useState("magasin");
   const [toast, setToast] = useState<string | null>(null);
-  const [accountUser, setAccountUser] = useState<{ nom: string; email: string; role: string; plan?: string } | null>(null);
+  const [accountUser, setAccountUser] = useState<{ id?: string; nom: string; email: string; role: string; plan?: string } | null>(null);
+  const [editNom, setEditNom] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editRole, setEditRole] = useState("");
+  const [savingAccount, setSavingAccount] = useState(false);
   const [clientPin, setClientPin] = useState(() => {
     try { return localStorage.getItem("optipilot_client_pin") || "1234"; } catch { return "1234"; }
   });
@@ -110,7 +114,10 @@ export default function ConfigPage() {
       const stored = localStorage.getItem("optipilot_user");
       if (stored) {
         const u = JSON.parse(stored);
-        setAccountUser({ nom: u.nom || "—", email: u.email || "—", role: u.role || "Utilisateur", plan: u.plan });
+        setAccountUser({ id: u.id, nom: u.nom || "—", email: u.email || "—", role: u.role || "Utilisateur", plan: u.plan });
+        setEditNom(u.nom || "");
+        setEditEmail(u.email || "");
+        setEditRole(u.role || "");
       }
     } catch { /* ignore */ }
   }, []);
@@ -564,21 +571,68 @@ export default function ConfigPage() {
                   </motion.button>
                 </div>
 
-                <div className="flex flex-col gap-5 mt-4">
+                <div className="flex flex-col gap-4 mt-4">
                   {[
-                    { label: "Nom", value: accountUser?.nom ?? "—" },
-                    { label: "Email", value: accountUser?.email ?? "—" },
-                    { label: "Rôle", value: accountUser?.role ?? "—" },
-                  ].map(({ label, value }) => (
-                    <div
-                      key={label}
-                      className="flex items-center justify-between p-5 rounded-xl border-2"
-                      style={{ background: "rgba(10,3,56,0.6)", borderColor: "rgba(155,150,218,0.15)" }}
-                    >
-                      <p className="text-lg font-semibold" style={{ color: "#9B96DA" }}>{label}</p>
-                      <p className="text-xl font-bold" style={{ color: "#FDFDFE" }}>{value}</p>
+                    { label: "Nom",   value: editNom,   setter: setEditNom,   type: "text" },
+                    { label: "Email", value: editEmail, setter: setEditEmail, type: "email" },
+                    { label: "Rôle",  value: editRole,  setter: setEditRole,  type: "text", disabled: accountUser?.role !== "admin" },
+                  ].map(({ label, value, setter, type, disabled }) => (
+                    <div key={label}>
+                      <label className="text-sm font-semibold mb-1 block" style={{ color: "#9B96DA" }}>{label}</label>
+                      <input
+                        type={type}
+                        value={value}
+                        onChange={(e) => setter(e.target.value)}
+                        disabled={disabled}
+                        className="w-full px-5 py-4 rounded-xl text-xl border-2 outline-none transition-all"
+                        style={{
+                          background: disabled ? "rgba(10,3,56,0.4)" : "rgba(2,0,23,0.7)",
+                          borderColor: "rgba(83,49,208,0.35)",
+                          color: disabled ? "rgba(255,255,255,0.35)" : "#FDFDFE",
+                          cursor: disabled ? "not-allowed" : "text",
+                        }}
+                        onFocus={(e) => !disabled && (e.target.style.borderColor = "#5331D0")}
+                        onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
+                      />
+                      {label === "Rôle" && accountUser?.role !== "admin" && (
+                        <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.5)" }}>Seul un admin peut modifier le rôle</p>
+                      )}
                     </div>
                   ))}
+                  <SaveButton
+                    onClick={async () => {
+                      if (!accountUser?.id) return;
+                      setSavingAccount(true);
+                      try {
+                        const token = localStorage.getItem("optipilot_token") || "";
+                        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+                        const res = await fetch(`${backendUrl}/api/utilisateur/${accountUser.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ nom: editNom, email: editEmail, role: editRole }),
+                        });
+                        if (!res.ok) {
+                          const err = await res.json();
+                          showToast(err.error || "Erreur lors de la mise à jour");
+                          return;
+                        }
+                        const updated = await res.json();
+                        // Mettre à jour le localStorage
+                        const userRaw = localStorage.getItem("optipilot_user");
+                        if (userRaw) {
+                          const u = JSON.parse(userRaw);
+                          localStorage.setItem("optipilot_user", JSON.stringify({ ...u, nom: updated.nom, email: updated.email, role: updated.role }));
+                        }
+                        setAccountUser((prev) => prev ? { ...prev, nom: updated.nom, email: updated.email, role: updated.role } : prev);
+                        showToast("Informations mises à jour ✓");
+                      } catch {
+                        showToast("Impossible de contacter le serveur");
+                      } finally {
+                        setSavingAccount(false);
+                      }
+                    }}
+                    label={savingAccount ? "Enregistrement…" : "Sauvegarder les informations"}
+                  />
                 </div>
 
                 <div className="mt-8 flex flex-col gap-4">
@@ -668,25 +722,73 @@ export default function ConfigPage() {
                   Le bridge est un petit programme installé sur le PC du magasin. Il permet à OptiPilot de lire les données de votre logiciel opticien (Optimum, etc.) via le réseau Wi-Fi local.
                 </p>
                 <div className="flex flex-col gap-5">
-                  {([
-                    { label: "IP du bridge", placeholder: "ex: 192.168.1.42", value: bridgeIp, set: setBridgeIp, key: "optipilot_bridge_ip" },
-                    { label: "Token secret", placeholder: "ex: optipilot-violette-2026", value: bridgeToken, set: setBridgeToken, key: "optipilot_bridge_token" },
-                    { label: "Port", placeholder: "5174", value: bridgePort, set: setBridgePort, key: "optipilot_bridge_port" },
-                  ] as const).map(({ label, placeholder, value, set, key }) => (
-                    <div key={key}>
-                      <label className="block text-base font-semibold mb-2" style={{ color: "#9B96DA" }}>{label}</label>
+                  <div>
+                    <label className="block text-base font-semibold mb-2" style={{ color: "#9B96DA" }}>IP du bridge</label>
+                    <input
+                      type="text"
+                      value={bridgeIp}
+                      placeholder="ex: 192.168.1.42"
+                      onChange={(e) => setBridgeIp(e.target.value)}
+                      className="w-full px-5 py-4 rounded-xl text-xl border-2 outline-none transition-all"
+                      style={{ background: "rgba(2,0,23,0.7)", borderColor: "rgba(83,49,208,0.35)", color: "#FDFDFE" }}
+                      onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                      onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-base font-semibold mb-2" style={{ color: "#9B96DA" }}>Token secret</label>
+                    <div className="flex gap-2">
                       <input
                         type="text"
-                        value={value}
-                        placeholder={placeholder}
-                        onChange={(e) => set(e.target.value)}
-                        className="w-full px-5 py-4 rounded-xl text-xl border-2 outline-none transition-all"
+                        value={bridgeToken}
+                        placeholder="Cliquez sur Générer →"
+                        onChange={(e) => setBridgeToken(e.target.value)}
+                        className="flex-1 px-5 py-4 rounded-xl text-base border-2 outline-none transition-all font-mono"
                         style={{ background: "rgba(2,0,23,0.7)", borderColor: "rgba(83,49,208,0.35)", color: "#FDFDFE" }}
                         onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
                         onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
                       />
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+                          const rand = (n: number) => Array.from(crypto.getRandomValues(new Uint8Array(n))).map(b => chars[b % chars.length]).join("");
+                          setBridgeToken(`op-${rand(6)}-${rand(6)}-${rand(6)}`);
+                        }}
+                        className="px-4 py-4 rounded-xl text-base font-bold border-2 whitespace-nowrap"
+                        style={{ background: "rgba(83,49,208,0.2)", borderColor: "rgba(83,49,208,0.5)", color: "#9B96DA" }}
+                      >
+                        Générer
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => { navigator.clipboard.writeText(bridgeToken); showToast("Token copié ✓"); }}
+                        disabled={!bridgeToken}
+                        className="px-4 py-4 rounded-xl text-base font-bold border-2 whitespace-nowrap"
+                        style={{ background: "rgba(83,49,208,0.2)", borderColor: "rgba(83,49,208,0.5)", color: "#9B96DA", opacity: !bridgeToken ? 0.4 : 1 }}
+                      >
+                        Copier
+                      </motion.button>
                     </div>
-                  ))}
+                    {bridgeToken && (
+                      <p className="text-sm mt-2" style={{ color: "rgba(155,150,218,0.6)" }}>
+                        À coller dans le fichier <span className="font-mono">.env</span> du bridge : <span className="font-mono" style={{ color: "#9B96DA" }}>BRIDGE_TOKEN={bridgeToken}</span>
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-base font-semibold mb-2" style={{ color: "#9B96DA" }}>Port</label>
+                    <input
+                      type="text"
+                      value={bridgePort}
+                      placeholder="5174"
+                      onChange={(e) => setBridgePort(e.target.value)}
+                      className="w-full px-5 py-4 rounded-xl text-xl border-2 outline-none transition-all"
+                      style={{ background: "rgba(2,0,23,0.7)", borderColor: "rgba(83,49,208,0.35)", color: "#FDFDFE" }}
+                      onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                      onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
+                    />
+                  </div>
                 </div>
 
                 {/* Statut test */}

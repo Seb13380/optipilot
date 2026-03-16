@@ -187,7 +187,7 @@ const KNOWLEDGE: EntreeKnowledge[] = [
         ctx.presbytie === "débutante" ? "Votre presbytie est débutante — une correction légère suffit à ce stade." : "",
         ctx.presbytie === "confirmée" ? "Votre presbytie est confirmée — un progressif de qualité correcte est recommandé." : "",
         ctx.presbytie === "avancée" ? "Votre presbytie est avancée — un progressif adapté avec une bonne addition est essentiel." : "",
-        "Elle progresse jusqu'towards 60 ans puis se stabilise.",
+        "Elle progresse jusqu'à 60 ans puis se stabilise.",
         "Les progressifs permettent de ne pas avoir à changer de lunettes selon la distance.",
       ].filter(Boolean) as string[],
       attention: ctx.presbytie

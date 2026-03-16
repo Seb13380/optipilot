@@ -4,7 +4,7 @@ import cors from "cors";
 import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
 import { testConnection } from "./src/db";
-import { router } from "./src/routes";
+import { router, startNoemiePolling } from "./src/routes";
 
 const PORT = parseInt(process.env.BRIDGE_PORT || "5174", 10);
 const TOKEN = process.env.BRIDGE_TOKEN || "optipilot-bridge-secret";
@@ -90,6 +90,9 @@ server.listen(PORT, "0.0.0.0", async () => {
   const ok = await testConnection();
   if (ok) {
     console.log("✅ Connexion SQL Server Optimum : OK\n");
+    // Démarre le polling automatique des retours NOEMIE
+    const backendUrl = process.env.OPTIPILOT_BACKEND_URL || "http://localhost:4000";
+    startNoemiePolling(backendUrl, TOKEN);
   } else {
     console.warn("⚠️  SQL Server non connecté — vérifiez le fichier .env\n");
   }

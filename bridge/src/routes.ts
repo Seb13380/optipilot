@@ -534,3 +534,209 @@ router.delete("/setup/reset", (_req: Request, res: Response) => {
     message: "Override supprimé — schéma par défaut rechargé.",
   });
 });
+
+// =============================================================================
+// NOEMIE — Retours de paiement tiers payant
+// =============================================================================
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/noemie/nouveaux
+// Lit les règlements TP reçus depuis Optimum (CPAM + mutuelles TP direct)
+// qui n'ont pas encore été remontés à OptiPilot.
+// Paramètre optionnel : since=ISO8601 pour filtrer par date
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/noemie/nouveaux", async (req: Request, res: Response) => {
+  const since = req.query.since ? new Date(String(req.query.since)) : (() => {
+    const d = new Date(); d.setDate(d.getDate() - 90); return d; // 90 jours par défaut
+  })();
+
+  try {
+    const p = await getPool();
+    const r = SCHEMA.reglements;
+
+    // Stratégie 1 — table dédiée (REGLEMENT_TP, RETOUR_NOEMIE…)
+    const result = await p.request()
+      .input("since", sql.DateTime, since)
+      .query(`
+        SELECT TOP 500
+          CAST(${r.id}             AS VARCHAR) AS id,
+          CAST(${r.idDevis}        AS VARCHAR) AS idDevis,
+          ISNULL(${r.organisme},   '')          AS organisme,
+          ISNULL(CAST(${r.montant} AS FLOAT), 0) AS montant,
+          ${r.dateReglement}                    AS dateReglement,
+          ISNULL(${r.statut},      'REGLE')     AS statut,
+          ISNULL(${r.motifRejet},  '')          AS motifRejet,
+          ISNULL(${r.reference},   '')          AS reference
+        FROM ${r.table}
+        WHERE ${r.dateReglement} >= @since
+        ORDER BY ${r.dateReglement} DESC
+      `).catch(async () => {
+        // Stratégie 2 — fallback : lire les champs de remboursement directement
+        // sur la table DEVIS (cas où Optimum met à jour directement le devis)
+        const d = SCHEMA.devis;
+        return p.request()
+          .input("since", sql.DateTime, since)
+          .query(`
+            SELECT TOP 500
+              CAST(${d.id}               AS VARCHAR) AS id,
+              CAST(${d.id}               AS VARCHAR) AS idDevis,
+              'SS'                                   AS organisme,
+              ISNULL(CAST(${d.remboursementSS} AS FLOAT), 0) AS montant,
+              ${d.dateDevis}                         AS dateReglement,
+              ${d.statut}                            AS statut,
+              ''                                     AS motifRejet,
+              ''                                     AS reference
+            FROM ${d.table}
+            WHERE ${d.dateDevis} >= @since
+              AND ${d.remboursementSS} IS NOT NULL
+              AND ${d.remboursementSS} > 0
+              AND ${d.originOptiPilot} = 'OPTIPILOT'
+            ORDER BY ${d.dateDevis} DESC
+          `);
+      });
+
+    res.json({ ok: true, reglements: result.recordset, total: result.recordset.length });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/noemie/sync
+// Déclenche une synchronisation immédiate et pousse les résultats via WebSocket
+// Le backend OptiPilot appellera cette route périodiquement (cron toutes les heures)
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/noemie/sync", async (req: Request, res: Response) => {
+  const since = req.body?.since ? new Date(req.body.since) : (() => {
+    const d = new Date(); d.setDate(d.getDate() - 30); return d;
+  })();
+
+  try {
+    const p = await getPool();
+    const r = SCHEMA.reglements;
+    const d = SCHEMA.devis;
+
+    // Même requête que GET /noemie/nouveaux mais on broadcast directement
+    const result = await p.request()
+      .input("since", sql.DateTime, since)
+      .query(`
+        SELECT TOP 500
+          CAST(${r.id}             AS VARCHAR) AS id,
+          CAST(${r.idDevis}        AS VARCHAR) AS idDevis,
+          ISNULL(${r.organisme},   '')          AS organisme,
+          ISNULL(CAST(${r.montant} AS FLOAT), 0) AS montant,
+          ${r.dateReglement}                    AS dateReglement,
+          ISNULL(${r.statut},      'REGLE')     AS statut,
+          ISNULL(${r.motifRejet},  '')          AS motifRejet,
+          ISNULL(${r.reference},   '')          AS reference
+        FROM ${r.table}
+        WHERE ${r.dateReglement} >= @since
+        ORDER BY ${r.dateReglement} DESC
+      `).catch(async () =>
+        p.request()
+          .input("since", sql.DateTime, since)
+          .query(`
+            SELECT TOP 200
+              CAST(${d.id} AS VARCHAR) AS id,
+              CAST(${d.id} AS VARCHAR) AS idDevis,
+              'SS' AS organisme,
+              ISNULL(CAST(${d.remboursementSS} AS FLOAT), 0) AS montant,
+              ${d.dateDevis} AS dateReglement,
+              ${d.statut} AS statut,
+              '' AS motifRejet, '' AS reference
+            FROM ${d.table}
+            WHERE ${d.dateDevis} >= @since
+              AND ${d.remboursementSS} > 0
+              AND ${d.originOptiPilot} = 'OPTIPILOT'
+          `)
+      );
+
+    const reglements = result.recordset;
+
+    // Envoie chaque règlement via WebSocket au backend OptiPilot
+    for (const reg of reglements) {
+      broadcast("noemie_reglement", reg);
+    }
+
+    console.log(`[NOEMIE] Sync terminée — ${reglements.length} règlement(s) envoyé(s)`);
+    res.json({ ok: true, count: reglements.length, reglements });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: (err as Error).message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Polling NOEMIE automatique (toutes les heures au démarrage du bridge)
+// Appelé en interne — pas une route HTTP
+// ─────────────────────────────────────────────────────────────────────────────
+export function startNoemiePolling(optiPilotBackendUrl: string, bridgeToken: string): void {
+  const INTERVAL_MS = 60 * 60 * 1000; // 1 heure
+  let lastSync = new Date(Date.now() - 24 * 60 * 60 * 1000); // remonte à 24h au démarrage
+
+  console.log("[NOEMIE] Polling automatique démarré — intervalle 1h");
+
+  const doSync = async () => {
+    try {
+      const p = await getPool();
+      const r = SCHEMA.reglements;
+      const d = SCHEMA.devis;
+
+      const result = await p.request()
+        .input("since", sql.DateTime, lastSync)
+        .query(`
+          SELECT TOP 500
+            CAST(${r.id} AS VARCHAR) AS id,
+            CAST(${r.idDevis} AS VARCHAR) AS idDevis,
+            ISNULL(${r.organisme}, '') AS organisme,
+            ISNULL(CAST(${r.montant} AS FLOAT), 0) AS montant,
+            ${r.dateReglement} AS dateReglement,
+            ISNULL(${r.statut}, 'REGLE') AS statut,
+            ISNULL(${r.motifRejet}, '') AS motifRejet,
+            ISNULL(${r.reference}, '') AS reference
+          FROM ${r.table}
+          WHERE ${r.dateReglement} >= @since
+          ORDER BY ${r.dateReglement} DESC
+        `).catch(async () =>
+          p.request()
+            .input("since", sql.DateTime, lastSync)
+            .query(`
+              SELECT TOP 200
+                CAST(${d.id} AS VARCHAR) AS id, CAST(${d.id} AS VARCHAR) AS idDevis,
+                'SS' AS organisme,
+                ISNULL(CAST(${d.remboursementSS} AS FLOAT), 0) AS montant,
+                ${d.dateDevis} AS dateReglement, ${d.statut} AS statut,
+                '' AS motifRejet, '' AS reference
+              FROM ${d.table}
+              WHERE ${d.dateDevis} >= @since AND ${d.remboursementSS} > 0
+                AND ${d.originOptiPilot} = 'OPTIPILOT'
+            `)
+        );
+
+      if (result.recordset.length > 0) {
+        // Pousse vers le backend OptiPilot via HTTP
+        const res = await fetch(`${optiPilotBackendUrl}/api/noemie/push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-bridge-token": bridgeToken,
+          },
+          body: JSON.stringify({ reglements: result.recordset }),
+        }).catch((e) => { console.error("[NOEMIE] Erreur push backend:", e.message); return null; });
+
+        if (res?.ok) {
+          console.log(`[NOEMIE] ${result.recordset.length} règlement(s) poussé(s) vers OptiPilot`);
+        }
+      }
+
+      lastSync = new Date();
+    } catch (err) {
+      // DB pas encore connectée ou table absente — sans erreur critique
+      console.warn("[NOEMIE] Sync ignorée (DB non dispo ou schéma non configuré):", (err as Error).message);
+    }
+  };
+
+  // Premier sync au démarrage (30s de délai pour laisser la DB se connecter)
+  setTimeout(doSync, 30_000);
+  // Puis toutes les heures
+  setInterval(doSync, INTERVAL_MS);
+}

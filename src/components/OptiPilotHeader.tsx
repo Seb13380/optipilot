@@ -17,6 +17,7 @@ const MENU_ITEMS = [
   { label: "Recommandations",   href: "/recommandations" },
   { label: "Devis",             href: "/devis" },
   { label: "Historique",        href: "/historique" },
+  { label: "Rapprochements",    href: "/rapprochements" },
   { label: "Configuration",     href: "/config" },
 ];
 
@@ -61,11 +62,21 @@ export default function OptiPilotHeader({
         {/* Center — Logo ou Titre */}
         <div className="flex flex-col items-center">
           {!title ? (
-            <img
-              src="/assets/images/logo-OptiPilot.png"
-              alt="OptiPilot"
-              className="w-44 h-auto object-contain"
-            />
+            <div className="relative flex items-center justify-center">
+              <div
+                className="absolute rounded-full"
+                style={{
+                  inset: "-20px",
+                  background: "radial-gradient(ellipse at center, rgba(244,114,182,0.20) 0%, rgba(167,139,250,0.12) 55%, transparent 78%)",
+                  filter: "blur(14px)",
+                }}
+              />
+              <img
+                src="/assets/images/logo-OptiPilot.png"
+                alt="OptiPilot"
+                className="relative w-44 h-auto object-contain"
+              />
+            </div>
           ) : (
             <span className="text-2xl font-bold" style={{ color: "#FDFDFE" }}>
               {title}
@@ -74,24 +85,23 @@ export default function OptiPilotHeader({
         </div>
 
         {/* Right */}
-        <div className="min-w-20 flex justify-end">
-          {rightAction || (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setMenuOpen(true)}
-              className="p-2 rounded-xl"
-              style={{ color: "#9B96DA" }}
-            >
-              <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M4 6h16M4 12h16M4 18h16"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </motion.button>
-          )}
+        <div className="min-w-20 flex items-center justify-end gap-2">
+          {rightAction}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setMenuOpen(true)}
+            className="p-2 rounded-xl"
+            style={{ color: "#9B96DA" }}
+          >
+            <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
+              <path
+                d="M4 6h16M4 12h16M4 18h16"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </motion.button>
         </div>
       </header>
 
