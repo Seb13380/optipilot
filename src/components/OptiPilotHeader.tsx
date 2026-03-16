@@ -72,7 +72,7 @@ export default function OptiPilotHeader({
                 }}
               />
               <img
-                src="/assets/images/logo-OptiPilot.png"
+                src="/assets/images/Logo-OptiPilot.png"
                 alt="OptiPilot"
                 className="relative w-44 h-auto object-contain"
               />

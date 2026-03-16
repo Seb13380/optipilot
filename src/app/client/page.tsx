@@ -106,7 +106,7 @@ export default function ClientPage() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center pt-12 pb-4 px-6"
       >
-        <img src="/assets/images/logo-OptiPilot.png" alt="OptiPilot" className="w-40 mx-auto mb-4 opacity-75" />
+        <img src="/assets/images/Logo-OptiPilot.png" alt="OptiPilot" className="w-40 mx-auto mb-4 opacity-75" />
         <h1 className="text-3xl font-black" style={{ color: "#FDFDFE" }}>{magasinNom}</h1>
         <p className="text-lg mt-1" style={{ color: "#C4C1EA" }}>Bienvenue chez nous</p>
       </motion.div>

@@ -149,7 +149,7 @@ export default function QuestionnairePage() {
         className="flex justify-center mb-6"
       >
         <img
-          src="/assets/images/logo-OptiPilot.png"
+          src="/assets/images/Logo-OptiPilot.png"
           alt="OptiPilot"
           className="h-16 w-auto object-contain drop-shadow-2xl"
         />

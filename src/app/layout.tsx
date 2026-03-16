@@ -8,18 +8,18 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/assets/images/logo-OptiPilot.png", type: "image/png" },
+      { url: "/assets/images/Logo-OptiPilot.png", type: "image/png" },
     ],
     apple: [
-      { url: "/assets/images/logo-OptiPilot.png", type: "image/png" },
+      { url: "/assets/images/Logo-OptiPilot.png", type: "image/png" },
     ],
-    shortcut: "/assets/images/logo-OptiPilot.png",
+    shortcut: "/assets/images/Logo-OptiPilot.png",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "OptiPilot",
-    startupImage: "/assets/images/logo-OptiPilot.png",
+    startupImage: "/assets/images/Logo-OptiPilot.png",
   },
 };
 
