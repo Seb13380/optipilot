@@ -229,13 +229,13 @@ export default function ClientMutuellePage() {
       // bridge indisponible — on continue quand même
     } finally {
       setCreateLoading(false);
-      router.push("/client");
+      router.push("/questionnaire");
     }
   }
 
   function selectClient(client: BridgeClient) {
     localStorage.setItem("optipilot_client", JSON.stringify(client));
-    router.push("/client");
+    router.push("/questionnaire");
   }
 
   return (
@@ -584,7 +584,7 @@ export default function ClientMutuellePage() {
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.97 }}
-              onClick={() => router.push("/client")}
+              onClick={() => router.push("/questionnaire")}
               className="py-3 rounded-2xl font-semibold text-base"
               style={{ background: "transparent", color: "#6b7280" }}
             >

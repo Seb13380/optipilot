@@ -139,21 +139,27 @@ export default function ScannerPage() {
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
       });
       streamRef.current = stream;
+      const attach = (video: HTMLVideoElement) => {
+        video.srcObject = stream;
+        video.play().catch(() => {});
+        setCameraStarted(true);
+        setTimeout(startStabilityLoop, 800);
+      };
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-          setCameraStarted(true);
-          setTimeout(startStabilityLoop, 800);
-        };
+        attach(videoRef.current);
+      } else {
+        setTimeout(() => { if (videoRef.current) attach(videoRef.current!); }, 150);
       }
     } catch {
       setCameraStarted(false);
     }
   }, [startStabilityLoop]);
+
+  // Auto-démarrage caméra
+  useEffect(() => { startCamera(); }, [startCamera]);
 
   // Nettoyage à la sortie de la page
   useEffect(() => {
@@ -218,7 +224,7 @@ export default function ScannerPage() {
         if (res.ok) localStorage.setItem("optipilot_ordonnance_db", JSON.stringify(ordo));
       }
     } catch { /* Continue sans backend */ }
-    router.push("/questionnaire");
+    router.push("/client/mutuelle");
   }
 
   function resetCamera() {

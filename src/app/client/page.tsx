@@ -7,6 +7,7 @@ import { checkPin, unlockSession } from "@/lib/opticianAuth";
 const ACTIONS = [
   {
     id: "ordonnance",
+    step: 1,
     label: "Scanner mon ordonnance",
     sub: "Photographiez votre prescription",
     href: "/scanner",
@@ -22,6 +23,7 @@ const ACTIONS = [
   },
   {
     id: "mutuelle",
+    step: 2,
     label: "Scanner ma carte mutuelle",
     sub: "Photographiez votre carte de tiers payant",
     href: "/client/mutuelle",
@@ -36,6 +38,7 @@ const ACTIONS = [
   },
   {
     id: "questionnaire",
+    step: 3,
     label: "Mon questionnaire",
     sub: "Vos besoins visuels et préférences",
     href: "/questionnaire",
@@ -49,6 +52,7 @@ const ACTIONS = [
   },
   {
     id: "montures",
+    step: 4,
     label: "Voir nos montures",
     sub: "Explorez notre sélection en stock",
     href: "/client/montures",
@@ -150,8 +154,14 @@ export default function ClientPage() {
               transition: "all 0.2s ease",
             }}
           >
-            <div className="rounded-xl flex items-center justify-center" style={{ width: 52, height: 52, background: "rgba(0,0,0,0.2)", flexShrink: 0 }}>
+            <div className="rounded-xl flex items-center justify-center relative" style={{ width: 52, height: 52, background: "rgba(0,0,0,0.2)", flexShrink: 0 }}>
               {action.icon}
+              <span
+                className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black"
+                style={{ background: "rgba(255,255,255,0.95)", color: "#5331D0", lineHeight: 1 }}
+              >
+                {action.step}
+              </span>
             </div>
             <div>
               <p className="text-white text-lg font-bold leading-tight">{action.label}</p>
