@@ -117,27 +117,27 @@ export default function ClientMutuellePage() {
 
   const startCamera = useCallback(async () => {
     setCameraError("");
-    const setup = async (constraints: MediaStreamConstraints) => {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-          setCameraStarted(true);
-          setTimeout(startStabilityLoop, 800);
-        };
-      }
-    };
     try {
-      await setup({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } });
-    } catch {
-      try {
-        await setup({ video: { facingMode: "user" } });
-      } catch {
-        setCameraError("Impossible d'accéder à la caméra. Vérifiez que vous avez autorisé l'accès.");
-        setCameraStarted(false);
+      // "ideal" = essaie caméra arrière, se rabat sur n'importe quelle caméra sans erreur
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      });
+      streamRef.current = stream;
+      // Attacher au <video> dès qu'il est disponible
+      const attach = (video: HTMLVideoElement) => {
+        video.srcObject = stream;
+        video.play().catch(() => {});
+        setCameraStarted(true);
+        setTimeout(startStabilityLoop, 800);
+      };
+      if (videoRef.current) {
+        attach(videoRef.current);
+      } else {
+        // Ref pas encore montée (render en cours) — réessayer dans 150ms
+        setTimeout(() => { if (videoRef.current) attach(videoRef.current); }, 150);
       }
+    } catch {
+      setCameraError("Impossible d'accéder à la caméra. Vérifiez que vous avez autorisé l'accès dans votre navigateur.");
     }
   }, [startStabilityLoop]);
 
