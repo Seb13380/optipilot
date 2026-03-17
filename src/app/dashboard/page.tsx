@@ -2,7 +2,6 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import OptiPilotHeader from "@/components/OptiPilotHeader";
 import OpticianGuard from "@/components/OpticianGuard";
 import { lockSession } from "@/lib/opticianAuth";
 
@@ -43,6 +42,7 @@ const MENU_ITEMS = [
       </svg>
     ),
     gradient: "linear-gradient(135deg, #5331D0 0%, #7B5CE5 100%)",
+    shadow: "rgba(83,49,208,0.45)",
     href: "/scanner",
   },
   {
@@ -56,7 +56,8 @@ const MENU_ITEMS = [
         <path d="M19 12v6M16 15h6" stroke="white" strokeWidth="2" strokeLinecap="round" />
       </svg>
     ),
-    gradient: "linear-gradient(135deg, #1C0B62 0%, #5331D0 100%)",
+    gradient: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
+    shadow: "rgba(124,58,237,0.4)",
     href: "/nouveau-client",
   },
   {
@@ -71,7 +72,8 @@ const MENU_ITEMS = [
         <path d="M7 14h5M7 17h8" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
     ),
-    gradient: "linear-gradient(135deg, #5331D0 0%, #9B96DA 100%)",
+    gradient: "linear-gradient(135deg, #475569 0%, #64748b 100%)",
+    shadow: "rgba(71,85,105,0.3)",
     href: "/historique",
   },
   {
@@ -84,7 +86,8 @@ const MENU_ITEMS = [
         <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
-    gradient: "linear-gradient(135deg, #2D0B62 0%, #5331D0 100%)",
+    gradient: "linear-gradient(135deg, #1e293b 0%, #334155 100%)",
+    shadow: "rgba(30,41,59,0.4)",
     href: "/relances",
   },
 ];
@@ -142,19 +145,7 @@ function DashboardPage() {
 
   return (
     <div className="page-bg min-h-screen flex flex-col">
-      <OptiPilotHeader
-        rightAction={
-          <button
-            onClick={handleLogout}
-            className="text-base font-medium px-4 py-2 rounded-xl"
-            style={{ color: "#5331D0", background: "rgba(83,49,208,0.12)" }}
-          >
-            Quitter
-          </button>
-        }
-      />
-
-      <main className="flex-1 px-6 pb-10 pt-2 w-full max-w-7xl mx-auto">
+      <main className="flex-1 px-6 pb-10 pt-0 w-full max-w-7xl mx-auto">
 
         {/* Confirmation upgrade */}
         <AnimatePresence>
@@ -199,14 +190,34 @@ function DashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* Salutation */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
-          <h1 className="text-4xl font-black" style={{ color: "#111827" }}>
-            Bonjour{user?.nom ? `, ${user.nom.split(" ")[0]}` : ""}
-          </h1>
-          <p className="text-xl mt-1" style={{ color: "#4b5563" }}>
-            {user?.magasinNom || "Votre magasin"} • {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-          </p>
+        {/* Header unifié logo + greeting */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between pt-6 pb-5"
+        >
+          <div className="flex items-center gap-4">
+            <img
+              src="/assets/images/Logo-OptiPilot.png"
+              alt="OptiPilot"
+              style={{ width: 50, height: 50, objectFit: "contain", filter: "drop-shadow(0 0 14px rgba(124,58,237,0.55)) drop-shadow(0 0 28px rgba(124,58,237,0.3))" }}
+            />
+            <div>
+              <h1 className="text-2xl font-black leading-tight" style={{ color: "#111827" }}>
+                Bonjour{user?.nom ? `, ${user.nom.split(" ")[0]}` : ""}
+              </h1>
+              <p className="text-sm mt-0.5" style={{ color: "#6b7280" }}>
+                {user?.magasinNom || "Votre magasin"} · {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="text-sm font-bold px-4 py-2 rounded-xl"
+            style={{ color: "#5331D0", background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.18)" }}
+          >
+            Quitter
+          </button>
         </motion.div>
 
         {/* Boutons d'action */}
@@ -218,65 +229,81 @@ function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08 }}
               whileTap={{ scale: 0.95 }}
+              whileHover={{ y: -4 }}
               onClick={() => router.push(item.href)}
-              className="rounded-3xl p-6 flex flex-col items-center gap-2 shadow-md"
-              style={{ background: item.gradient, minHeight: 155 }}
+              className="rounded-3xl p-6 flex flex-col items-center gap-2"
+              style={{
+                background: item.gradient,
+                minHeight: 155,
+                boxShadow: `0 4px 20px ${item.shadow}`,
+                transition: "box-shadow 0.25s ease",
+              }}
             >
               <div className="opacity-95">{item.icon}</div>
               <span className="text-white text-xl font-bold text-center leading-snug" style={{ whiteSpace: "pre-line" }}>
                 {item.label}
               </span>
-              <span className="text-white text-sm font-medium text-center" style={{ opacity: 0.6 }}>
+              <span className="text-white text-sm font-medium text-center" style={{ opacity: 0.65 }}>
                 {item.description}
               </span>
             </motion.button>
           ))}
         </div>
 
-        {/* Passer la tablette au client */}
+        {/* Passer la tablette au client — CTA principal */}
         <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.28 }}
           whileTap={{ scale: 0.98 }}
+          whileHover={{ y: -3 }}
           onClick={() => { lockSession(); router.push("/client"); }}
-          className="w-full rounded-2xl px-6 py-5 flex items-center justify-between mb-5"
+          className="w-full rounded-3xl px-6 py-6 flex items-center justify-between mb-5"
           style={{
-            background: "linear-gradient(135deg, rgba(28,11,98,0.85) 0%, rgba(83,49,208,0.55) 100%)",
-            border: "1.5px solid rgba(155,150,218,0.4)",
-            boxShadow: "0 4px 24px rgba(83,49,208,0.25)",
+            background: "linear-gradient(135deg, #3b1fa8 0%, #5331D0 55%, #7B5CE5 100%)",
+            border: "1.5px solid rgba(255,255,255,0.18)",
+            boxShadow: "0 8px 36px rgba(83,49,208,0.45), 0 0 0 1px rgba(83,49,208,0.2)",
+            transition: "box-shadow 0.25s ease",
           }}
         >
-          <div className="flex items-center gap-4">
-            <div className="rounded-xl flex items-center justify-center" style={{ width: 44, height: 44, background: "rgba(83,49,208,0.5)", flexShrink: 0 }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <div className="flex items-center gap-5">
+            <div
+              className="rounded-2xl flex items-center justify-center"
+              style={{ width: 56, height: 56, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", flexShrink: 0 }}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
                 <rect x="5" y="2" width="14" height="20" rx="2" stroke="white" strokeWidth="2" />
-                <circle cx="12" cy="18" r="1.2" fill="white" />
-                <path d="M9 6h6M9 9.5h4" stroke="white" strokeWidth="1.7" strokeLinecap="round" />
+                <circle cx="12" cy="18" r="1.5" fill="white" />
+                <path d="M9 6h6M9 9.5h4" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
             </div>
             <div className="text-left">
-              <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>
+              <p className="text-xl font-black leading-tight" style={{ color: "#FFFFFF" }}>
                 Passer la tablette au client
               </p>
-              <p className="text-sm mt-0.5" style={{ color: "#C4C1EA" }}>
-                Scan ordonnance &amp; mutuelle · Questionnaire · Montures
+              <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
+                Ordonnance · Mutuelle · Questionnaire · Montures
               </p>
             </div>
           </div>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ color: "#9B96DA", flexShrink: 0 }}>
-            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <div
+            className="rounded-xl flex items-center justify-center"
+            style={{ width: 40, height: 40, background: "rgba(255,255,255,0.15)", flexShrink: 0 }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
         </motion.button>
 
         {/* Stats du jour — 4 tuiles */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mb-4">
           <h2 className="text-xl font-bold mb-3" style={{ color: "#374151" }}> Aujourd'hui</h2>
           <div className="grid grid-cols-4 gap-3">
-            <StatTile value={loading ? "…" : s?.devisJour ?? 0} label="Devis établis" color="#e0d9ff" bg="linear-gradient(135deg, #3b1fa8 0%, #5331D0 100%)" />
-            <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label="Ventes" color="#fce7f3" bg="linear-gradient(135deg, #9d1b6e 0%, #ec4899 100%)" />
-            <StatTile value={loading ? "…" : `${s?.tauxConversionJour ?? 0}%`} label="Conversion" color="#ede9fe" bg="linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%)" />
-            <StatTile value={loading ? "…" : `${s?.panierMoyen ?? 0}€`} label="Panier moyen" color="#dbeafe" bg="linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)" />
+            <StatTile value={loading ? "…" : s?.devisJour ?? 0} label="Devis établis" accent="#5331D0" />
+            <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label="Ventes" accent="#ec4899" />
+            <StatTile value={loading ? "…" : `${s?.tauxConversionJour ?? 0}%`} label="Conversion" accent="#7c3aed" />
+            <StatTile value={loading ? "…" : `${s?.panierMoyen ?? 0}€`} label="Panier moyen" accent="#3b82f6" />
           </div>
         </motion.div>
 
@@ -377,11 +404,24 @@ function DashboardPage() {
   );
 }
 
-function StatTile({ value, label, color, bg }: { value: number | string; label: string; color: string; bg: string }) {
+function StatTile({ value, label, accent }: { value: number | string; label: string; accent: string }) {
   return (
-    <div className="rounded-2xl p-4 flex flex-col items-center text-center" style={{ background: bg }}>
-      <span className="text-3xl font-black" style={{ color }}>{value}</span>
-      <span className="text-sm font-bold mt-1 leading-tight" style={{ color: "rgba(255,255,255,0.85)" }}>{label}</span>
+    <div
+      className="rounded-2xl p-4 flex flex-col"
+      style={{
+        background: "#ffffff",
+        border: "1.5px solid #f1f0f9",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+      }}
+    >
+      <div
+        className="w-7 h-7 rounded-xl flex items-center justify-center mb-3"
+        style={{ background: `${accent}18` }}
+      >
+        <div className="w-2.5 h-2.5 rounded-full" style={{ background: accent }} />
+      </div>
+      <span className="text-3xl font-black leading-none" style={{ color: "#111827" }}>{value}</span>
+      <span className="text-xs font-semibold mt-1.5 leading-tight" style={{ color: "#9ca3af" }}>{label}</span>
     </div>
   );
 }
