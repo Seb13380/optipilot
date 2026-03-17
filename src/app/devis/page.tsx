@@ -76,6 +76,9 @@ export default function DevisPage() {
   const [stockPanelOpen, setStockPanelOpen] = useState(false);
   const [stockSearch, setStockSearch] = useState("");
 
+  // Saisie manuelle monture (bridge non connecté)
+  const [montureManuelle, setMontureManuelle] = useState({ fabricant: "", marque: "", modele: "", calibreOeil: "", calibrePont: "", calibreBranche: "" });
+
   useEffect(() => {
     const offreRaw = localStorage.getItem("optipilot_offre_selectionnee");
     const clientRaw = localStorage.getItem("optipilot_client");
@@ -614,9 +617,102 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                         <span className="text-sm" style={{ color: "#9B96DA" }}>Chargement du stock…</span>
                       </div>
                     ) : monturesStock.length === 0 ? (
-                      <p className="text-sm text-center py-5 px-4" style={{ color: "rgba(155,150,218,0.6)" }}>
-                        Bridge non connecté — saisissez le prix manuellement dans le devis
-                      </p>
+                      <div className="p-4">
+                        <p className="text-xs font-semibold mb-3" style={{ color: "#9B96DA" }}>
+                          Saisie manuelle — bridge Optimum non connecté
+                        </p>
+                        <div className="flex flex-col gap-2.5">
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Fabricant</label>
+                              <input
+                                value={montureManuelle.fabricant}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, fabricant: e.target.value }))}
+                                placeholder="ex: Luxottica"
+                                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Marque</label>
+                              <input
+                                value={montureManuelle.marque}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, marque: e.target.value }))}
+                                placeholder="ex: Ray-Ban"
+                                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Modèle / Référence</label>
+                            <input
+                              value={montureManuelle.modele}
+                              onChange={(e) => setMontureManuelle((p) => ({ ...p, modele: e.target.value }))}
+                              placeholder="ex: Wayfarer RB2140"
+                              className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                              style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Taille — calibre œil / pont / branche</label>
+                            <div className="flex gap-2">
+                              <input
+                                value={montureManuelle.calibreOeil}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, calibreOeil: e.target.value }))}
+                                placeholder="52"
+                                className="w-1/3 px-3 py-2 rounded-lg text-sm text-center outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                              <input
+                                value={montureManuelle.calibrePont}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, calibrePont: e.target.value }))}
+                                placeholder="18"
+                                className="w-1/3 px-3 py-2 rounded-lg text-sm text-center outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                              <input
+                                value={montureManuelle.calibreBranche}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, calibreBranche: e.target.value }))}
+                                placeholder="145"
+                                className="w-1/3 px-3 py-2 rounded-lg text-sm text-center outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Tarif (€)</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={prixMonture}
+                                onChange={(e) => setPrixMonture(Math.max(0, parseInt(e.target.value) || 0))}
+                                className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                              <span className="text-sm font-bold" style={{ color: "#9B96DA" }}>€</span>
+                              <button
+                                onClick={() => {
+                                  if (!montureManuelle.marque) return;
+                                  const taille = [montureManuelle.calibreOeil, montureManuelle.calibrePont, montureManuelle.calibreBranche].filter(Boolean).join("-");
+                                  const reference = [montureManuelle.modele, montureManuelle.fabricant].filter(Boolean).join(" · ");
+                                  setMontureSelectionnee({ id: -1, marque: montureManuelle.marque, reference, couleur: taille || undefined, prix: prixMonture });
+                                  setStockPanelOpen(false);
+                                }}
+                                disabled={!montureManuelle.marque}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold"
+                                style={{
+                                  background: montureManuelle.marque ? "linear-gradient(135deg, #5331D0, #7c3aed)" : "rgba(83,49,208,0.2)",
+                                  color: montureManuelle.marque ? "#FDFDFE" : "rgba(155,150,218,0.4)",
+                                }}
+                              >
+                                Valider
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <div className="max-h-52 overflow-y-auto">
                         {monturesStock
