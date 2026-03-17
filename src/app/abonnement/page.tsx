@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 
 interface User {
   nom: string;
@@ -92,6 +93,7 @@ export default function AbonnementPage() {
   }
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         showBack
@@ -317,5 +319,6 @@ export default function AbonnementPage() {
 
       </main>
     </div>
+    </OpticianGuard>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { io, Socket } from "socket.io-client";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 import type { OffreVerre } from "@/lib/recommandation";
 
 interface ClientInfo {
@@ -383,6 +384,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
   }
 
   return (
+      <OpticianGuard>
       <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         title="Votre Devis"
@@ -1058,6 +1060,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
         </div>
       </main>
     </div>
+    </OpticianGuard>
   );
 }
 

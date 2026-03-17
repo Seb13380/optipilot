@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import OpticianGuard from "@/components/OpticianGuard";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface MutuelleData {
@@ -261,6 +262,7 @@ export default function NouveauClientPage() {
   }
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen px-4 py-8">
       <div className="flex items-center gap-4 mb-6 max-w-2xl mx-auto">
         <button onClick={() => router.back()} className="text-2xl" style={{ color: "#9B96DA" }}>←</button>
@@ -490,6 +492,6 @@ export default function NouveauClientPage() {
 
       </AnimatePresence>
     </div>
+    </OpticianGuard>
   );
 }
-

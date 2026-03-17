@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 
 interface Relance {
   id: string;
@@ -171,6 +172,7 @@ export default function RelancesPage() {
   const selectedRelance = relances.find((r) => r.id === selected);
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader title="Relances" showBack onBack={() => router.push("/dashboard")} />
 
@@ -396,5 +398,6 @@ export default function RelancesPage() {
         )}
       </AnimatePresence>
     </div>
+    </OpticianGuard>
   );
 }

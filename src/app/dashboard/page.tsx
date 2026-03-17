@@ -3,6 +3,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
+import { lockSession } from "@/lib/opticianAuth";
 
 interface Stats {
   devisJour: number;
@@ -237,7 +239,7 @@ function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.28 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => router.push("/client")}
+          onClick={() => { lockSession(); router.push("/client"); }}
           className="w-full rounded-2xl px-6 py-5 flex items-center justify-between mb-5"
           style={{
             background: "linear-gradient(135deg, rgba(28,11,98,0.85) 0%, rgba(83,49,208,0.55) 100%)",
@@ -567,8 +569,10 @@ function OpportunitesSansStats({
 
 export default function DashboardPageWrapper() {
   return (
-    <Suspense fallback={null}>
-      <DashboardPage />
-    </Suspense>
+    <OpticianGuard>
+      <Suspense fallback={null}>
+        <DashboardPage />
+      </Suspense>
+    </OpticianGuard>
   );
 }

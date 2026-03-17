@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -899,6 +900,7 @@ export default function RapprochementsPage() {
   }
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col pb-8">
       <OptiPilotHeader
         title="Rapprochements"
@@ -1060,5 +1062,6 @@ export default function RapprochementsPage() {
         )}
       </AnimatePresence>
     </div>
+    </OpticianGuard>
   );
 }

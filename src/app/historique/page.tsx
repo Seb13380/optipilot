@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 
 interface DevisItem {
   id: string;
@@ -74,6 +75,7 @@ export default function HistoriquePage() {
   };
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         title="Historique"
@@ -232,5 +234,6 @@ export default function HistoriquePage() {
         </div>
       </main>
     </div>
+    </OpticianGuard>
   );
 }

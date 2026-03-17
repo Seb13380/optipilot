@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
+import { getStoredPin, savePin } from "@/lib/opticianAuth";
 
 interface ConfigMagasin {
   nom: string;
@@ -63,18 +65,24 @@ const RESEAUX_OPTIQUES = [
 ];
 
 const TABS = [
-  { id: "magasin",  label: "Magasin" },
-  { id: "reseaux",  label: "Réseaux" },
-  { id: "verriers", label: "Verriers" },
-  { id: "relances", label: "Relances" },
-  { id: "bridge",   label: "Bridge" },
-  { id: "compte",   label: "Compte" },
+  { id: "magasin",   label: "Magasin" },
+  { id: "reseaux",   label: "Réseaux" },
+  { id: "verriers",  label: "Verriers" },
+  { id: "relances",  label: "Relances" },
+  { id: "bridge",    label: "Bridge" },
+  { id: "compte",    label: "Compte" },
+  { id: "securite",  label: "Sécurité" },
 ];
 
 export default function ConfigPage() {
   const router = useRouter();
   const [tab, setTab] = useState("magasin");
   const [toast, setToast] = useState<string | null>(null);
+  // ── État onglet Sécurité ──
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [pinMsg, setPinMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [accountUser, setAccountUser] = useState<{ id?: string; nom: string; email: string; role: string; plan?: string } | null>(null);
   const [editNom, setEditNom] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -183,6 +191,7 @@ export default function ConfigPage() {
   }
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader title="Configuration" showBack onBack={() => router.push("/dashboard")} />
 
@@ -827,6 +836,119 @@ export default function ConfigPage() {
             </motion.div>
           )}
 
+          {/* ── ONGLET SÉCURITÉ ── */}
+          {tab === "securite" && (
+            <motion.div key="securite" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <Card>
+                <CardTitle>Code PIN opticien</CardTitle>
+                <p className="text-base mt-2 mb-6" style={{ color: "rgba(155,150,218,0.65)" }}>
+                  Ce code à 4 chiffres protège l&apos;accès aux pages opticien (tableau de bord, config, devis...). Il est demandé dès que la tablette a été passée au client.
+                </p>
+
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: "#9B96DA" }}>Code actuel</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={currentPin}
+                      onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full px-4 py-3 rounded-xl text-lg tracking-[0.5em] text-center font-bold"
+                      style={{
+                        background: "rgba(83,49,208,0.12)",
+                        border: "1px solid rgba(83,49,208,0.35)",
+                        color: "#FDFDFE",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: "#9B96DA" }}>Nouveau code (4 chiffres)</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full px-4 py-3 rounded-xl text-lg tracking-[0.5em] text-center font-bold"
+                      style={{
+                        background: "rgba(83,49,208,0.12)",
+                        border: "1px solid rgba(83,49,208,0.35)",
+                        color: "#FDFDFE",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: "#9B96DA" }}>Confirmer le nouveau code</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full px-4 py-3 rounded-xl text-lg tracking-[0.5em] text-center font-bold"
+                      style={{
+                        background: "rgba(83,49,208,0.12)",
+                        border: "1px solid rgba(83,49,208,0.35)",
+                        color: "#FDFDFE",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+
+                  {pinMsg && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm text-center font-semibold"
+                      style={{ color: pinMsg.ok ? "#a855f7" : "#ef4444" }}
+                    >
+                      {pinMsg.text}
+                    </motion.p>
+                  )}
+
+                  <SaveButton
+                    onClick={() => {
+                      const stored = getStoredPin();
+                      if (currentPin !== stored) {
+                        setPinMsg({ text: "Code actuel incorrect.", ok: false });
+                        setTimeout(() => setPinMsg(null), 3000);
+                        return;
+                      }
+                      if (newPin.length !== 4) {
+                        setPinMsg({ text: "Le nouveau code doit contenir exactement 4 chiffres.", ok: false });
+                        setTimeout(() => setPinMsg(null), 3000);
+                        return;
+                      }
+                      if (newPin !== confirmPin) {
+                        setPinMsg({ text: "Les deux codes ne correspondent pas.", ok: false });
+                        setTimeout(() => setPinMsg(null), 3000);
+                        return;
+                      }
+                      savePin(newPin);
+                      setPinMsg({ text: "Code PIN mis à jour avec succès.", ok: true });
+                      setCurrentPin(""); setNewPin(""); setConfirmPin("");
+                      setTimeout(() => setPinMsg(null), 4000);
+                    }}
+                    label="Changer le code PIN"
+                  />
+                </div>
+
+                <div className="mt-6 pt-4" style={{ borderTop: "1px solid rgba(83,49,208,0.25)" }}>
+                  <p className="text-xs" style={{ color: "rgba(155,150,218,0.55)" }}>
+                    Code par défaut : <strong style={{ color: "rgba(167,139,250,0.7)" }}>1234</strong> — modifiez-le dès votre première utilisation.
+                    Le code est stocké localement sur cet appareil.
+                  </p>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
@@ -851,6 +973,7 @@ export default function ConfigPage() {
         )}
       </AnimatePresence>
     </div>
+    </OpticianGuard>
   );
 }
 

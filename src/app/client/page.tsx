@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { checkPin, unlockSession } from "@/lib/opticianAuth";
 
 const ACTIONS = [
   {
@@ -86,9 +87,9 @@ export default function ClientPage() {
     setPin(next);
     if (next.length === 4) {
       setTimeout(() => {
-        const saved = localStorage.getItem("optipilot_client_pin") || "1234";
-        if (next === saved) {
+        if (checkPin(next)) {
           setPinSuccess(true);
+          unlockSession();
           setTimeout(() => router.push("/dashboard"), 600);
         } else {
           setPinError(true);

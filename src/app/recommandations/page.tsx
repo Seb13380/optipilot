@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 import type { OffreVerre, RecommandationResult } from "@/lib/recommandation";
 import { calculerRecommandations, getCategorieCorrection } from "@/lib/recommandation";
 import { repondreQuestion, questionsSuggerees, type ContexteClient, type ReponseConseiller } from "@/lib/conseillerOpticien";
@@ -214,6 +215,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
   };
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         title="Recommandations OptiPilot"
@@ -704,5 +706,6 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
         ) : null}
       </main>
     </div>
+    </OpticianGuard>
   );
 }
