@@ -13,6 +13,66 @@ export interface OrdonnanceData {
   ogAxe?: number;
 }
 
+// ─── Transposition en cylindre positif ────────────────────────────────────────
+// En notation cyl+, la référence est le méridien le moins fort.
+// Utile pour lire la puissance la plus élevée : c'est S_pos + C_pos (= S original).
+export interface OeilTranspose {
+  sphere: number;   // sphère en cyl+
+  cylindre: number; // cylindre positif
+  axe: number;      // axe transposé (± 90°)
+  puissanceMin: number;  // méridien moins fort = sphere en cyl+
+  puissanceMax: number;  // méridien le plus fort = sphere + cylindre = sph original
+}
+
+export function transposerCylindrePositif(sphere: number, cylindre: number, axe: number): OeilTranspose {
+  if (cylindre >= 0) {
+    // Déjà en cyl+
+    return {
+      sphere,
+      cylindre,
+      axe,
+      puissanceMin: sphere,
+      puissanceMax: sphere + cylindre,
+    };
+  }
+  // Transposition : S_pos = S + C, C_pos = -C, Axe_pos = (Axe + 90) % 180
+  const spherePos = sphere + cylindre;
+  const cylindrePos = -cylindre;
+  const axePos = axe >= 90 ? axe - 90 : axe + 90;
+  return {
+    sphere: spherePos,
+    cylindre: cylindrePos,
+    axe: axePos,
+    puissanceMin: spherePos,        // méridien le moins fort
+    puissanceMax: spherePos + cylindrePos, // = sphere original
+  };
+}
+
+// Puissance méridienne maximale d'un oeil (valeur absolue du méridien le plus fort)
+function puissanceMaxOeil(sphere: number, cylindre: number): number {
+  const meridienA = Math.abs(sphere);
+  const meridienB = Math.abs(sphere + cylindre);
+  return Math.max(meridienA, meridienB);
+}
+
+// Puissance max sur les 2 yeux
+function getPuissanceMax(ordo: OrdonnanceData): number {
+  const od = puissanceMaxOeil(ordo.odSphere || 0, ordo.odCylindre || 0);
+  const og = puissanceMaxOeil(ordo.ogSphere || 0, ordo.ogCylindre || 0);
+  return Math.max(od, og);
+}
+
+// Indice minimum recommandé selon puissance maximale et type de monture
+// Règle : puissance <= 2 → 1.5 (sauf percée/nylor → 1.59), 2–4 → 1.6, 4–6 → 1.67, >6 → 1.74
+function getRecommendedIndice(puissanceMax: number, preferenceMonture?: string): number {
+  const montureSensible = preferenceMonture === "percee" || preferenceMonture === "nylon";
+  if (puissanceMax > 6) return 1.74;
+  if (puissanceMax > 4) return 1.67;
+  if (puissanceMax > 2) return 1.6;
+  // Percée / nylor : même pour les faibles corrections, on évite 1.5 fragile
+  return montureSensible ? 1.59 : 1.5;
+}
+
 export interface QuestionnaireData {
   tempsEcran?: number; // heures/jour
   sport?: boolean;
@@ -58,6 +118,15 @@ export interface RecommandationResult {
     indiceRecommande: number;
   };
   conseilsMonture: string[];
+  transpositions: {
+    od: OeilTranspose;
+    og: OeilTranspose;
+  };
+  puissancesMax: {
+    od: number;
+    og: number;
+    max: number;
+  };
 }
 
 // Catégorie de correction telle que définie par la réforme 100% Santé
@@ -78,13 +147,6 @@ export function getCategorieCorrection(ordo: OrdonnanceData): CategorieCorrectio
   return { isProgressif, isForteCorrectionUnifocal, isForteCorrectionProgressif };
 }
 
-function getSphereMax(ordo: OrdonnanceData): number {
-  return Math.max(
-    Math.abs(ordo.odSphere || 0),
-    Math.abs(ordo.ogSphere || 0)
-  );
-}
-
 function getAdditionMax(ordo: OrdonnanceData): number {
   return Math.max(ordo.odAddition || 0, ordo.ogAddition || 0);
 }
@@ -93,11 +155,21 @@ function needsProgressive(ordo: OrdonnanceData): boolean {
   return getAdditionMax(ordo) > 0;
 }
 
-function getRecommendedIndice(sphere: number): number {
-  if (sphere > 6) return 1.74;
-  if (sphere > 4) return 1.67;
-  if (sphere > 2) return 1.6;
-  return 1.5;
+// Échelons d'indices commerciaux disponibles (du plus épais au plus fin)
+const INDICES: number[] = [1.5, 1.59, 1.6, 1.67, 1.74];
+function descendreIndice(indice: number): number {
+  const i = INDICES.indexOf(indice);
+  return i > 0 ? INDICES[i - 1] : INDICES[0];
+}
+function monterIndice(indice: number): number {
+  const i = INDICES.indexOf(indice);
+  return i >= 0 && i < INDICES.length - 1 ? INDICES[i + 1] : INDICES[INDICES.length - 1];
+}
+// Trouve l'indice commercial le plus proche dans la liste
+function normaliserIndice(indice: number): number {
+  return INDICES.reduce((prev, curr) =>
+    Math.abs(curr - indice) < Math.abs(prev - indice) ? curr : prev
+  );
 }
 
 export function calculerRecommandations(
@@ -105,12 +177,28 @@ export function calculerRecommandations(
   questionnaire: QuestionnaireData,
   remboursementMutuelle: { unifocal: number; progressif: number }
 ): RecommandationResult {
-  const sphereMax = getSphereMax(ordo);
   const addition = getAdditionMax(ordo);
   const progressive = needsProgressive(ordo);
-  const indiceMin = getRecommendedIndice(sphereMax);
   const tempsEcran = questionnaire.tempsEcran || 0;
   const categorie = getCategorieCorrection(ordo);
+  const preferenceM = questionnaire.preferenceMonture || "";
+
+  // Puissance méridienne max (tient compte des 2 axes)
+  const puissanceMax = getPuissanceMax(ordo);
+
+  // Indice minimum basé sur la vraie puissance max
+  const indiceMin = normaliserIndice(getRecommendedIndice(puissanceMax, preferenceM));
+  // Échelons pour les 3 offres
+  const indiceEssentiel = descendreIndice(indiceMin); // échelon inférieur (plus épais, moins cher)
+  const indiceConfort = indiceMin;                    // indice optimum
+  const indicePremium = monterIndice(indiceMin);       // échelon supérieur (plus fin, plus cher)
+
+  // Transposition cyl+ pour chaque oeil (utile pour affichage opticien)
+  const odT = transposerCylindrePositif(ordo.odSphere || 0, ordo.odCylindre || 0, ordo.odAxe || 0);
+  const ogT = transposerCylindrePositif(ordo.ogSphere || 0, ordo.ogCylindre || 0, ordo.ogAxe || 0);
+
+  // On garde aussi la sphère max classique pour d'autres calculs internes
+  const sphereMax = Math.max(Math.abs(ordo.odSphere || 0), Math.abs(ordo.ogSphere || 0));
 
   const traitements: string[] = [];
   const argumentaireGlobal: string[] = [];
@@ -200,7 +288,7 @@ export function calculerRecommandations(
       verrier: "Essilor",
       gamme: "Crizal Easy",
       type: typeVerre,
-      indice: parseFloat(Math.max(1.5, indiceMin - 0.1).toFixed(2)),
+      indice: indiceEssentiel,
       traitement: progressive ? "antireflet_standard" : "antireflet_standard",
       classe100ps: "A",
       prixVerres: baseEssentiel,
@@ -220,7 +308,7 @@ export function calculerRecommandations(
       verrier: "Hoya",
       gamme: "Hilux 1.6",
       type: typeVerre,
-      indice: parseFloat(Math.max(1.6, indiceMin).toFixed(2)),
+      indice: indiceConfort,
       traitement: "antireflet_premium",
       classe100ps: "B",
       prixVerres: baseConfort,
@@ -241,7 +329,7 @@ export function calculerRecommandations(
       verrier: "Zeiss",
       gamme: progressive ? "Individual 2" : "Single Vision ClearView",
       type: typeVerre,
-      indice: parseFloat(Math.max(1.67, indiceMin + 0.07).toFixed(2)),
+      indice: indicePremium,
       traitement: "duravision_platinum",
       classe100ps: "B",
       prixVerres: basePremium,
@@ -302,15 +390,14 @@ export function calculerRecommandations(
     alerteAmincis = {
       titre: forte ? "Verres amincis fortement recommandés" : "Verres amincis conseillés",
       message: forte
-        ? `Votre correction (sphère ${sphereMax.toFixed(2)}) nécessite un indice ${indiceMin} pour des verres fins et esthétiques. L'offre Essentiel (indice 1.5) produira des verres nettement plus épais — nous recommandons au minimum l'offre Confort.`
-        : `Avec une sphère de ${sphereMax.toFixed(2)}, un indice ${indiceMin} est conseillé pour un résultat optimal. L'offre Essentiel (indice 1.5) reste possible mais ses verres seront légèrement plus épais.`,
+        ? `La puissance maximale sur vos méridiens est de ${puissanceMax.toFixed(2)} D, ce qui nécessite un indice ${indiceMin} pour des verres fins et esthétiques. L'offre Essentiel produira des verres nettement plus épais — nous recommandons au minimum l'offre Confort.`
+        : `La puissance maximale sur vos méridiens est de ${puissanceMax.toFixed(2)} D. Un indice ${indiceMin} est conseillé pour un résultat optimal. L'offre Essentiel restera un peu plus épaisse.`,
       indiceRecommande: indiceMin,
     };
   }
 
   // ── Conseils spécifiques à la monture ─────────────────────────────────────
   const conseilsMonture: string[] = [];
-  const preferenceM = questionnaire.preferenceMonture || "";
   const hasVerresPositifs = (ordo.odSphere || 0) > 0 || (ordo.ogSphere || 0) > 0;
 
   if (preferenceM === "percee" || preferenceM === "nylon") {
@@ -338,5 +425,11 @@ export function calculerRecommandations(
     secondePaire,
     alerteAmincis,
     conseilsMonture,
+    transpositions: { od: odT, og: ogT },
+    puissancesMax: {
+      od: puissanceMaxOeil(ordo.odSphere || 0, ordo.odCylindre || 0),
+      og: puissanceMaxOeil(ordo.ogSphere || 0, ordo.ogCylindre || 0),
+      max: puissanceMax,
+    },
   };
 }

@@ -464,6 +464,51 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
               </motion.div>
             )}
 
+            {/* Bloc info opticien : puissances méridionales + transpositions cyl+ */}
+            {result.transpositions && result.puissancesMax && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.41 }}
+                className="mt-4 p-5 rounded-2xl"
+                style={{ background: "rgba(83,49,208,0.10)", border: "1.5px solid rgba(124,58,237,0.45)" }}
+              >
+                <p className="text-sm font-bold mb-3 uppercase tracking-widest" style={{ color: "#a78bfa" }}>
+                  Données opticien — puissances méridionales
+                </p>
+                <div className="flex flex-col gap-2 text-sm" style={{ color: "rgba(167,139,250,0.9)", fontFamily: "monospace" }}>
+                  <div className="flex gap-2 items-start">
+                    <span className="shrink-0 font-bold" style={{ color: "#c084fc" }}>OD</span>
+                    <span>
+                      Puissance max : <strong>{result.puissancesMax.od.toFixed(2)} D</strong>
+                      {" · "}cyl+ : {result.transpositions.od.sphere >= 0 ? "+" : ""}{result.transpositions.od.sphere.toFixed(2)}
+                      {" ("}
+                      {result.transpositions.od.cylindre >= 0 ? "+" : ""}{result.transpositions.od.cylindre.toFixed(2)}
+                      {") "}
+                      {result.transpositions.od.axe}°
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <span className="shrink-0 font-bold" style={{ color: "#c084fc" }}>OG</span>
+                    <span>
+                      Puissance max : <strong>{result.puissancesMax.og.toFixed(2)} D</strong>
+                      {" · "}cyl+ : {result.transpositions.og.sphere >= 0 ? "+" : ""}{result.transpositions.og.sphere.toFixed(2)}
+                      {" ("}
+                      {result.transpositions.og.cylindre >= 0 ? "+" : ""}{result.transpositions.og.cylindre.toFixed(2)}
+                      {") "}
+                      {result.transpositions.og.axe}°
+                    </span>
+                  </div>
+                  <div className="mt-1 pt-2" style={{ borderTop: "1px solid rgba(124,58,237,0.3)" }}>
+                    <span style={{ color: "#9B96DA" }}>
+                      Puissance retenue pour l&apos;indice : <strong style={{ color: "#a78bfa" }}>{result.puissancesMax.max.toFixed(2)} D</strong>
+                      {" → "}indice recommandé : <strong style={{ color: "#e879f9" }}>{result.indiceMin}</strong>
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {/* Bouton comparateur */}
             <motion.button
               initial={{ opacity: 0, y: 10 }}
