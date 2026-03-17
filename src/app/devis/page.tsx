@@ -87,6 +87,11 @@ export default function DevisPage() {
   const [clientSearchResults, setClientSearchResults] = useState<{id: string; nom: string; prenom: string; email?: string; mutuelle?: string}[]>([]);
   const [clientSearchLoading, setClientSearchLoading] = useState(false);
   const [emailSentTo, setEmailSentTo] = useState("");
+  const [clientCreateOpen, setClientCreateOpen] = useState(false);
+  const [clientCreateForm, setClientCreateForm] = useState({ prenom: "", nom: "", email: "", tel: ["","","","",""], mutuelle: "", dateNaissance: "", adresse: "", numeroSecu: "" });
+  const [clientCreateLoading, setClientCreateLoading] = useState(false);
+
+  const MUTUELLES = ["","Harmonie Mutuelle","MGEN","Malakoff Humanis","AG2R La Mondiale","Groupama","MAAF","GMF","MAIF","MACIF","Mutuelle de France","Generali","April","Allianz","AXA","Covéa","Swiss Life","Intégrance","Mutuelle des Motards","Smatis","Eovi-MCD","Apicil","Klesia","Pro BTP","Solimut","Amphivia","Autre"];
 
   useEffect(() => {
     const offreRaw = localStorage.getItem("optipilot_offre_selectionnee");
@@ -159,6 +164,29 @@ export default function DevisPage() {
       if (res.ok) setClientSearchResults(await res.json());
     } catch { /* offline */ }
     setClientSearchLoading(false);
+  }
+
+  async function creerClientInline() {
+    if (!clientCreateForm.nom.trim() || !clientCreateForm.prenom.trim()) return;
+    setClientCreateLoading(true);
+    try {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const userRaw = localStorage.getItem("optipilot_user");
+      const magasinId = userRaw ? JSON.parse(userRaw).magasinId : "";
+      const telephone = clientCreateForm.tel.join("");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ prenom: clientCreateForm.prenom, nom: clientCreateForm.nom, email: clientCreateForm.email, telephone, mutuelle: clientCreateForm.mutuelle, dateNaissance: clientCreateForm.dateNaissance || null, adresse: clientCreateForm.adresse || null, numeroSecu: clientCreateForm.numeroSecu || null, magasinId }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        selectionnerClient(created);
+        setClientCreateOpen(false);
+        setClientCreateForm({ prenom: "", nom: "", email: "", tel: ["","","","",""], mutuelle: "", dateNaissance: "", adresse: "", numeroSecu: "" });
+      }
+    } catch { /* offline */ }
+    setClientCreateLoading(false);
   }
 
   function selectionnerClient(c: { id: string; nom: string; prenom: string; email?: string; mutuelle?: string }) {
@@ -693,14 +721,105 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                     <div className="text-center py-2">
                       <p className="text-xs mb-2" style={{ color: "rgba(155,150,218,0.6)" }}>Client introuvable</p>
                       <button
-                        onClick={() => router.push("/nouveau-client")}
+                        onClick={() => { setClientCreateOpen(true); setClientSearchOpen(false); }}
                         className="text-xs px-3 py-1.5 rounded-lg font-semibold"
                         style={{ background: "rgba(83,49,208,0.2)", color: "#9B96DA" }}
                       >
-                        Créer un nouveau client →
+                        + Créer ce client
                       </button>
                     </div>
                   )}
+              </div>
+              )}
+              {clientCreateOpen && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <p className="text-xs font-bold mb-1" style={{ color: "#c084fc" }}>Nouveau client</p>
+                  {/* Prénom / Nom */}
+                  <div className="flex gap-2">
+                    {(["prenom","nom"] as const).map((k) => (
+                      <input key={k} type="text" placeholder={k === "prenom" ? "Prénom *" : "Nom *"}
+                        value={clientCreateForm[k]}
+                        onChange={(e) => setClientCreateForm((f) => ({ ...f, [k]: e.target.value }))}
+                        className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                        style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                      />
+                    ))}
+                  </div>
+                  {/* Email */}
+                  <input type="email" placeholder="Email"
+                    value={clientCreateForm.email}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, email: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                  />
+                  {/* Téléphone — 5 cases de 2 chiffres */}
+                  <div className="flex gap-1 items-center">
+                    <span className="text-xs shrink-0" style={{ color: "#9B96DA" }}>+33</span>
+                    {clientCreateForm.tel.map((v, i) => (
+                      <input key={i} type="text" inputMode="numeric" maxLength={2} value={v}
+                        placeholder="00"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          setClientCreateForm((f) => { const t = [...f.tel]; t[i] = val; return { ...f, tel: t }; });
+                          if (val.length === 2 && i < 4) {
+                            const next = document.getElementById(`tel-create-${i+1}`);
+                            if (next) (next as HTMLInputElement).focus();
+                          }
+                        }}
+                        id={`tel-create-${i}`}
+                        className="w-10 text-center px-1 py-2 rounded-lg text-sm outline-none"
+                        style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                      />
+                    ))}
+                  </div>
+                  {/* Date de naissance */}
+                  <input type="date"
+                    value={clientCreateForm.dateNaissance}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, dateNaissance: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)", colorScheme: "dark" }}
+                  />
+                  {/* Adresse */}
+                  <input type="text" placeholder="Adresse postale"
+                    value={clientCreateForm.adresse}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, adresse: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                  />
+                  {/* Numéro sécu */}
+                  <input type="text" placeholder="N° Sécurité Sociale" maxLength={15}
+                    value={clientCreateForm.numeroSecu}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, numeroSecu: e.target.value.replace(/\D/g, "").slice(0, 15) }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none font-mono"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)", letterSpacing: "0.1em" }}
+                  />
+                  {/* Mutuelle */}
+                  <select
+                    value={clientCreateForm.mutuelle}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, mutuelle: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "rgba(20,10,60,0.95)", color: clientCreateForm.mutuelle ? "#FDFDFE" : "rgba(155,150,218,0.6)", border: "1px solid rgba(83,49,208,0.3)" }}
+                  >
+                    <option value="">Mutuelle…</option>
+                    {MUTUELLES.filter(Boolean).map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={creerClientInline}
+                      disabled={clientCreateLoading || !clientCreateForm.nom || !clientCreateForm.prenom}
+                      className="flex-1 py-2 rounded-lg text-sm font-bold"
+                      style={{ background: "rgba(83,49,208,0.5)", color: "#FDFDFE", opacity: clientCreateLoading ? 0.6 : 1 }}
+                    >
+                      {clientCreateLoading ? "Création…" : "Créer et sélectionner"}
+                    </button>
+                    <button
+                      onClick={() => setClientCreateOpen(false)}
+                      className="px-3 py-2 rounded-lg text-sm"
+                      style={{ background: "rgba(83,49,208,0.1)", color: "#9B96DA" }}
+                    >
+                      Annuler
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

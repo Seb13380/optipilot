@@ -443,21 +443,21 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.38 }}
                 className="mt-4 p-5 rounded-2xl"
-                style={{ background: "rgba(139,92,246,0.08)", border: "1.5px solid rgba(192,132,252,0.45)" }}
+                style={{ background: "rgba(139,92,246,0.50)", border: "2px solid rgba(192,132,252,0.9)" }}
               >
-                <p className="text-base font-bold mb-3" style={{ color: "#c084fc" }}>
+                <p className="text-lg font-bold mb-3" style={{ color: "#e9d5ff" }}>
                   Conseils spécifiques à votre monture
                 </p>
                 <ul className="flex flex-col gap-3">
                   {result.conseilsMonture.map((conseil, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <span
-                        className="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black"
-                        style={{ background: "rgba(192,132,252,0.2)", color: "#c084fc" }}
+                        className="shrink-0 mt-0.5 w-6 h-6 rounded-full flex items-center justify-center text-sm font-black"
+                        style={{ background: "rgba(192,132,252,0.35)", color: "#f3e8ff" }}
                       >
                         {i + 1}
                       </span>
-                      <span className="text-base leading-relaxed" style={{ color: "rgba(192,132,252,0.9)" }}>
+                      <span className="text-base leading-relaxed" style={{ color: "#f3e8ff" }}>
                         {conseil}
                       </span>
                     </li>
@@ -473,12 +473,12 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.41 }}
                 className="mt-4 p-5 rounded-2xl"
-                style={{ background: "rgba(83,49,208,0.10)", border: "1.5px solid rgba(124,58,237,0.45)" }}
+                style={{ background: "rgba(83,49,208,0.55)", border: "2px solid rgba(124,58,237,0.9)" }}
               >
-                <p className="text-sm font-bold mb-3 uppercase tracking-widest" style={{ color: "#a78bfa" }}>
+                <p className="text-base font-bold mb-3 uppercase tracking-widest" style={{ color: "#c4b5fd" }}>
                   Données opticien — puissances méridionales
                 </p>
-                <div className="flex flex-col gap-2 text-sm" style={{ color: "rgba(167,139,250,0.9)", fontFamily: "monospace" }}>
+                <div className="flex flex-col gap-2 text-base" style={{ color: "#ddd6fe", fontFamily: "monospace" }}>
                   <div className="flex gap-2 items-start">
                     <span className="shrink-0 font-bold" style={{ color: "#c084fc" }}>OD</span>
                     <span>
@@ -667,7 +667,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 className="mt-6 rounded-2xl p-6"
-                style={{ background: "rgba(10,3,56,0.75)", border: "1.5px solid rgba(236,72,153,0.4)" }}
+                style={{ background: "rgba(20,5,80,0.95)", border: "2px solid rgba(236,72,153,0.9)" }}
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div
@@ -693,9 +693,9 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 </p>
                 <div
                   className="p-4 rounded-xl"
-                  style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.25)" }}
+                  style={{ background: "rgba(236,72,153,0.18)", border: "1px solid rgba(236,72,153,0.6)" }}
                 >
-                  <p className="text-sm font-bold mb-1" style={{ color: "#f472b6" }}>Conseil opticien</p>
+                  <p className="text-base font-bold mb-1" style={{ color: "#f9a8d4" }}>Conseil opticien</p>
                   <p className="text-base" style={{ color: "#FDFDFE" }}>
                     {result.secondePaire.conseil}
                   </p>
