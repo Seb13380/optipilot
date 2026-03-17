@@ -416,9 +416,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   style={{
                     background:
                       offre.nom === "Essentiel"
-                        ? "#22c55e"
-                        : offre.nom === "Confort"
-                        ? "#5331D0"
+                        ? "#a855f7"
                         : "#5331D0",
                   }}
                 >
@@ -483,8 +481,8 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               {/* Remise */}
               {remise > 0 && (
                 <div className="flex items-center justify-between py-1.5 px-1">
-                  <span className="text-base" style={{ color: "#fb923c" }}>Remise opticien</span>
-                  <span className="text-base font-bold" style={{ color: "#fb923c" }}>-{remise}€</span>
+                  <span className="text-base" style={{ color: "#c084fc" }}>Remise opticien</span>
+                  <span className="text-base font-bold" style={{ color: "#c084fc" }}>-{remise}€</span>
                 </div>
               )}
               {remise > 0 && (
@@ -649,27 +647,27 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
             {/* ─── REMISE OPTICIEN ─── */}
             <div
               className="rounded-2xl p-5 flex items-center gap-4"
-              style={{ background: "#0A0338", border: "1px solid rgba(251,146,60,0.35)" }}
+              style={{ background: "#0A0338", border: "1px solid rgba(192,132,252,0.35)" }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M9.5 9.5h.01M14.5 14.5h.01M9 15L15 9" stroke="#fb923c" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="12" cy="12" r="9" stroke="#fb923c" strokeWidth="2"/>
+                <path d="M9.5 9.5h.01M14.5 14.5h.01M9 15L15 9" stroke="#c084fc" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="12" r="9" stroke="#c084fc" strokeWidth="2"/>
               </svg>
               <div className="flex-1">
-                <p className="text-sm font-bold" style={{ color: "#fb923c" }}>REMISE OPTICIEN</p>
-                <p className="text-xs mt-0.5" style={{ color: "rgba(251,146,60,0.65)" }}>Offre commerciale, promo, fidélité…</p>
+                <p className="text-sm font-bold" style={{ color: "#c084fc" }}>REMISE OPTICIEN</p>
+                <p className="text-xs mt-0.5" style={{ color: "rgba(192,132,252,0.65)" }}>Offre commerciale, promo, fidélité…</p>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-bold" style={{ color: "#fb923c" }}>−</span>
+                <span className="text-xl font-bold" style={{ color: "#c084fc" }}>−</span>
                 <input
                   type="number"
                   min="0"
                   value={remise}
                   onChange={(e) => setRemise(Math.max(0, parseInt(e.target.value) || 0))}
                   className="w-20 text-right px-2 py-1.5 rounded-lg text-lg font-bold outline-none"
-                  style={{ background: "rgba(251,146,60,0.1)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.35)" }}
+                  style={{ background: "rgba(192,132,252,0.1)", color: "#c084fc", border: "1px solid rgba(192,132,252,0.35)" }}
                 />
-                <span className="text-base font-bold" style={{ color: "#fb923c" }}>€</span>
+                <span className="text-base font-bold" style={{ color: "#c084fc" }}>€</span>
               </div>
             </div>
 
@@ -687,11 +685,11 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   style={{
                     padding: "22px 24px",
                     fontSize: "1.125rem",
-                    background: "linear-gradient(135deg, #22c55e, #16a34a)",
-                    boxShadow: "0 6px 28px rgba(34,197,94,0.45)",
+                    background: "linear-gradient(135deg, #5331D0, #7c3aed)",
+                    boxShadow: "0 6px 28px rgba(83,49,208,0.45)",
                   }}
                 >
-                  <span style={{ fontSize: "1.5rem" }}>🎯</span>
+                  <span style={{ fontSize: "1.25rem", lineHeight: 1 }}>►</span>
                   <div className="text-left">
                     <div>Confirmer et obtenir RAC réel</div>
                     <div style={{ fontSize: "0.85rem", opacity: 0.85, fontWeight: 500 }}>Connexion automatique mutuelle</div>
@@ -734,27 +732,27 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   className="rac-card confirmed w-full"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.15)", border: "2px solid rgba(34,197,94,0.5)" }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(139,92,246,0.15)", border: "2px solid rgba(139,92,246,0.5)" }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                     <div>
-                      <p className="text-xl font-bold" style={{ color: "#22c55e" }}>Remboursement confirmé</p>
+                      <p className="text-xl font-bold" style={{ color: "#a78bfa" }}>Remboursement confirmé</p>
                       <p className="text-base" style={{ color: "#9B96DA" }}>{racResult.detail}</p>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 mb-4" style={{ borderTop: "1px solid rgba(34,197,94,0.25)", paddingTop: 16 }}>
+                  <div className="flex flex-col gap-2 mb-4" style={{ borderTop: "1px solid rgba(139,92,246,0.25)", paddingTop: 16 }}>
                     <div className="flex justify-between items-center">
                       <span className="text-base" style={{ color: "#9B96DA" }}>Sécurité Sociale</span>
-                      <span className="text-lg font-bold" style={{ color: "#22c55e" }}>-{racResult.secu}€</span>
+                      <span className="text-lg font-bold" style={{ color: "#a78bfa" }}>-{racResult.secu}€</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-base" style={{ color: "#9B96DA" }}>{client.mutuelle || "Mutuelle"}</span>
-                      <span className="text-lg font-bold" style={{ color: "#22c55e" }}>-{racResult.mutuelle}€</span>
+                      <span className="text-lg font-bold" style={{ color: "#a78bfa" }}>-{racResult.mutuelle}€</span>
                     </div>
                     <div
                       className="flex justify-between items-center p-3 rounded-xl mt-1"
-                      style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.4)" }}
+                      style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.4)" }}
                     >
                       <span className="text-lg font-bold" style={{ color: "#FDFDFE" }}>Votre RAC réel</span>
                       <span className="text-4xl font-black" style={{ color: "#FDFDFE" }}>{racResult.montant}€</span>
@@ -808,10 +806,10 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="py-5 rounded-2xl text-center space-y-1"
-              style={{ background: "rgba(34,197,94,0.12)", border: "2px solid rgba(34,197,94,0.5)" }}
+              style={{ background: "rgba(83,49,208,0.18)", border: "2px solid rgba(139,92,246,0.5)" }}
             >
-              <p className="text-2xl">✅</p>
-              <p className="font-bold text-xl" style={{ color: "#22c55e" }}>Vente confirmée !</p>
+              <p className="text-2xl"></p>
+              <p className="font-bold text-xl" style={{ color: "#a78bfa" }}>Vente confirmée !</p>
               <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
                 Le suivi des remboursements SS &amp; mutuelle a été initialisé automatiquement.
               </p>
@@ -827,8 +825,8 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                 disabled={confirming}
                 className="w-full py-5 rounded-2xl text-white font-bold text-xl flex items-center justify-center gap-3"
                 style={{
-                  background: "linear-gradient(135deg, #22c55e, #16a34a)",
-                  boxShadow: "0 6px 28px rgba(34,197,94,0.4)",
+                  background: "linear-gradient(135deg, #5331D0, #7c3aed)",
+                  boxShadow: "0 6px 28px rgba(83,49,208,0.4)",
                 }}
               >
                 {confirming ? (
@@ -840,7 +838,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   </>
                 ) : (
                   <>
-                    <span style={{ fontSize: "1.5rem" }}>✅</span>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     <div className="text-left">
                       <div>Confirmer la vente</div>
                       <div style={{ fontSize: "0.85rem", opacity: 0.85, fontWeight: 500 }}>

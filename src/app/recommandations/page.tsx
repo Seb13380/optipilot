@@ -208,7 +208,7 @@ export default function RecommandationsPage() {
 };
 
 const COULEURS: Record<string, { bg: string; border: string; badge: string; text: string }> = {
-    Essentiel: { bg: "#071a0e", border: "#22c55e", badge: "#22c55e", text: "#22c55e" },
+    Essentiel: { bg: "#0e0b2c", border: "#e879f9", badge: "#a855f7", text: "#e879f9" },
     Confort:   { bg: "#0e0b2c", border: "#7c5fec", badge: "#5331D0", text: "#a89cf7" },
     Premium:   { bg: "#0e0b2c", border: "#9c5ff7", badge: "#5331D0", text: "#c084fc" },
   };
@@ -365,15 +365,15 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     {offre.nom === "Essentiel" && result.alerteAmincis && (
                       <div
                         className="mb-4 p-3 rounded-xl"
-                        style={{ background: "rgba(251,146,60,0.1)", border: "1.5px solid rgba(251,146,60,0.5)" }}
+                        style={{ background: "rgba(192,132,252,0.1)", border: "1.5px solid rgba(192,132,252,0.5)" }}
                       >
-                        <p className="text-sm font-bold mb-1" style={{ color: "#fb923c" }}>
-                          ⚠️ {result.alerteAmincis.titre}
+                        <p className="text-sm font-bold mb-1" style={{ color: "#c084fc" }}>
+                          ! {result.alerteAmincis.titre}
                         </p>
-                        <p className="text-sm leading-snug" style={{ color: "rgba(251,146,60,0.9)" }}>
+                        <p className="text-sm leading-snug" style={{ color: "rgba(192,132,252,0.9)" }}>
                           {result.alerteAmincis.message}
                         </p>
-                        <p className="text-xs mt-1.5 font-medium" style={{ color: "rgba(251,146,60,0.6)" }}>
+                        <p className="text-xs mt-1.5 font-medium" style={{ color: "rgba(192,132,252,0.6)" }}>
                           Vous pouvez tout de même choisir cette offre — c'est votre décision.
                         </p>
                       </div>
@@ -441,21 +441,21 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.38 }}
                 className="mt-4 p-5 rounded-2xl"
-                style={{ background: "rgba(251,146,60,0.08)", border: "1.5px solid rgba(251,146,60,0.45)" }}
+                style={{ background: "rgba(139,92,246,0.08)", border: "1.5px solid rgba(192,132,252,0.45)" }}
               >
-                <p className="text-base font-bold mb-3" style={{ color: "#fb923c" }}>
-                  ⚠️ Conseils spécifiques à votre monture
+                <p className="text-base font-bold mb-3" style={{ color: "#c084fc" }}>
+                  Conseils spécifiques à votre monture
                 </p>
                 <ul className="flex flex-col gap-3">
                   {result.conseilsMonture.map((conseil, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <span
                         className="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black"
-                        style={{ background: "rgba(251,146,60,0.2)", color: "#fb923c" }}
+                        style={{ background: "rgba(192,132,252,0.2)", color: "#c084fc" }}
                       >
                         {i + 1}
                       </span>
-                      <span className="text-base leading-relaxed" style={{ color: "rgba(251,146,60,0.9)" }}>
+                      <span className="text-base leading-relaxed" style={{ color: "rgba(192,132,252,0.9)" }}>
                         {conseil}
                       </span>
                     </li>
