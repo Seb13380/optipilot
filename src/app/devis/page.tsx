@@ -15,6 +15,17 @@ interface ClientInfo {
   niveauGarantie?: string;
 }
 
+interface MontureStock {
+  id: string | number;
+  marque: string;
+  reference: string;
+  couleur?: string;
+  matiere?: string;
+  genre?: string;
+  prix: number;
+  stock?: number;
+}
+
 type RacStatut = "idle" | "loading" | "confirmed" | "error";
 type OptimumStatut = "idle" | "sending" | "sent" | "waiting_cotation" | "cotation_received" | "error";
 
@@ -53,6 +64,16 @@ export default function DevisPage() {
   const [bridgeUrl, setBridgeUrl] = useState<string | null>(null);
   const [optimumStatut, setOptimumStatut] = useState<OptimumStatut>("idle");
   const [optimumError, setOptimumError] = useState<string | null>(null);
+
+  // Remise opticien
+  const [remise, setRemise] = useState(0);
+
+  // Sélection monture depuis le stock Optimum
+  const [montureSelectionnee, setMontureSelectionnee] = useState<MontureStock | null>(null);
+  const [monturesStock, setMonturesStock] = useState<MontureStock[]>([]);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [stockPanelOpen, setStockPanelOpen] = useState(false);
+  const [stockSearch, setStockSearch] = useState("");
 
   useEffect(() => {
     const offreRaw = localStorage.getItem("optipilot_offre_selectionnee");
@@ -101,7 +122,8 @@ export default function DevisPage() {
   }, []);
 
   const totalVerres = offre?.prixVerres || 0;
-  const totalDevis = prixMonture + totalVerres;
+  const totalBrut = prixMonture + totalVerres;
+  const totalDevis = totalBrut - remise;
   const remboursement = offre ? offre.remboursementSecu + offre.remboursementMutuelle : 0;
   const resteACharge = Math.max(0, totalDevis - remboursement);
 
@@ -189,6 +211,9 @@ export default function DevisPage() {
 
   function copierDonnees() {
     const rac = racResult ? racResult.montant : resteACharge;
+    const ligneMonture = montureSelectionnee
+      ? `${montureSelectionnee.marque} — ${montureSelectionnee.reference} : ${prixMonture}€`
+      : `Monture : ${prixMonture}€`;
     const texte = `DEVIS OPTIPILOT
 Client: ${client.prenom || ""} ${client.nom || ""}
 Date: ${new Date().toLocaleDateString("fr-FR")}
@@ -199,9 +224,9 @@ OG: Sph ${ordonnance.ogSphere || "?"} Cyl ${ordonnance.ogCylindre || "?"} Axe ${
 ADD: ${ordonnance.odAddition || "—"}
 
 DEVIS ${offre?.nom?.toUpperCase()}:
-Monture: ${prixMonture}€
+${ligneMonture}
 Verres (${offre?.verrier} ${offre?.gamme}): ${totalVerres}€
-Total: ${totalDevis}€
+Sous-total: ${totalBrut}€${remise > 0 ? `\nRemise opticien: -${remise}€\nTotal net: ${totalDevis}€` : ""}
 ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.mutuelle}€\nReste à charge RÉEL : ${rac}€` : `Remboursement SS + mutuelle : -${remboursement}€\nReste à charge estimé : ${resteACharge}€`}`;
 
     navigator.clipboard.writeText(texte).then(() => {
@@ -342,6 +367,21 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
     }
   }
 
+  async function chargerStock() {
+    setStockLoading(true);
+    try {
+      const res = await fetch(`/api/montures?prixMax=9999`);
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.montures)) {
+        setMonturesStock(data.montures);
+      }
+    } catch {
+      // Bridge non disponible — saisie manuelle conservée
+    } finally {
+      setStockLoading(false);
+    }
+  }
+
   return (
       <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
@@ -423,8 +463,9 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
             {/* Détail financier */}
             <div className="flex flex-col gap-2">
               <DevisLigne
-                label="Monture"
+                label={montureSelectionnee ? `${montureSelectionnee.marque} — ${montureSelectionnee.reference}` : "Monture"}
                 value={`${prixMonture}€`}
+                sub={montureSelectionnee?.couleur}
                 editable
                 onEdit={(v) => setPrixMonture(parseInt(v) || 0)}
               />
@@ -436,9 +477,26 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               <div className="pt-2" style={{ borderTop: "1px solid rgba(10,3,56,0.8)" }} />
               <DevisLigne
                 label="Sous-total"
-                value={`${totalDevis}€`}
+                value={`${totalBrut}€`}
                 bold
               />
+              {/* Remise */}
+              {remise > 0 && (
+                <div className="flex items-center justify-between py-1.5 px-1">
+                  <span className="text-base" style={{ color: "#fb923c" }}>Remise opticien</span>
+                  <span className="text-base font-bold" style={{ color: "#fb923c" }}>-{remise}€</span>
+                </div>
+              )}
+              {remise > 0 && (
+                <>
+                  <div className="pt-2" style={{ borderTop: "1px solid rgba(10,3,56,0.8)" }} />
+                  <DevisLigne
+                    label="Total net"
+                    value={`${totalDevis}€`}
+                    bold
+                  />
+                </>
+              )}
               <DevisLigne
                 label="Remboursement Sécurité Sociale"
                 value={`${offre?.remboursementSecu || 0}€`}
@@ -493,6 +551,128 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
             transition={{ delay: 0.2 }}
             className="flex flex-col gap-4"
           >
+            {/* ─── SÉLECTION MONTURE STOCK ─── */}
+            <div className="rounded-2xl p-5" style={{ background: "#0A0338", border: "1px solid rgba(83,49,208,0.4)" }}>
+              <p className="section-label mb-3">MONTURE</p>
+              {montureSelectionnee ? (
+                <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: "rgba(83,49,208,0.15)" }}>
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: "#FDFDFE" }}>
+                      {montureSelectionnee.marque} — {montureSelectionnee.reference}
+                    </p>
+                    {montureSelectionnee.couleur && (
+                      <p className="text-xs mt-0.5" style={{ color: "#9B96DA" }}>{montureSelectionnee.couleur}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-base font-bold" style={{ color: "#9B96DA" }}>{montureSelectionnee.prix}€</span>
+                    <button
+                      onClick={() => setMontureSelectionnee(null)}
+                      className="text-xs px-2 py-1 rounded-lg"
+                      style={{ color: "rgba(155,150,218,0.7)", background: "rgba(83,49,208,0.12)" }}
+                    >
+                      Changer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setStockPanelOpen((v) => !v); if (!stockPanelOpen && monturesStock.length === 0) chargerStock(); }}
+                  className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+                  style={{ background: "rgba(83,49,208,0.15)", color: "#9B96DA", border: "1.5px dashed rgba(83,49,208,0.5)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="8" stroke="#9B96DA" strokeWidth="2"/>
+                    <path d="M21 21l-4-4" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Choisir depuis le stock Optimum
+                </button>
+              )}
+              <AnimatePresence>
+                {stockPanelOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-3 rounded-xl overflow-hidden"
+                    style={{ border: "1px solid rgba(83,49,208,0.3)", background: "rgba(10,3,56,0.9)" }}
+                  >
+                    <div className="p-3 pb-2">
+                      <input
+                        value={stockSearch}
+                        onChange={(e) => setStockSearch(e.target.value)}
+                        placeholder="Rechercher (marque, référence…)"
+                        className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                        style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                      />
+                    </div>
+                    {stockLoading ? (
+                      <div className="flex items-center justify-center py-6 gap-3">
+                        <svg className="animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="#9B96DA" strokeWidth="2.5" strokeDasharray="50" strokeDashoffset="15"/>
+                        </svg>
+                        <span className="text-sm" style={{ color: "#9B96DA" }}>Chargement du stock…</span>
+                      </div>
+                    ) : monturesStock.length === 0 ? (
+                      <p className="text-sm text-center py-5 px-4" style={{ color: "rgba(155,150,218,0.6)" }}>
+                        Bridge non connecté — saisissez le prix manuellement dans le devis
+                      </p>
+                    ) : (
+                      <div className="max-h-52 overflow-y-auto">
+                        {monturesStock
+                          .filter((m) => {
+                            const q = stockSearch.toLowerCase();
+                            return !q || m.marque?.toLowerCase().includes(q) || m.reference?.toLowerCase().includes(q);
+                          })
+                          .slice(0, 30)
+                          .map((m) => (
+                            <button
+                              key={m.id}
+                              onClick={() => { setMontureSelectionnee(m); setPrixMonture(m.prix); setStockPanelOpen(false); setStockSearch(""); }}
+                              className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
+                              style={{ borderTop: "1px solid rgba(83,49,208,0.12)" }}
+                            >
+                              <div>
+                                <p className="text-sm font-bold" style={{ color: "#FDFDFE" }}>{m.marque} — {m.reference}</p>
+                                {m.couleur && <p className="text-xs" style={{ color: "#9B96DA" }}>{m.couleur}</p>}
+                              </div>
+                              <span className="text-sm font-bold ml-4 shrink-0" style={{ color: "#9B96DA" }}>{m.prix}€</span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* ─── REMISE OPTICIEN ─── */}
+            <div
+              className="rounded-2xl p-5 flex items-center gap-4"
+              style={{ background: "#0A0338", border: "1px solid rgba(251,146,60,0.35)" }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M9.5 9.5h.01M14.5 14.5h.01M9 15L15 9" stroke="#fb923c" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="12" r="9" stroke="#fb923c" strokeWidth="2"/>
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-bold" style={{ color: "#fb923c" }}>REMISE OPTICIEN</p>
+                <p className="text-xs mt-0.5" style={{ color: "rgba(251,146,60,0.65)" }}>Offre commerciale, promo, fidélité…</p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-bold" style={{ color: "#fb923c" }}>−</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={remise}
+                  onChange={(e) => setRemise(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-20 text-right px-2 py-1.5 rounded-lg text-lg font-bold outline-none"
+                  style={{ background: "rgba(251,146,60,0.1)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.35)" }}
+                />
+                <span className="text-base font-bold" style={{ color: "#fb923c" }}>€</span>
+              </div>
+            </div>
+
             {/* ─── BLOC RAC TEMPS RÉEL ─── */}
             <AnimatePresence mode="wait">
               {racStatut === "idle" && (

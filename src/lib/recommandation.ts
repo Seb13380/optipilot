@@ -52,6 +52,12 @@ export interface RecommandationResult {
     description: string;
     conseil: string;
   };
+  alerteAmincis?: {
+    titre: string;
+    message: string;
+    indiceRecommande: number;
+  };
+  conseilsMonture: string[];
 }
 
 // Catégorie de correction telle que définie par la réforme 100% Santé
@@ -289,6 +295,40 @@ export function calculerRecommandations(
 
   const secondePaire = questionnaire.typeSport ? SECONDE_PAIRE[questionnaire.typeSport] : undefined;
 
+  // ── Alerte verres amincis ─────────────────────────────────────────────────
+  let alerteAmincis: RecommandationResult["alerteAmincis"];
+  if (indiceMin > 1.5) {
+    const forte = indiceMin >= 1.67;
+    alerteAmincis = {
+      titre: forte ? "Verres amincis fortement recommandés" : "Verres amincis conseillés",
+      message: forte
+        ? `Votre correction (sphère ${sphereMax.toFixed(2)}) nécessite un indice ${indiceMin} pour des verres fins et esthétiques. L'offre Essentiel (indice 1.5) produira des verres nettement plus épais — nous recommandons au minimum l'offre Confort.`
+        : `Avec une sphère de ${sphereMax.toFixed(2)}, un indice ${indiceMin} est conseillé pour un résultat optimal. L'offre Essentiel (indice 1.5) reste possible mais ses verres seront légèrement plus épais.`,
+      indiceRecommande: indiceMin,
+    };
+  }
+
+  // ── Conseils spécifiques à la monture ─────────────────────────────────────
+  const conseilsMonture: string[] = [];
+  const preferenceM = questionnaire.preferenceMonture || "";
+  const hasVerresPositifs = (ordo.odSphere || 0) > 0 || (ordo.ogSphere || 0) > 0;
+
+  if (preferenceM === "percee" || preferenceM === "nylon") {
+    conseilsMonture.push(
+      `Monture ${preferenceM === "percee" ? "percée" : "nylor (demi-cerclée)"} : verres Trivex (indice 1.53) ou Polycarbonate (indice 1.59) recommandés — ces matériaux résistent mieux aux contraintes mécaniques des perçages et du fil, évitant les risques de fissure.`
+    );
+  }
+  if (hasVerresPositifs) {
+    conseilsMonture.push(
+      "Verres positifs (convexes) : un précalibrage est conseillé — le verre est taillé sur mesure avec une épaisseur de centre réduite, diminuant sensiblement le poids et améliorant l'esthétique."
+    );
+    if (preferenceM === "nylon") {
+      conseilsMonture.push(
+        "Nylor + verres positifs : le fil nylor exerce une contrainte sur le bord du verre — un précalibrage est indispensable pour prévenir le gauchissement lié à l'épaisseur des verres positifs."
+      );
+    }
+  }
+
   return {
     typeVerre,
     indiceMin,
@@ -296,5 +336,7 @@ export function calculerRecommandations(
     offres,
     argumentaireGlobal,
     secondePaire,
+    alerteAmincis,
+    conseilsMonture,
   };
 }

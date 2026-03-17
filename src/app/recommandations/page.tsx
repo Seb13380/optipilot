@@ -361,6 +361,24 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                       ))}
                     </div>
 
+                    {/* Alerte amincis — uniquement sur Essentiel si correction lé nécessite un indice supérieur */}
+                    {offre.nom === "Essentiel" && result.alerteAmincis && (
+                      <div
+                        className="mb-4 p-3 rounded-xl"
+                        style={{ background: "rgba(251,146,60,0.1)", border: "1.5px solid rgba(251,146,60,0.5)" }}
+                      >
+                        <p className="text-sm font-bold mb-1" style={{ color: "#fb923c" }}>
+                          ⚠️ {result.alerteAmincis.titre}
+                        </p>
+                        <p className="text-sm leading-snug" style={{ color: "rgba(251,146,60,0.9)" }}>
+                          {result.alerteAmincis.message}
+                        </p>
+                        <p className="text-xs mt-1.5 font-medium" style={{ color: "rgba(251,146,60,0.6)" }}>
+                          Vous pouvez tout de même choisir cette offre — c'est votre décision.
+                        </p>
+                      </div>
+                    )}
+
                     {/* Prix */}
                     <div
                       className="flex items-center justify-between p-4 rounded-2xl"
@@ -415,6 +433,36 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 );
               })}
             </div>
+
+            {/* Conseils spécifiques à la monture (percée, nylor, verres positifs) */}
+            {result.conseilsMonture && result.conseilsMonture.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.38 }}
+                className="mt-4 p-5 rounded-2xl"
+                style={{ background: "rgba(251,146,60,0.08)", border: "1.5px solid rgba(251,146,60,0.45)" }}
+              >
+                <p className="text-base font-bold mb-3" style={{ color: "#fb923c" }}>
+                  ⚠️ Conseils spécifiques à votre monture
+                </p>
+                <ul className="flex flex-col gap-3">
+                  {result.conseilsMonture.map((conseil, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span
+                        className="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black"
+                        style={{ background: "rgba(251,146,60,0.2)", color: "#fb923c" }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="text-base leading-relaxed" style={{ color: "rgba(251,146,60,0.9)" }}>
+                        {conseil}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
 
             {/* Bouton comparateur */}
             <motion.button
