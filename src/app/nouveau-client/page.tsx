@@ -232,6 +232,7 @@ export default function NouveauClientPage() {
         client = await res.json();
       }
       localStorage.setItem("optipilot_client", JSON.stringify(client));
+      localStorage.setItem("optipilot_client_id", client.id || "");
       setStep("done");
       setTimeout(() => router.push("/scanner"), 2000);
     } catch {

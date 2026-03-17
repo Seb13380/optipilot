@@ -353,6 +353,68 @@ app.patch("/api/devis/:id", async (req, res) => {
   }
 });
 
+// ─── Envoi devis par email ────────────────────────────────
+app.post("/api/devis/:id/email", async (req, res) => {
+  try {
+    const devis = await (prisma.devis as any).findUnique({
+      where: { id: req.params.id },
+      include: { client: true },
+    });
+    if (!devis) return res.status(404).json({ error: "Devis non trouvé" });
+
+    const emailTo: string = devis.client?.email ?? req.body.email ?? "";
+    if (!emailTo) return res.status(400).json({ error: "Aucun email pour ce client" });
+
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      // SMTP non configuré — on logue mais on ne bloque pas
+      console.log(`[EMAIL non configuré] Devis ${req.params.id} → ${emailTo}`);
+      return res.json({ ok: true, warn: "SMTP non configuré" });
+    }
+
+    const nodemailer = await import("nodemailer");
+    const transporter = nodemailer.default.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+
+    const offre = (devis.offreChoisie ?? "").replace(/^\w/, (c: string) => c.toUpperCase());
+    const total = Number(devis.totalConfort ?? 0);
+    const rac = Number(devis.racConfort ?? 0);
+    const remSS = Number(devis.remboursementSS ?? 0);
+    const remMut = Number(devis.remboursementMutuelle ?? 0);
+    const prenom = devis.client?.prenom ?? "";
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || "noreply@optipilot.fr",
+      to: emailTo,
+      subject: `Votre devis OptiPilot — Offre ${offre}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:auto;background:#0A0338;color:#FDFDFE;border-radius:16px;padding:32px">
+          <h2 style="color:#9B96DA;margin-top:0">Votre devis OptiPilot</h2>
+          <p>Bonjour ${prenom},</p>
+          <p>Votre opticien vous envoie votre devis <strong>${offre}</strong>.</p>
+          <table style="width:100%;border-collapse:collapse;margin:24px 0">
+            <tr><td style="padding:8px 0;color:#9B96DA">Total</td><td style="text-align:right;font-weight:bold">${total}€</td></tr>
+            <tr><td style="padding:8px 0;color:#9B96DA">Remb. Sécu</td><td style="text-align:right;color:#a78bfa">–${remSS}€</td></tr>
+            <tr><td style="padding:8px 0;color:#9B96DA">Remb. Mutuelle</td><td style="text-align:right;color:#a78bfa">–${remMut}€</td></tr>
+            <tr style="border-top:1px solid rgba(83,49,208,0.4)">
+              <td style="padding:12px 0;font-weight:bold;font-size:18px">Reste à charge</td>
+              <td style="text-align:right;font-weight:900;font-size:24px;color:#a78bfa">${rac}€</td>
+            </tr>
+          </table>
+          <p style="color:rgba(155,150,218,0.6);font-size:12px">Ce devis est valable 30 jours. Les remboursements mutuelles sont donnés à titre indicatif.</p>
+        </div>`,
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[EMAIL]", err);
+    res.status(500).json({ error: "Erreur envoi email" });
+  }
+});
+
 // ─── Stats Dashboard ──────────────────────────────────────
 app.get("/api/stats/:magasinId", async (req, res) => {
   try {

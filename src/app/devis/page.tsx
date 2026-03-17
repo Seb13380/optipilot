@@ -79,6 +79,15 @@ export default function DevisPage() {
   // Saisie manuelle monture (bridge non connecté)
   const [montureManuelle, setMontureManuelle] = useState({ fabricant: "", marque: "", modele: "", calibreOeil: "", calibrePont: "", calibreBranche: "" });
 
+  // Client — email & recherche
+  const [clientEmail, setClientEmail] = useState("");
+  const [emailInputOpen, setEmailInputOpen] = useState(false);
+  const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [clientSearchResults, setClientSearchResults] = useState<{id: string; nom: string; prenom: string; email?: string; mutuelle?: string}[]>([]);
+  const [clientSearchLoading, setClientSearchLoading] = useState(false);
+  const [emailSentTo, setEmailSentTo] = useState("");
+
   useEffect(() => {
     const offreRaw = localStorage.getItem("optipilot_offre_selectionnee");
     const clientRaw = localStorage.getItem("optipilot_client");
@@ -86,7 +95,11 @@ export default function DevisPage() {
     const questRaw = localStorage.getItem("optipilot_questionnaire");
 
     if (offreRaw) setOffre(JSON.parse(offreRaw));
-    if (clientRaw) setClient(JSON.parse(clientRaw));
+    if (clientRaw) {
+      const c = JSON.parse(clientRaw);
+      setClient(c);
+      setClientEmail(c.email || "");
+    }
     if (ordoRaw) setOrdonnance(JSON.parse(ordoRaw));
     if (questRaw) {
       const q = JSON.parse(questRaw);
@@ -131,13 +144,47 @@ export default function DevisPage() {
   const remboursement = offre ? offre.remboursementSecu + offre.remboursementMutuelle : 0;
   const resteACharge = Math.max(0, totalDevis - remboursement);
 
+  async function rechercherClient(q: string) {
+    setClientSearchQuery(q);
+    if (q.length < 2) { setClientSearchResults([]); return; }
+    setClientSearchLoading(true);
+    try {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const userRaw = localStorage.getItem("optipilot_user");
+      const magasin = userRaw ? JSON.parse(userRaw).magasinId : "";
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients/search?nom=${encodeURIComponent(q)}&magasinId=${magasin}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) setClientSearchResults(await res.json());
+    } catch { /* offline */ }
+    setClientSearchLoading(false);
+  }
+
+  function selectionnerClient(c: { id: string; nom: string; prenom: string; email?: string; mutuelle?: string }) {
+    localStorage.setItem("optipilot_client_id", c.id);
+    localStorage.setItem("optipilot_client", JSON.stringify(c));
+    setClient({ nom: c.nom, prenom: c.prenom, email: c.email, mutuelle: c.mutuelle });
+    setClientEmail(c.email || "");
+    setClientSearchOpen(false);
+    setClientSearchQuery("");
+    setClientSearchResults([]);
+  }
+
   async function envoyerDevis() {
+    const emailFinal = clientEmail.trim();
+    if (!emailFinal) { setEmailInputOpen(true); return; }
     setSending(true);
     try {
       const token = localStorage.getItem("optipilot_token") || "";
       const userRaw = localStorage.getItem("optipilot_user");
       const magasin = userRaw ? JSON.parse(userRaw).magasinId : "demo-magasin";
-      const clientId = localStorage.getItem("optipilot_client_id") || "demo";
+      const clientId = localStorage.getItem("optipilot_client_id") || "";
+      if (!clientId) {
+        alert("Veuillez d'abord rechercher et sélectionner le client.");
+        setSending(false);
+        return;
+      }
 
       const montantSS  = racResult ? racResult.secu  : (offre?.remboursementSecu  ?? 0);
       const montantMut = racResult ? racResult.mutuelle : (offre?.remboursementMutuelle ?? 0);
@@ -158,7 +205,19 @@ export default function DevisPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setDevisId(data.id ?? null);
+        const newDevisId = data.id ?? null;
+        setDevisId(newDevisId);
+        // Envoyer le devis par email
+        if (newDevisId) {
+          try {
+            await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${newDevisId}/email`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ email: emailFinal }),
+            });
+          } catch { /* email non bloquant */ }
+        }
+        setEmailSentTo(emailFinal);
       }
     } catch {
       // Mode démo
@@ -554,6 +613,98 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
             transition={{ delay: 0.2 }}
             className="flex flex-col gap-4"
           >
+            {/* ─── CLIENT ─── */}
+            <div className="rounded-2xl p-5" style={{ background: "#0A0338", border: "1px solid rgba(83,49,208,0.4)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="section-label">CLIENT</p>
+                <button
+                  onClick={() => setClientSearchOpen((v) => !v)}
+                  className="text-xs px-3 py-1 rounded-lg font-semibold"
+                  style={{ background: "rgba(83,49,208,0.18)", color: "#9B96DA" }}
+                >
+                  Rechercher
+                </button>
+              </div>
+              {(client.nom || client.prenom) ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>{client.prenom} {client.nom}</p>
+                  {clientEmail ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm" style={{ color: "#9B96DA" }}>{clientEmail}</p>
+                      <button onClick={() => setEmailInputOpen((v) => !v)} className="text-xs" style={{ color: "rgba(155,150,218,0.55)" }}>✏</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setEmailInputOpen(true)}
+                      className="text-xs text-left"
+                      style={{ color: "#e879f9" }}
+                    >
+                      + Ajouter un email (requis pour l'envoi)
+                    </button>
+                  )}
+                  {emailInputOpen && (
+                    <div className="flex gap-2 mt-1">
+                      <input
+                        type="email"
+                        value={clientEmail}
+                        onChange={(e) => setClientEmail(e.target.value)}
+                        placeholder="email@client.fr"
+                        className="flex-1 px-3 py-1.5 rounded-lg text-sm outline-none"
+                        style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.35)" }}
+                        onKeyDown={(e) => e.key === "Enter" && setEmailInputOpen(false)}
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => setEmailInputOpen(false)}
+                        className="px-3 py-1.5 rounded-lg text-sm font-bold"
+                        style={{ background: "rgba(83,49,208,0.25)", color: "#FDFDFE" }}
+                      >
+                        OK
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm" style={{ color: "rgba(155,150,218,0.6)" }}>Aucun client sélectionné</p>
+              )}
+              {clientSearchOpen && (
+                <div className="mt-3">
+                  <input
+                    value={clientSearchQuery}
+                    onChange={(e) => rechercherClient(e.target.value)}
+                    placeholder="Nom du client…"
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none mb-2"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                    autoFocus
+                  />
+                  {clientSearchLoading && <p className="text-xs text-center py-2" style={{ color: "#9B96DA" }}>Recherche…</p>}
+                  {clientSearchResults.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => selectionnerClient(c)}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left mb-1"
+                      style={{ background: "rgba(83,49,208,0.12)", border: "1px solid rgba(83,49,208,0.2)" }}
+                    >
+                      <span className="text-sm font-semibold" style={{ color: "#FDFDFE" }}>{c.prenom} {c.nom}</span>
+                      <span className="text-xs" style={{ color: "#9B96DA" }}>{c.email || "sans email"}</span>
+                    </button>
+                  ))}
+                  {clientSearchQuery.length >= 2 && !clientSearchLoading && clientSearchResults.length === 0 && (
+                    <div className="text-center py-2">
+                      <p className="text-xs mb-2" style={{ color: "rgba(155,150,218,0.6)" }}>Client introuvable</p>
+                      <button
+                        onClick={() => router.push("/nouveau-client")}
+                        className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+                        style={{ background: "rgba(83,49,208,0.2)", color: "#9B96DA" }}
+                      >
+                        Créer un nouveau client →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* ─── SÉLECTION MONTURE STOCK ─── */}
             <div className="rounded-2xl p-5" style={{ background: "#0A0338", border: "1px solid rgba(83,49,208,0.4)" }}>
               <p className="section-label mb-3">MONTURE</p>
@@ -952,7 +1103,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               className="py-4 rounded-2xl text-center font-semibold text-lg"
               style={{ background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "2px solid #22c55e" }}
             >
-              ✓ Devis envoyé par email !
+              ✓ Devis envoyé à {emailSentTo || "(email non renseigné)"}
             </div>
           ) : racStatut !== "confirmed" ? (
             <motion.button
