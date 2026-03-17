@@ -147,7 +147,7 @@ function DashboardPage() {
           <button
             onClick={handleLogout}
             className="text-base font-medium px-4 py-2 rounded-xl"
-            style={{ color: "#DDDAF5", background: "rgba(83,49,208,0.35)" }}
+            style={{ color: "#5331D0", background: "rgba(83,49,208,0.12)" }}
           >
             Quitter
           </button>
@@ -201,10 +201,10 @@ function DashboardPage() {
 
         {/* Salutation */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
-          <h1 className="text-4xl font-black" style={{ color: "#FDFDFE" }}>
+          <h1 className="text-4xl font-black" style={{ color: "#111827" }}>
             Bonjour{user?.nom ? `, ${user.nom.split(" ")[0]}` : ""}
           </h1>
-          <p className="text-xl mt-1" style={{ color: "#C4C1EA" }}>
+          <p className="text-xl mt-1" style={{ color: "#4b5563" }}>
             {user?.magasinNom || "Votre magasin"} • {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </motion.div>
@@ -271,12 +271,12 @@ function DashboardPage() {
 
         {/* Stats du jour — 4 tuiles */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mb-4">
-          <h2 className="text-xl font-bold mb-3" style={{ color: "#DDDAF5" }}> Aujourd'hui</h2>
+          <h2 className="text-xl font-bold mb-3" style={{ color: "#374151" }}> Aujourd'hui</h2>
           <div className="grid grid-cols-4 gap-3">
-            <StatTile value={loading ? "…" : s?.devisJour ?? 0} label="Devis établis" color="#C4C1EA" bg="rgba(83,49,208,0.55)" />
-            <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label="Ventes" color="#4ade80" bg="rgba(34,197,94,0.35)" />
-            <StatTile value={loading ? "…" : `${s?.tauxConversionJour ?? 0}%`} label="Conversion" color="#c4b5fd" bg="rgba(167,139,250,0.35)" />
-            <StatTile value={loading ? "…" : `${s?.panierMoyen ?? 0}€`} label="Panier moyen" color="#93c5fd" bg="rgba(96,165,250,0.35)" />
+            <StatTile value={loading ? "…" : s?.devisJour ?? 0} label="Devis établis" color="#e0d9ff" bg="linear-gradient(135deg, #3b1fa8 0%, #5331D0 100%)" />
+            <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label="Ventes" color="#fce7f3" bg="linear-gradient(135deg, #9d1b6e 0%, #ec4899 100%)" />
+            <StatTile value={loading ? "…" : `${s?.tauxConversionJour ?? 0}%`} label="Conversion" color="#ede9fe" bg="linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%)" />
+            <StatTile value={loading ? "…" : `${s?.panierMoyen ?? 0}€`} label="Panier moyen" color="#dbeafe" bg="linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)" />
           </div>
         </motion.div>
 
@@ -294,7 +294,7 @@ function DashboardPage() {
             <h3 className="text-lg font-bold mb-4" style={{ color: "#FDFDFE" }}>Cette semaine</h3>
             <div className="flex flex-col gap-3">
               <BarStat label="Devis" value={s?.devisSemaine ?? 0} max={20} color="#a78bfa" loading={loading} />
-              <BarStat label="Ventes" value={s?.ventesSemaine ?? 0} max={20} color="#4ade80" loading={loading} />
+              <BarStat label="Ventes" value={s?.ventesSemaine ?? 0} max={20} color="#f472b6" loading={loading} />
               <BarStat label="Nouveaux clients" value={s?.clientsSemaine ?? 0} max={10} color="#93c5fd" loading={loading} />
             </div>
             <div className="mt-4 pt-3" style={{ borderTop: "1px solid rgba(83,49,208,0.4)" }}>
@@ -315,7 +315,7 @@ function DashboardPage() {
             <h3 className="text-lg font-bold mb-4" style={{ color: "#FDFDFE" }}>Clients</h3>
             <div className="flex flex-col gap-4">
               <BigStat value={loading ? "…" : s?.totalClients ?? 0} label="Total clients" color="#93c5fd" />
-              <BigStat value={loading ? "…" : s?.clientsSemaine ?? 0} label="Cette semaine" color="#4ade80" />
+              <BigStat value={loading ? "…" : s?.clientsSemaine ?? 0} label="Cette semaine" color="#f472b6" />
               <BigStat value={loading ? "…" : s?.clientsMois ?? 0} label="Ce mois" color="#c4b5fd" />
             </div>
             <motion.button
@@ -381,7 +381,7 @@ function StatTile({ value, label, color, bg }: { value: number | string; label: 
   return (
     <div className="rounded-2xl p-4 flex flex-col items-center text-center" style={{ background: bg }}>
       <span className="text-3xl font-black" style={{ color }}>{value}</span>
-      <span className="text-sm font-bold mt-1 leading-tight" style={{ color: "#DDDAF5" }}>{label}</span>
+      <span className="text-sm font-bold mt-1 leading-tight" style={{ color: "rgba(255,255,255,0.85)" }}>{label}</span>
     </div>
   );
 }

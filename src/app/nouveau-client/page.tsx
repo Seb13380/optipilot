@@ -266,10 +266,10 @@ export default function NouveauClientPage() {
     <OpticianGuard>
     <div className="page-bg min-h-screen px-4 py-8">
       <div className="flex items-center gap-4 mb-6 max-w-2xl mx-auto">
-        <button onClick={() => router.back()} className="text-2xl" style={{ color: "#9B96DA" }}>←</button>
+        <button onClick={() => router.back()} className="text-2xl" style={{ color: "#5331D0" }}>←</button>
         <div>
-          <h1 className="text-2xl font-black" style={{ color: "#FDFDFE" }}>Nouveau client</h1>
-          <p className="text-sm" style={{ color: "#9B96DA" }}>
+          <h1 className="text-2xl font-black" style={{ color: "#111827" }}>Nouveau client</h1>
+          <p className="text-sm" style={{ color: "#6b7280" }}>
             {step === "scan" && "Scannez la carte mutuelle"}
             {(step === "analyse" || step === "lookup") && "Analyse en cours..."}
             {step === "confirm-existing" && "Client reconnu — confirmez les informations"}

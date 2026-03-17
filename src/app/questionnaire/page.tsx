@@ -130,14 +130,14 @@ export default function QuestionnairePage() {
           whileTap={{ scale: 0.9 }}
           onClick={back}
           className="flex items-center gap-2 font-semibold text-xl"
-          style={{ color: "#9B96DA" }}
+          style={{ color: "#5331D0" }}
         >
           <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-            <path d="M15 19l-7-7 7-7" stroke="#9B96DA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M15 19l-7-7 7-7" stroke="#5331D0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Retour
         </motion.button>
-        <span className="text-lg font-medium" style={{ color: "rgba(155,150,218,0.55)" }}>
+        <span className="text-lg font-medium" style={{ color: "#6b7280" }}>
           {step} / {TOTAL_STEPS}
         </span>
       </div>
@@ -151,7 +151,8 @@ export default function QuestionnairePage() {
         <img
           src="/assets/images/Logo-OptiPilot.png"
           alt="OptiPilot"
-          className="h-16 w-auto object-contain drop-shadow-2xl"
+          className="h-16 w-auto object-contain"
+          style={{ filter: "drop-shadow(0 0 20px rgba(124,58,237,0.6)) drop-shadow(0 0 40px rgba(124,58,237,0.35))" }}
         />
       </motion.div>
 
@@ -159,7 +160,7 @@ export default function QuestionnairePage() {
       <div className="px-6 mb-8">
         <div
           className="w-full h-1 rounded-full overflow-hidden"
-          style={{ background: "rgba(83,49,208,0.25)" }}
+          style={{ background: "rgba(124,58,237,0.15)" }}
         >
           <motion.div
             className="h-full rounded-full"

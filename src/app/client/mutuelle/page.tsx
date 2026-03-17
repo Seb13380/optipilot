@@ -13,7 +13,17 @@ interface MutuelleData {
   organisme?: string | null;
 }
 
-type Step = "camera" | "preview" | "result";
+interface BridgeClient {
+  id: number;
+  civilite?: string;
+  nom: string;
+  prenom: string;
+  telephone?: string;
+  email?: string;
+  mutuelle?: string;
+}
+
+type Step = "camera" | "preview" | "result" | "lookup" | "create";
 
 const STABILITY_THRESHOLD = 8;
 const STABLE_FRAMES_NEEDED = 10;
@@ -36,6 +46,12 @@ export default function ClientMutuellePage() {
   const [autoCapturing, setAutoCapturing] = useState(false);
   const [cameraStarted, setCameraStarted] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupResults, setLookupResults] = useState<BridgeClient[]>([]);
+  const [lookupError, setLookupError] = useState("");
+  const [clientForm, setClientForm] = useState({ telephone: "", email: "", adresse: "" });
+  const [createLoading, setCreateLoading] = useState(false);
 
   function frameDiff(a: ImageData, b: ImageData): number {
     let total = 0;
@@ -100,10 +116,9 @@ export default function ClientMutuellePage() {
   }, [captureFrame]);
 
   const startCamera = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
-      });
+    setCameraError("");
+    const setup = async (constraints: MediaStreamConstraints) => {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -113,10 +128,23 @@ export default function ClientMutuellePage() {
           setTimeout(startStabilityLoop, 800);
         };
       }
+    };
+    try {
+      await setup({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } });
     } catch {
-      setCameraStarted(false);
+      try {
+        await setup({ video: { facingMode: "user" } });
+      } catch {
+        setCameraError("Impossible d'accéder à la caméra. Vérifiez que vous avez autorisé l'accès.");
+        setCameraStarted(false);
+      }
     }
   }, [startStabilityLoop]);
+
+  // Auto-démarrage de la caméra à l'ouverture de la page
+  useEffect(() => {
+    startCamera();
+  }, [startCamera]);
 
   useEffect(() => {
     return () => {
@@ -151,7 +179,63 @@ export default function ClientMutuellePage() {
   function confirmer() {
     localStorage.setItem("optipilot_mutuelle", JSON.stringify(mutuelle));
     setConfirmed(true);
-    setTimeout(() => router.push("/client"), 1200);
+    setTimeout(async () => {
+      setStep("lookup");
+      setLookupLoading(true);
+      setLookupError("");
+      try {
+        const ord = JSON.parse(localStorage.getItem("optipilot_ordonnance") || "{}");
+        const q = mutuelle.nom || ord?.patient?.nom || "";
+        if (!q) { setLookupLoading(false); setStep("create"); return; }
+        const res = await fetch(`/api/bridge/clients?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if (data.ok && data.clients?.length > 0) {
+          setLookupResults(data.clients);
+        } else {
+          setStep("create");
+        }
+      } catch {
+        setLookupError("Bridge non disponible.");
+        setStep("create");
+      } finally {
+        setLookupLoading(false);
+      }
+    }, 800);
+  }
+
+  async function createClient() {
+    setCreateLoading(true);
+    const ord = JSON.parse(localStorage.getItem("optipilot_ordonnance") || "{}");
+    const payload = {
+      nom: mutuelle.nom || ord?.patient?.nom || "",
+      prenom: mutuelle.prenom || ord?.patient?.prenom || "",
+      telephone: clientForm.telephone,
+      email: clientForm.email,
+      adresse: clientForm.adresse,
+      mutuelle: mutuelle.mutuelle,
+      numeroMutuelle: mutuelle.numAdherent,
+    };
+    try {
+      const res = await fetch("/api/bridge/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        localStorage.setItem("optipilot_client", JSON.stringify({ ...payload, id: data.id }));
+      }
+    } catch {
+      // bridge indisponible — on continue quand même
+    } finally {
+      setCreateLoading(false);
+      router.push("/client");
+    }
+  }
+
+  function selectClient(client: BridgeClient) {
+    localStorage.setItem("optipilot_client", JSON.stringify(client));
+    router.push("/client");
   }
 
   return (
@@ -175,8 +259,8 @@ export default function ClientMutuellePage() {
           </svg>
         </button>
         <div>
-          <p className="text-lg font-bold" style={{ color: "#FDFDFE" }}>Scanner ma mutuelle</p>
-          <p className="text-sm" style={{ color: "#9B96DA" }}>Photographiez votre carte de tiers payant</p>
+          <p className="text-lg font-bold" style={{ color: "#111827" }}>Scanner ma mutuelle</p>
+          <p className="text-sm" style={{ color: "#6b7280" }}>Photographiez votre carte de tiers payant</p>
         </div>
       </div>
 
@@ -186,27 +270,45 @@ export default function ClientMutuellePage() {
           <div className="flex-1 flex flex-col">
             {!cameraStarted ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8">
-                <div className="rounded-2xl p-6" style={{ background: "rgba(83,49,208,0.18)", border: "1.5px solid rgba(83,49,208,0.4)" }}>
-                  <svg width="56" height="56" fill="none" viewBox="0 0 24 24" style={{ color: "#7B5CE5", margin: "0 auto 12px" }}>
-                    <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
-                    <path d="M2 10h20" stroke="currentColor" strokeWidth="2" />
-                    <path d="M6 15h4M14 15h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                  <p className="text-center text-base font-semibold" style={{ color: "#FDFDFE" }}>
-                    Préparez votre carte mutuelle
-                  </p>
-                  <p className="text-center text-sm mt-2" style={{ color: "#9B96DA" }}>
-                    Posez-la sur une surface bien éclairée,<br />face visible.
-                  </p>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={startCamera}
-                  className="px-8 py-4 rounded-2xl text-lg font-bold w-full max-w-xs"
-                  style={{ background: "linear-gradient(135deg, #5331D0 0%, #7B5CE5 100%)", color: "white" }}
-                >
-                  Activer la caméra
-                </motion.button>
+                {cameraError ? (
+                  <div className="rounded-2xl p-5 max-w-xs w-full text-center" style={{ background: "rgba(239,68,68,0.1)", border: "1.5px solid rgba(239,68,68,0.4)" }}>
+                    <p className="text-base font-semibold mb-2" style={{ color: "#ef4444" }}>Caméra inaccessible</p>
+                    <p className="text-sm mb-4" style={{ color: "#374151" }}>{cameraError}</p>
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={startCamera}
+                      className="px-6 py-3 rounded-2xl font-bold w-full"
+                      style={{ background: "linear-gradient(135deg, #5331D0 0%, #7B5CE5 100%)", color: "white" }}
+                    >
+                      Réessayer
+                    </motion.button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="rounded-2xl p-6" style={{ background: "rgba(83,49,208,0.18)", border: "1.5px solid rgba(83,49,208,0.4)" }}>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+                        className="w-12 h-12 rounded-full border-4 mx-auto mb-4"
+                        style={{ borderColor: "#5331D0", borderTopColor: "transparent" }}
+                      />
+                      <p className="text-center text-base font-semibold" style={{ color: "#111827" }}>
+                        Activation de la caméra…
+                      </p>
+                      <p className="text-center text-sm mt-2" style={{ color: "#6b7280" }}>
+                        Posez votre carte mutuelle sur une surface éclairée.
+                      </p>
+                    </div>
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={startCamera}
+                      className="px-8 py-3 rounded-2xl text-base font-semibold w-full max-w-xs"
+                      style={{ background: "rgba(83,49,208,0.15)", color: "#5331D0", border: "1px solid rgba(83,49,208,0.35)" }}
+                    >
+                      Activer manuellement
+                    </motion.button>
+                  </>
+                )}
               </div>
             ) : (
               <div className="relative flex-1">
@@ -388,6 +490,106 @@ export default function ClientMutuellePage() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* Étape 4 : Recherche bridge */}
+        {step === "lookup" && (
+          <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-5">
+            {lookupLoading ? (
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                  className="w-12 h-12 rounded-full border-4"
+                  style={{ borderColor: "#5331D0", borderTopColor: "transparent" }}
+                />
+                <p className="text-base font-semibold" style={{ color: "#374151" }}>Recherche dans Optimum…</p>
+              </>
+            ) : (
+              <>
+                <p className="text-xl font-bold text-center" style={{ color: "#111827" }}>Client trouvé dans Optimum</p>
+                {lookupError && <p className="text-sm text-center" style={{ color: "#ef4444" }}>{lookupError}</p>}
+                <div className="w-full flex flex-col gap-3">
+                  {lookupResults.map((c) => (
+                    <motion.button
+                      key={c.id}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => selectClient(c)}
+                      className="w-full rounded-2xl p-4 text-left flex items-center justify-between"
+                      style={{ background: "rgba(83,49,208,0.08)", border: "1.5px solid rgba(83,49,208,0.35)" }}
+                    >
+                      <div>
+                        <p className="font-bold" style={{ color: "#111827" }}>{c.prenom} {c.nom}</p>
+                        {c.telephone && <p className="text-sm mt-0.5" style={{ color: "#6b7280" }}>{c.telephone}</p>}
+                        {c.email && <p className="text-sm" style={{ color: "#6b7280" }}>{c.email}</p>}
+                      </div>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ color: "#5331D0", flexShrink: 0 }}>
+                        <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </motion.button>
+                  ))}
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setStep("create")}
+                  className="w-full py-3 rounded-2xl font-semibold text-base mt-1"
+                  style={{ background: "rgba(83,49,208,0.12)", color: "#5331D0", border: "1px solid rgba(83,49,208,0.3)" }}
+                >
+                  Ce n&apos;est pas moi → Nouveau client
+                </motion.button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Étape 5 : Créer le client */}
+        {step === "create" && (
+          <div className="flex-1 flex flex-col px-6 py-6 gap-5 overflow-y-auto">
+            <div>
+              <p className="text-xl font-bold" style={{ color: "#111827" }}>Vos coordonnées</p>
+              <p className="text-sm mt-1" style={{ color: "#6b7280" }}>Pour que votre opticien puisse vous recontacter.</p>
+            </div>
+            <div className="flex flex-col gap-4">
+              {[
+                { key: "telephone" as const, label: "Téléphone", type: "tel", placeholder: "06 xx xx xx xx" },
+                { key: "email" as const, label: "E-mail", type: "email", placeholder: "prenom@exemple.fr" },
+                { key: "adresse" as const, label: "Adresse", type: "text", placeholder: "15 rue des Lilas, 75001 Paris" },
+              ].map(({ key, label, type, placeholder }) => (
+                <div key={key}>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: "#374151" }}>{label}</label>
+                  <input
+                    type={type}
+                    value={clientForm[key]}
+                    onChange={(e) => setClientForm((f) => ({ ...f, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full px-4 py-3 rounded-2xl text-base outline-none"
+                    style={{
+                      background: "rgba(255,255,255,0.9)",
+                      border: "1.5px solid rgba(83,49,208,0.3)",
+                      color: "#111827",
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={createClient}
+              disabled={createLoading}
+              className="py-4 rounded-2xl font-bold text-lg mt-2"
+              style={{ background: "linear-gradient(135deg, #5331D0 0%, #7B5CE5 100%)", color: "white", opacity: createLoading ? 0.7 : 1 }}
+            >
+              {createLoading ? "Enregistrement…" : "Terminer"}
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => router.push("/client")}
+              className="py-3 rounded-2xl font-semibold text-base"
+              style={{ background: "transparent", color: "#6b7280" }}
+            >
+              Passer cette étape
+            </motion.button>
           </div>
         )}
       </div>

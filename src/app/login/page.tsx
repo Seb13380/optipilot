@@ -78,7 +78,7 @@ export default function LoginPage() {
             className="relative w-80 h-auto object-contain drop-shadow-2xl"
           />
         </div>
-        <p className="text-xl mt-1 font-semibold" style={{ color: "#9B96DA" }}>
+        <p className="text-xl mt-1 font-semibold" style={{ color: "#5331D0" }}>
           Copilote IA pour opticiens
         </p>
       </motion.div>

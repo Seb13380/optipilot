@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020017;
-  --foreground: #FDFDFE;
-  --card: #0A0338;
-  --card-alt: #0F0545;
+  --background: #f0f0fa;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-alt: #f4f4fb;
   --primary: #5331D0;
   --primary-light: #9B96DA;
   --primary-dark: #1C0B62;
@@ -12,8 +12,8 @@
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --text-muted: #9B96DA;
-  --border: rgba(83,49,208,0.35);
+  --text-muted: #6b7280;
+  --border: rgba(83,49,208,0.25);
 }
 
 @theme inline {
@@ -60,7 +60,9 @@ a {
 /* Background principal des pages */
 .page-bg {
   background:
-    url('/assets/images/BackGround-OptiPilot.png') center / cover no-repeat fixed;
+    radial-gradient(circle at 15% 20%, rgba(124,58,237,0.35), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(236,72,153,0.28), transparent 45%),
+    linear-gradient(180deg, #f0f0fa 0%, #e8e8f5 100%);
 }
 
 /* Card base */

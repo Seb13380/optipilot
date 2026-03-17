@@ -43,12 +43,12 @@ export default function OptiPilotHeader({
               whileTap={{ scale: 0.9 }}
               onClick={onBack}
               className="flex items-center gap-2 font-bold text-xl"
-              style={{ color: "#9B96DA" }}
+              style={{ color: "#5331D0" }}
             >
               <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path
                   d="M15 19l-7-7 7-7"
-                  stroke="#9B96DA"
+                  stroke="#5331D0"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -75,10 +75,11 @@ export default function OptiPilotHeader({
                 src="/assets/images/Logo-OptiPilot.png"
                 alt="OptiPilot"
                 className="relative w-44 h-auto object-contain"
+                style={{ filter: "drop-shadow(0 0 24px rgba(124,58,237,0.6)) drop-shadow(0 0 48px rgba(124,58,237,0.35))" }}
               />
             </div>
           ) : (
-            <span className="text-2xl font-bold" style={{ color: "#FDFDFE" }}>
+            <span className="text-2xl font-bold" style={{ color: "#111827" }}>
               {title}
             </span>
           )}
@@ -91,7 +92,7 @@ export default function OptiPilotHeader({
             whileTap={{ scale: 0.9 }}
             onClick={() => setMenuOpen(true)}
             className="p-2 rounded-xl"
-            style={{ color: "#9B96DA" }}
+            style={{ color: "#5331D0" }}
           >
             <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
               <path

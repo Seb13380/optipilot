@@ -100,16 +100,16 @@ export default function ClientPage() {
   }
 
   return (
-    <div className="page-bg min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "radial-gradient(circle at 15% 20%, rgba(124,58,237,0.35), transparent 45%), radial-gradient(circle at 85% 80%, rgba(236,72,153,0.28), transparent 45%), linear-gradient(180deg, #f0f0fa 0%, #e8e8f5 100%)" }}>
       {/* Header magasin */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center pt-12 pb-4 px-6"
       >
-        <img src="/assets/images/Logo-OptiPilot.png" alt="OptiPilot" className="w-40 mx-auto mb-4 opacity-75" />
-        <h1 className="text-3xl font-black" style={{ color: "#FDFDFE" }}>{magasinNom}</h1>
-        <p className="text-lg mt-1" style={{ color: "#C4C1EA" }}>Bienvenue chez nous</p>
+        <img src="/assets/images/Logo-OptiPilot.png" alt="OptiPilot" className="w-48 mx-auto mb-5" style={{ filter: "drop-shadow(0 0 30px rgba(124,58,237,0.7)) drop-shadow(0 0 60px rgba(124,58,237,0.4))" }} />
+        <h1 className="text-3xl font-black" style={{ color: "#111827" }}>{magasinNom}</h1>
+        <p className="text-lg mt-1" style={{ color: "#6b7280" }}>Bienvenue chez nous</p>
       </motion.div>
 
       {/* Bannière workflow */}
@@ -118,15 +118,15 @@ export default function ClientPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
         className="mx-6 mb-4 px-4 py-3 rounded-2xl flex items-start gap-3"
-        style={{ background: "rgba(83,49,208,0.18)", border: "1px solid rgba(155,150,218,0.25)" }}
+        style={{ background: "rgba(255,255,255,0.65)", border: "1px solid rgba(255,255,255,0.15)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
       >
         <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style={{ color: "#9B96DA", flexShrink: 0, marginTop: 2 }}>
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
           <path d="M12 8v4l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
-        <p className="text-sm leading-snug" style={{ color: "#C4C1EA" }}>
+        <p className="text-sm leading-snug" style={{ color: "#6b7280" }}>
           Remplissez vos informations ci-dessous.{" "}
-          <span style={{ color: "#DDDAF5", fontWeight: 600 }}>Votre opticien vérifiera vos données</span>{" "}
+          <span style={{ color: "#111827", fontWeight: 600 }}>Votre opticien vérifiera vos données</span>{" "}
           et soumettra la demande à votre mutuelle.
         </p>
       </motion.div>
@@ -140,11 +140,14 @@ export default function ClientPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + i * 0.07 }}
             whileTap={{ scale: 0.97 }}
+            whileHover={{ y: -2 }}
             onClick={() => router.push(action.href)}
             className="w-full rounded-2xl p-5 flex items-center gap-5 shadow-lg text-left"
             style={{
               background: action.gradient,
-              border: action.border ?? "none",
+              border: action.border ?? "1px solid rgba(255,255,255,0.15)",
+              backdropFilter: "blur(6px)",
+              transition: "all 0.2s ease",
             }}
           >
             <div className="rounded-xl flex items-center justify-center" style={{ width: 52, height: 52, background: "rgba(0,0,0,0.2)", flexShrink: 0 }}>
@@ -167,9 +170,9 @@ export default function ClientPage() {
         className="fixed bottom-6 right-6 flex items-center justify-center transition-opacity"
         style={{
           width: 52, height: 52,
-          background: "rgba(83,49,208,0.18)",
-          color: "rgba(196,193,234,0.3)",
-          border: "1px solid rgba(83,49,208,0.2)",
+          background: "#f3f4f6",
+          color: "rgba(107,114,128,0.6)",
+          border: "1px solid #e5e7eb",
           borderRadius: "50%",
         }}
         aria-label="Mode opticien"

@@ -248,7 +248,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   initial={{ opacity: 0, y: -12 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="mb-5 p-4 rounded-2xl flex items-center gap-4"
-                  style={{ background: "rgba(83,49,208,0.18)", border: "1.5px solid rgba(124,95,236,0.45)" }}
+                  style={{ background: "rgba(15,5,65,0.92)", border: "1.5px solid rgba(124,95,236,0.7)" }}
                 >
                   <div className="shrink-0 w-14 h-14 rounded-xl overflow-hidden" style={{ border: "1.5px solid rgba(124,95,236,0.4)" }}>
                     <Image src="/assets/images/IA_Optipilot.png" alt="OptiPilot IA" width={56} height={56} className="w-full h-full object-cover" />
@@ -268,7 +268,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6 p-5 rounded-2xl"
-                style={{ background: "rgba(83,49,208,0.30)", border: "1.5px solid rgba(155,150,218,0.6)" }}
+                style={{ background: "rgba(15,5,65,0.92)", border: "1.5px solid rgba(155,150,218,0.7)" }}
               >
                 {/* Intro personnalisée */}
                 <p className="text-xl font-bold mb-5" style={{ color: "#FDFDFE" }}>
@@ -443,7 +443,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.38 }}
                 className="mt-4 p-5 rounded-2xl"
-                style={{ background: "rgba(139,92,246,0.50)", border: "2px solid rgba(192,132,252,0.9)" }}
+                style={{ background: "rgba(30,10,80,0.92)", border: "2px solid rgba(192,132,252,0.9)" }}
               >
                 <p className="text-lg font-bold mb-3" style={{ color: "#e9d5ff" }}>
                   Conseils spécifiques à votre monture
@@ -473,7 +473,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.41 }}
                 className="mt-4 p-5 rounded-2xl"
-                style={{ background: "rgba(83,49,208,0.55)", border: "2px solid rgba(124,58,237,0.9)" }}
+                style={{ background: "rgba(15,5,65,0.93)", border: "2px solid rgba(124,58,237,0.9)" }}
               >
                 <p className="text-base font-bold mb-3 uppercase tracking-widest" style={{ color: "#c4b5fd" }}>
                   Données opticien — puissances méridionales
@@ -519,7 +519,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
               whileTap={{ scale: 0.98 }}
               onClick={() => router.push("/comparateur")}
               className="w-full py-5 rounded-2xl flex items-center justify-center gap-3 mt-2"
-              style={{ background: "rgba(83,49,208,0.35)", border: "2px solid rgba(155,150,218,0.6)" }}
+              style={{ background: "rgba(20,8,72,0.90)", border: "2px solid rgba(155,150,218,0.6)" }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <rect x="3" y="3" width="8" height="18" rx="2" stroke="#FDFDFE" strokeWidth="2"/>
@@ -534,7 +534,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
               className="mt-4 rounded-2xl overflow-hidden"
-              style={{ border: "1.5px solid rgba(83,49,208,0.45)", background: "rgba(10,3,56,0.7)" }}
+              style={{ border: "1.5px solid rgba(83,49,208,0.7)", background: "rgba(10,3,56,0.95)" }}
             >
               {/* En-tête cliquable */}
               <button
