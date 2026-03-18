@@ -105,7 +105,7 @@ function ContactModal({ onClose }: { onClose: () => void }) {
 
         <div className="space-y-4">
           <div className="rounded-2xl p-4 space-y-1" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
-            <p className="text-xs font-semibold" style={{ color: "#A78BFA" }}>👤 Éditeur</p>
+            <p className="text-xs font-semibold" style={{ color: "#A78BFA" }}>Éditeur</p>
             <p className="font-bold text-white">Sébastien GIORDANO</p>
             <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>SG Digital Web — Plan-de-Cuques (13380)</p>
           </div>
@@ -115,7 +115,10 @@ function ContactModal({ onClose }: { onClose: () => void }) {
             className="flex items-center gap-3 rounded-2xl p-4 w-full"
             style={{ background: "rgba(83,49,208,0.2)", border: "1px solid rgba(83,49,208,0.35)" }}
           >
-            <span className="text-2xl">✉️</span>
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" style={{ flexShrink: 0, color: "#A78BFA" }}>
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2"/>
+              <polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
             <div>
               <p className="text-xs font-semibold" style={{ color: "#A78BFA" }}>Email</p>
               <p className="font-semibold text-white text-sm">sgdigitalweb13@gmail.com</p>
@@ -127,7 +130,9 @@ function ContactModal({ onClose }: { onClose: () => void }) {
             className="flex items-center gap-3 rounded-2xl p-4 w-full"
             style={{ background: "rgba(83,49,208,0.2)", border: "1px solid rgba(83,49,208,0.35)" }}
           >
-            <span className="text-2xl">📞</span>
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" style={{ flexShrink: 0, color: "#A78BFA" }}>
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.07 2.18 2 2 0 012.03 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
             <div>
               <p className="text-xl font-semibold" style={{ color: "#A78BFA" }}>Téléphone</p>
               <p className="font-semibold text-white text-xl">06.44.26.98.96</p>
@@ -157,22 +162,22 @@ export default function OptiPilotFooter() {
         className="w-full px-6 py-6 flex flex-col items-center gap-1.5 text-center"
         style={{ background: "transparent" }}
       >
-        <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.35)" }}>
+        <p className="text-sm font-semibold" style={{ color: "#6b7280" }}>
           © {new Date().getFullYear()} OptiPilot — SG Digital Web
         </p>
         <div className="flex items-center gap-4">
           <button
             onClick={() => setShowMentions(true)}
-            className="text-xl underline"
-            style={{ color: "rgba(155,150,218,0.7)" }}
+            className="text-sm font-semibold underline underline-offset-2"
+            style={{ color: "#5331D0" }}
           >
             Mentions légales
           </button>
-          <span style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
+          <span style={{ color: "#d1d5db" }}>·</span>
           <button
             onClick={() => setShowContact(true)}
-            className="text-xl underline"
-            style={{ color: "rgba(155,150,218,0.7)" }}
+            className="text-sm font-semibold underline underline-offset-2"
+            style={{ color: "#5331D0" }}
           >
             Contact
           </button>

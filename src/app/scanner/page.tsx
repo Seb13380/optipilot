@@ -67,8 +67,10 @@ export default function ScannerPage() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
+    // Garde : si la vidéo n'a pas encore de vraies trames, ne pas capturer
+    if (!video.videoWidth || video.videoWidth === 0) return;
 
-    const w = video.videoWidth || 1280;
+    const w = video.videoWidth;
     const h = video.videoHeight || 720;
     canvas.width = w;
     canvas.height = h;
@@ -332,13 +334,13 @@ export default function ScannerPage() {
                   <motion.button whileTap={{ scale: 0.97 }} onClick={startCamera}
                     className="py-5 rounded-2xl text-white font-bold text-xl"
                     style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                    📸 Démarrer la caméra
+                    Activer la caméra
                   </motion.button>
                 ) : (
                   <motion.button whileTap={{ scale: 0.97 }} onClick={captureAndAnalyse}
                     className="py-4 rounded-2xl font-bold text-lg"
                     style={{ background: "rgba(83,49,208,0.15)", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.4)" }}>
-                    📷 Capturer manuellement
+                    Capturer manuellement
                   </motion.button>
                 )}
               </div>
@@ -348,14 +350,18 @@ export default function ScannerPage() {
           {/* ── ÉTAPE 2 : APERÇU ── */}
           {step === "preview" && (
             <motion.div key="preview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
-              <p className="text-center font-bold text-xl" style={{ color: "#FDFDFE" }}>Vérifiez la photo</p>
-              <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: "rgba(10,3,56,0.8)", minHeight: 280 }}>
+              <p className="text-center font-bold text-xl" style={{ color: "#111827" }}>Vérifiez la photo</p>
+              <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: "#f3f4f6", minHeight: 280, border: "1.5px solid #e5e7eb" }}>
                 {imageDataUrl ? (
                   <img src={imageDataUrl} alt="Ordonnance" className="w-full object-contain" style={{ maxHeight: 400 }} />
                 ) : (
                   <div className="flex flex-col items-center justify-center p-10 gap-3" style={{ minHeight: 280 }}>
-                    <span className="text-7xl">📄</span>
-                    <p className="font-bold text-xl text-white">Document prêt</p>
+                    <svg width="48" height="48" fill="none" viewBox="0 0 24 24" style={{ color: "#9ca3af" }}>
+                      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M3 9h18" stroke="currentColor" strokeWidth="2"/>
+                      <circle cx="8" cy="14" r="1.5" fill="currentColor"/>
+                    </svg>
+                    <p className="font-bold text-base" style={{ color: "#9ca3af" }}>Aucune capture</p>
                   </div>
                 )}
               </div>
@@ -363,12 +369,12 @@ export default function ScannerPage() {
                 <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                   className="flex-1 py-5 rounded-2xl font-bold text-lg"
                   style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}>
-                  ↩ Reprendre
+                  Reprendre
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={analyseOrdonnance}
                   className="flex-1 py-5 rounded-2xl text-white font-bold text-lg"
                   style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                  🤖 Analyser
+                  Analyser
                 </motion.button>
               </div>
             </motion.div>
@@ -390,14 +396,17 @@ export default function ScannerPage() {
               ) : scanError ? (
                 <div className="flex flex-col gap-5">
                   <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(239,68,68,0.1)", border: "2px solid rgba(239,68,68,0.4)" }}>
-                    <p className="text-2xl mb-2">⚠️</p>
+                    <svg width="36" height="36" fill="none" viewBox="0 0 24 24" className="mx-auto mb-3" style={{ color: "#ef4444" }}>
+                      <path d="M12 9v4M12 17h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+                      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+                    </svg>
                     <p className="font-bold text-xl text-white mb-1">Lecture impossible</p>
                     <p className="text-lg" style={{ color: "#fca5a5" }}>{scanError}</p>
                   </div>
                   <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                     className="py-5 rounded-2xl text-white font-bold text-xl"
                     style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                    📸 Reprendre le scan
+                    Reprendre le scan
                   </motion.button>
                 </div>
               ) : (
@@ -564,7 +573,7 @@ export default function ScannerPage() {
                       <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                         className="flex-1 py-4 rounded-2xl font-bold text-base"
                         style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}>
-                        📸 Reprendre la photo
+                        Reprendre la photo
                       </motion.button>
                       <motion.button whileTap={{ scale: 0.97 }} onClick={() => setEditMode((v) => !v)}
                         className="flex-1 py-4 rounded-2xl font-bold text-base"
