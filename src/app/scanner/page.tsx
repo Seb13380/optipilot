@@ -67,8 +67,9 @@ export default function ScannerPage() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
-    // Garde : si la vidéo n'a pas encore de vraies trames, ne pas capturer
+    // Garde : vidéo pas encore prête (readyState 4 = HAVE_ENOUGH_DATA = vraies trames)
     if (!video.videoWidth || video.videoWidth === 0) return;
+    if (video.readyState < 4) return;
 
     const w = video.videoWidth;
     const h = video.videoHeight || 720;
