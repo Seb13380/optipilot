@@ -7,6 +7,8 @@ interface MutuelleData {
   nom?: string | null;
   prenom?: string | null;
   numAdherent?: string | null;
+  numSecu?: string | null;
+  dateNaissance?: string | null;
   mutuelle?: string | null;
   niveauGarantie?: string | null;
   dateValidite?: string | null;
@@ -462,6 +464,8 @@ export default function ClientMutuellePage() {
                   {[
                     { label: "Nom", value: mutuelle.nom },
                     { label: "Prénom", value: mutuelle.prenom },
+                    { label: "Date de naissance", value: mutuelle.dateNaissance },
+                    { label: "N° sécurité sociale", value: mutuelle.numSecu },
                     { label: "N° adhérent", value: mutuelle.numAdherent },
                     { label: "Mutuelle", value: mutuelle.mutuelle },
                     { label: "Niveau de garantie", value: mutuelle.niveauGarantie },
@@ -486,7 +490,7 @@ export default function ClientMutuellePage() {
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setStep("camera"); startCamera(); }}
                     className="py-3.5 rounded-2xl font-semibold text-base"
-                    style={{ background: "rgba(83,49,208,0.2)", color: "#C4C1EA", border: "1px solid rgba(83,49,208,0.4)" }}
+                    style={{ background: "rgba(83,49,208,0.55)", color: "white", border: "1px solid rgba(83,49,208,0.6)" }}
                   >
                     Rescanner
                   </motion.button>
