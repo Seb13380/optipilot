@@ -461,10 +461,12 @@ export default function ClientMutuellePage() {
                 </AnimatePresence>
 
                 <div
-                  className="rounded-2xl p-5 flex flex-col gap-3"
-                  style={{ background: "rgba(8,2,40,0.96)", border: "1px solid rgba(83,49,208,0.45)" }}
+                  className="rounded-2xl overflow-hidden"
+                  style={{ border: "1px solid rgba(83,49,208,0.45)" }}
                 >
-                  <p className="text-base font-bold mb-1" style={{ color: "#FDFDFE" }}>Informations détectées</p>
+                  <div className="px-4 py-2.5" style={{ background: "rgba(8,2,40,0.98)" }}>
+                    <p className="text-sm font-bold" style={{ color: "#FDFDFE" }}>Informations détectées</p>
+                  </div>
                   {[
                     { label: "Nom", value: mutuelle.nom },
                     { label: "Prénom", value: mutuelle.prenom },
@@ -479,14 +481,19 @@ export default function ClientMutuellePage() {
                     { label: "Niveau de garantie", value: mutuelle.niveauGarantie },
                     { label: "Validité", value: mutuelle.dateValidite },
                     { label: "Organisme", value: mutuelle.organisme },
-                  ].map(({ label, value }) =>
-                    value ? (
-                      <div key={label} className="flex justify-between items-center py-2" style={{ borderBottom: "1px solid rgba(83,49,208,0.2)" }}>
-                        <span className="text-sm" style={{ color: "#9B96DA" }}>{label}</span>
-                        <span className="text-sm font-semibold" style={{ color: "#DDDAF5" }}>{value}</span>
+                  ]
+                    .filter(({ value }) => value)
+                    .map(({ label, value }, idx) => (
+                      <div
+                        key={label}
+                        className="flex justify-between items-center px-4 py-2 gap-3"
+                        style={{ background: idx % 2 === 0 ? "rgba(8,2,40,0.92)" : "rgba(22,8,65,0.92)" }}
+                      >
+                        <span className="text-xs font-medium shrink-0" style={{ color: "#9B96DA", width: 130 }}>{label}</span>
+                        <span className="text-xs font-semibold text-right" style={{ color: "#DDDAF5" }}>{value}</span>
                       </div>
-                    ) : null
-                  )}
+                    ))
+                  }
                 </div>
 
                 <p className="text-sm text-center px-4" style={{ color: "#9B96DA" }}>
