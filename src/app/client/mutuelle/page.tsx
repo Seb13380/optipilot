@@ -402,7 +402,7 @@ export default function ClientMutuellePage() {
                   startCamera();
                 }}
                 className="py-3.5 rounded-2xl font-semibold text-base"
-                style={{ background: "rgba(83,49,208,0.2)", color: "#C4C1EA", border: "1px solid rgba(83,49,208,0.4)" }}
+                style={{ background: "rgba(83,49,208,0.55)", color: "white", border: "1px solid rgba(83,49,208,0.6)" }}
               >
                 Reprendre
               </motion.button>
