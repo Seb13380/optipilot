@@ -143,6 +143,15 @@ function DashboardPage() {
 
   const s = stats;
 
+  // Calculs valeur visible
+  const caGenere = (s?.ventesJour ?? 0) * (s?.panierMoyen ?? 0);
+  const tempsGagneMin = (s?.devisJour ?? 0) * 15;
+  const tempsLabel = tempsGagneMin >= 60
+    ? `${Math.floor(tempsGagneMin / 60)}h${tempsGagneMin % 60 > 0 ? String(tempsGagneMin % 60).padStart(2, "0") : ""}`
+    : tempsGagneMin > 0 ? `${tempsGagneMin} min` : null;
+  const relancesCount = Math.max(0, (s?.devisSemaine ?? 0) - (s?.ventesSemaine ?? 0));
+  const potentielRelances = relancesCount * (s?.panierMoyen ?? 0);
+
   return (
     <div className="page-bg min-h-screen flex flex-col">
       <main className="flex-1 px-6 pb-10 pt-0 w-full max-w-7xl mx-auto">
@@ -220,6 +229,36 @@ function DashboardPage() {
           </button>
         </motion.div>
 
+        {/* Bloc ROI — valeur visible */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-3xl p-5 mb-4"
+          style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #2e1d6e 100%)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 28px rgba(83,49,208,0.28)" }}
+        >
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "rgba(167,139,250,0.65)" }}>💰 Aujourd&apos;hui avec OptiPilot</p>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              {loading ? (
+                <p className="text-3xl font-black" style={{ color: "rgba(255,255,255,0.4)" }}>…</p>
+              ) : caGenere > 0 ? (
+                <p className="text-4xl font-black" style={{ color: "#ffffff" }}>+{caGenere.toLocaleString("fr-FR")}<span className="text-2xl">€</span></p>
+              ) : (
+                <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.5)" }}>Démarrez votre journée 🚀</p>
+              )}
+              {tempsLabel && (
+                <p className="text-sm mt-2" style={{ color: "rgba(196,181,253,0.8)" }}>⏱️ {tempsLabel} gagnées grâce aux scans</p>
+              )}
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="text-xs font-semibold mb-1" style={{ color: "rgba(167,139,250,0.6)" }}>Taux transfo</p>
+              <p className="text-3xl font-black" style={{ color: "#c4b5fd" }}>{loading ? "…" : `${s?.tauxConversionJour ?? 0}%`}</p>
+              <p className="text-xs mt-1" style={{ color: "rgba(167,139,250,0.55)" }}>+32% vs marché</p>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Boutons d'action */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           {MENU_ITEMS.map((item, i) => (
@@ -279,7 +318,7 @@ function DashboardPage() {
             </div>
             <div className="text-left">
               <p className="text-xl font-black leading-tight" style={{ color: "#FFFFFF" }}>
-                Passer la tablette au client
+                Lancer l&apos;expérience client
               </p>
               <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
                 Ordonnance · Mutuelle · Questionnaire · Montures
@@ -296,9 +335,33 @@ function DashboardPage() {
           </div>
         </motion.button>
 
+        {/* WAOUH relances */}
+        {!loading && relancesCount > 0 && potentielRelances > 0 && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileTap={{ scale: 0.97 }}
+            whileHover={{ y: -2 }}
+            onClick={() => router.push("/relances")}
+            className="w-full rounded-2xl px-5 py-4 flex items-center justify-between mb-4"
+            style={{ background: "rgba(239,68,68,0.07)", border: "1.5px solid rgba(239,68,68,0.22)", transition: "all 0.2s ease" }}
+          >
+            <div className="flex items-center gap-3">
+              <span style={{ fontSize: 22 }}>🔥</span>
+              <div className="text-left">
+                <p className="font-bold text-base" style={{ color: "#111827" }}>{relancesCount} devis en attente de relance</p>
+                <p className="text-sm" style={{ color: "#6b7280" }}>+{potentielRelances.toLocaleString("fr-FR")}€ de CA potentiel non encaissé</p>
+              </div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ color: "#ef4444", flexShrink: 0 }}>
+              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </motion.button>
+        )}
+
         {/* Stats du jour — 4 tuiles */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mb-4">
-          <h2 className="text-xl font-bold mb-3" style={{ color: "#374151" }}> Aujourd'hui</h2>
+          <h2 className="text-xl font-bold mb-3" style={{ color: "#374151" }}> Aujourd&apos;hui</h2>
           <div className="grid grid-cols-4 gap-3">
             <StatTile value={loading ? "…" : s?.devisJour ?? 0} label="Devis établis" accent="#5331D0" />
             <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label="Ventes" accent="#ec4899" />
