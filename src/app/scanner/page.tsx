@@ -63,20 +63,12 @@ export default function ScannerPage() {
     return total / (len / 16);
   }
 
-  // Vérifie que la frame n'est pas entièrement noire (flux pas encore prêt)
-  function isBlackFrame(frame: ImageData): boolean {
-    let total = 0;
-    for (let i = 0; i < frame.data.length; i += 16) total += frame.data[i];
-    return (total / (frame.data.length / 16)) < 10;
-  }
-
   const captureAndAnalyse = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
     // Garde : si la vidéo n'a pas encore de vraies trames, ne pas capturer
     if (!video.videoWidth || video.videoWidth === 0) return;
-    if (video.readyState < 4) return;
 
     const w = video.videoWidth;
     const h = video.videoHeight || 720;
@@ -123,14 +115,6 @@ export default function ScannerPage() {
 
       ctx.drawImage(video, 0, 0, 80, 60);
       const frame = ctx.getImageData(0, 0, 80, 60);
-
-      // Si la frame est noire, la caméra n'a pas encore de vraies trames → reset
-      if (isBlackFrame(frame)) {
-        prevFrameRef.current = null;
-        stableCountRef.current = 0;
-        setStableProgress(0);
-        return;
-      }
 
       if (prevFrameRef.current) {
         const diff = frameDiff(prevFrameRef.current, frame);
