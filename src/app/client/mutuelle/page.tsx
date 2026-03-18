@@ -130,11 +130,9 @@ export default function ClientMutuellePage() {
         setCameraStarted(true);
         setTimeout(startStabilityLoop, 800);
       };
+      // videoRef est toujours monté (video toujours dans le DOM)
       if (videoRef.current) {
         attach(videoRef.current);
-      } else {
-        // Ref pas encore montée (render en cours) — réessayer dans 150ms
-        setTimeout(() => { if (videoRef.current) attach(videoRef.current); }, 150);
       }
     } catch {
       setCameraError("Impossible d'accéder à la caméra. Vérifiez que vous avez autorisé l'accès dans votre navigateur.");
@@ -310,53 +308,53 @@ export default function ClientMutuellePage() {
                   </>
                 )}
               </div>
-            ) : (
-              <div className="relative flex-1">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                  style={{ maxHeight: "65vh" }}
+            )}
+            {/* Vidéo toujours dans le DOM — videoRef jamais null au démarrage */}
+            <div className="relative flex-1" style={{ display: cameraStarted ? "flex" : "none", flexDirection: "column" }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+                style={{ maxHeight: "65vh" }}
+              />
+              {/* Cadre carte horizontale */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div
+                  className="border-4 rounded-xl"
+                  style={{
+                    width: "80%",
+                    maxWidth: 480,
+                    aspectRatio: "1.586",
+                    borderColor: autoCapturing ? "#22c55e" : `rgba(255,255,255,${0.4 + stableProgress * 0.006})`,
+                    boxShadow: autoCapturing ? "0 0 24px rgba(34,197,94,0.6)" : "0 0 20px rgba(0,0,0,0.5)",
+                    transition: "border-color 0.2s",
+                  }}
                 />
-                {/* Cadre carte horizontale */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div
-                    className="border-4 rounded-xl"
-                    style={{
-                      width: "80%",
-                      maxWidth: 480,
-                      aspectRatio: "1.586",
-                      borderColor: autoCapturing ? "#22c55e" : `rgba(255,255,255,${0.4 + stableProgress * 0.006})`,
-                      boxShadow: autoCapturing ? "0 0 24px rgba(34,197,94,0.6)" : "0 0 20px rgba(0,0,0,0.5)",
-                      transition: "border-color 0.2s",
-                    }}
+              </div>
+              {/* Barre de stabilité */}
+              <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-2 px-10">
+                <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.75)" }}>
+                  {autoCapturing ? "Capture en cours…" : stableProgress > 0 ? "Maintenez stable…" : "Cadrez votre carte mutuelle"}
+                </p>
+                <div className="w-full max-w-xs rounded-full h-2" style={{ background: "rgba(255,255,255,0.15)" }}>
+                  <motion.div
+                    animate={{ width: `${stableProgress}%`, background: stableProgress === 100 ? "#22c55e" : "#5331D0" }}
+                    transition={{ duration: 0.1 }}
+                    className="h-2 rounded-full"
                   />
                 </div>
-                {/* Barre de stabilité */}
-                <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-2 px-10">
-                  <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.75)" }}>
-                    {autoCapturing ? "Capture en cours…" : stableProgress > 0 ? "Maintenez stable…" : "Cadrez votre carte mutuelle"}
-                  </p>
-                  <div className="w-full max-w-xs rounded-full h-2" style={{ background: "rgba(255,255,255,0.15)" }}>
-                    <motion.div
-                      animate={{ width: `${stableProgress}%`, background: stableProgress === 100 ? "#22c55e" : "#5331D0" }}
-                      transition={{ duration: 0.1 }}
-                      className="h-2 rounded-full"
-                    />
-                  </div>
-                </div>
-                {/* Bouton photo manuel */}
-                <button
-                  onClick={captureFrame}
-                  className="absolute top-4 right-4 px-4 py-2 rounded-xl text-sm font-semibold"
-                  style={{ background: "rgba(0,0,0,0.5)", color: "white", backdropFilter: "blur(8px)" }}
-                >
-                  Photo
-                </button>
               </div>
-            )}
+              {/* Bouton photo manuel */}
+              <button
+                onClick={captureFrame}
+                className="absolute top-4 right-4 px-4 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: "rgba(0,0,0,0.5)", color: "white", backdropFilter: "blur(8px)" }}
+              >
+                Photo
+              </button>
+            </div>
             <canvas ref={canvasRef} className="hidden" />
           </div>
         )}
@@ -364,13 +362,13 @@ export default function ClientMutuellePage() {
         {/* Étape 2 : Aperçu */}
         {step === "preview" && (
           <div className="flex-1 flex flex-col items-center gap-5 px-6 py-6">
-            <p className="text-lg font-bold" style={{ color: "#DDDAF5" }}>Photo prise — bonne qualité ?</p>
+            <p className="text-lg font-bold" style={{ color: "#111827" }}>Photo prise — bonne qualité ?</p>
             {imageDataUrl && (
               <img
                 src={imageDataUrl}
                 alt="Carte mutuelle"
                 className="rounded-2xl shadow-xl w-full max-w-sm object-contain"
-                style={{ maxHeight: 260, background: "#0A0338" }}
+                style={{ maxHeight: 260, background: "#ffffff" }}
               />
             )}
             <p className="text-sm text-center px-4" style={{ color: "#9B96DA" }}>
