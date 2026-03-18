@@ -60,10 +60,17 @@ export default function ClientMutuellePage() {
     return total / (len / 16);
   }
 
+  function isBlackFrame(frame: ImageData): boolean {
+    let total = 0;
+    for (let i = 0; i < frame.data.length; i += 16) total += frame.data[i];
+    return (total / (frame.data.length / 16)) < 10;
+  }
+
   const captureFrame = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
+    if (!video.videoWidth || video.readyState < 4) return;
     const w = video.videoWidth || 1280;
     const h = video.videoHeight || 720;
     canvas.width = w;
@@ -96,6 +103,12 @@ export default function ClientMutuellePage() {
       if (!video || video.readyState < 2) return;
       ctx.drawImage(video, 0, 0, 80, 60);
       const frame = ctx.getImageData(0, 0, 80, 60);
+      if (isBlackFrame(frame)) {
+        prevFrameRef.current = null;
+        stableCountRef.current = 0;
+        setStableProgress(0);
+        return;
+      }
       if (prevFrameRef.current) {
         const diff = frameDiff(prevFrameRef.current, frame);
         if (diff < STABILITY_THRESHOLD) {
