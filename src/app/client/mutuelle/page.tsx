@@ -266,7 +266,7 @@ export default function ClientMutuellePage() {
         {/* Étape 1 : Caméra */}
         {step === "camera" && (
           <div className="flex-1 flex flex-col">
-            {!cameraStarted ? (
+            {!cameraStarted && (
               <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8">
                 {cameraError ? (
                   <div className="rounded-2xl p-5 max-w-xs w-full text-center" style={{ background: "rgba(239,68,68,0.1)", border: "1.5px solid rgba(239,68,68,0.4)" }}>
