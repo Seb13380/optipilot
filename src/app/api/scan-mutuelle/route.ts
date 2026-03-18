@@ -11,6 +11,9 @@ Retourne UNIQUEMENT ce JSON, sans texte avant ou après :
   "numAdherent": "numéro d'adhérent ou numéro de carte ou null",
   "numSecu": "numéro de sécurité sociale / NIR (15 chiffres) ou null",
   "dateNaissance": "date de naissance au format JJ/MM/AAAA ou null",
+  "adresse": "numéro et nom de la voie (ex: 12 rue des Lilas) ou null",
+  "codePostal": "code postal 5 chiffres ou null",
+  "ville": "nom de la ville ou null",
   "mutuelle": "nom exact de la mutuelle/organisme (ex: MGEN, IRP AUTO, Harmonie Mutuelle, Malakoff Humanis, etc.) ou null",
   "niveauGarantie": "niveau/formule si visible (ex: Confort, Premium, Base, etc.) ou null",
   "dateValidite": "YYYY-MM ou null",
@@ -20,6 +23,7 @@ Retourne UNIQUEMENT ce JSON, sans texte avant ou après :
 Règles :
 - Le numéro d'adhérent est un identifiant COURT propre à la mutuelle (souvent 8-12 chiffres). NE PAS confondre avec le numéro de sécurité sociale (NIR, 15 chiffres commençant par 1 ou 2).
 - Le numéro de sécurité sociale (NIR) fait toujours 15 chiffres et commence par 1 ou 2.
+- Pour l'adresse : séparer le numéro+voie dans "adresse", le code postal dans "codePostal", la ville dans "ville".
 - Lire le nom de la mutuelle avec précision : ex «IRP AUTO» ne doit pas devenir «IPPI AUTO».
 - Si plusieurs noms sont présents, prendre le titulaire principal.
 - Si la valeur est illisible ou absente, mettre null.

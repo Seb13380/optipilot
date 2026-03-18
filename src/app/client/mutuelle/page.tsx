@@ -9,6 +9,9 @@ interface MutuelleData {
   numAdherent?: string | null;
   numSecu?: string | null;
   dateNaissance?: string | null;
+  adresse?: string | null;
+  codePostal?: string | null;
+  ville?: string | null;
   mutuelle?: string | null;
   niveauGarantie?: string | null;
   dateValidite?: string | null;
@@ -466,6 +469,9 @@ export default function ClientMutuellePage() {
                     { label: "Prénom", value: mutuelle.prenom },
                     { label: "Date de naissance", value: mutuelle.dateNaissance },
                     { label: "N° sécurité sociale", value: mutuelle.numSecu },
+                    { label: "Adresse", value: mutuelle.adresse },
+                    { label: "Code postal", value: mutuelle.codePostal },
+                    { label: "Ville", value: mutuelle.ville },
                     { label: "N° adhérent", value: mutuelle.numAdherent },
                     { label: "Mutuelle", value: mutuelle.mutuelle },
                     { label: "Niveau de garantie", value: mutuelle.niveauGarantie },
