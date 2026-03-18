@@ -166,7 +166,11 @@ function DashboardPage() {
               className="mb-4 px-5 py-4 rounded-2xl flex items-center gap-4"
               style={{ background: "rgba(34,197,94,0.12)", border: "1.5px solid rgba(34,197,94,0.45)" }}
             >
-              <span style={{ fontSize: 28 }}>🎉</span>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(34,197,94,0.2)" }}>
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                  <path d="M5 13l4 4L19 7" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
               <div>
                 <p className="font-bold text-lg" style={{ color: "#4ade80" }}>Abonnement activé avec succès !</p>
                 <p className="text-sm mt-0.5" style={{ color: "#86efac" }}>Bienvenue sur OptiPilot Pro — toutes les fonctionnalités sont maintenant disponibles.</p>
@@ -237,7 +241,7 @@ function DashboardPage() {
           className="rounded-3xl p-5 mb-4"
           style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #2e1d6e 100%)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 28px rgba(83,49,208,0.28)" }}
         >
-          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "rgba(167,139,250,0.65)" }}>💰 Aujourd&apos;hui avec OptiPilot</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "rgba(167,139,250,0.65)" }}>Aujourd&apos;hui avec OptiPilot</p>
           <div className="flex items-end justify-between gap-4">
             <div>
               {loading ? (
@@ -245,10 +249,16 @@ function DashboardPage() {
               ) : caGenere > 0 ? (
                 <p className="text-4xl font-black" style={{ color: "#ffffff" }}>+{caGenere.toLocaleString("fr-FR")}<span className="text-2xl">€</span></p>
               ) : (
-                <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.5)" }}>Démarrez votre journée 🚀</p>
+                <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.5)" }}>Démarrez votre journée</p>
               )}
               {tempsLabel && (
-                <p className="text-sm mt-2" style={{ color: "rgba(196,181,253,0.8)" }}>⏱️ {tempsLabel} gagnées grâce aux scans</p>
+                <p className="text-sm mt-2 flex items-center gap-1.5" style={{ color: "rgba(196,181,253,0.8)" }}>
+                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  {tempsLabel} gagnées grâce aux scans
+                </p>
               )}
             </div>
             <div className="text-right flex-shrink-0">
@@ -347,7 +357,12 @@ function DashboardPage() {
             style={{ background: "rgba(239,68,68,0.07)", border: "1.5px solid rgba(239,68,68,0.22)", transition: "all 0.2s ease" }}
           >
             <div className="flex items-center gap-3">
-              <span style={{ fontSize: 22 }}>🔥</span>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(239,68,68,0.12)" }}>
+                <svg width="17" height="17" fill="none" viewBox="0 0 24 24">
+                  <path d="M12 9v4M12 17h.01" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round"/>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#ef4444" strokeWidth="2" strokeLinejoin="round"/>
+                </svg>
+              </div>
               <div className="text-left">
                 <p className="font-bold text-base" style={{ color: "#111827" }}>{relancesCount} devis en attente de relance</p>
                 <p className="text-sm" style={{ color: "#6b7280" }}>+{potentielRelances.toLocaleString("fr-FR")}€ de CA potentiel non encaissé</p>

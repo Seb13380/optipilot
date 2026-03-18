@@ -124,11 +124,14 @@ export default function ClientPage() {
         className="mx-6 mb-5 px-5 py-4 rounded-2xl"
         style={{ background: "linear-gradient(135deg, rgba(83,49,208,0.1) 0%, rgba(236,72,153,0.08) 100%)", border: "1px solid rgba(83,49,208,0.2)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
       >
-        <p className="text-base font-black" style={{ color: "#111827" }}>✨ Préparez votre dossier en 2 minutes</p>
+        <p className="text-base font-black" style={{ color: "#111827" }}>Préparez votre dossier en 2 minutes</p>
         <p className="text-sm mt-1" style={{ color: "#6b7280" }}
         >Suivez les étapes ci-dessous — votre opticien prend ensuite le relais pour votre prise en charge.</p>
         <div className="flex items-center gap-2 mt-2.5">
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(83,49,208,0.12)", color: "#5331D0" }}>⏱️ 2 min</span>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: "rgba(83,49,208,0.12)", color: "#5331D0" }}>
+            <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.2"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>
+            2 min
+          </span>
           <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(83,49,208,0.12)", color: "#5331D0" }}>100% autonome</span>
         </div>
       </motion.div>
