@@ -63,11 +63,10 @@ export default function ScannerPage() {
     return total / (len / 16);
   }
 
-  const captureAndAnalyse = useCallback(() => {
+  const captureAndAnalyse = useCallback((force = false) => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
-    // Garde : vidéo pas encore prête (readyState 4 = HAVE_ENOUGH_DATA = vraies trames)
     if (!video.videoWidth || video.videoWidth === 0) return;
     if (video.readyState < 4) return;
 
@@ -78,6 +77,22 @@ export default function ScannerPage() {
 
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(video, 0, 0, w, h);
+
+    // Vérifier que le contenu capturé n'est pas noir (webcam encore en initialisation)
+    if (!force) {
+      const sample = ctx.getImageData(0, 0, Math.min(w, 80), Math.min(h, 60));
+      let bright = 0;
+      for (let i = 0; i < sample.data.length; i += 4) bright += sample.data[i];
+      if ((bright / (sample.data.length / 4)) < 12) {
+        // Image noire : reset et relancer la boucle dans 1s
+        stableCountRef.current = 0;
+        setStableProgress(0);
+        prevFrameRef.current = null;
+        setAutoCapturing(false);
+        setTimeout(startStabilityLoop, 1000);
+        return;
+      }
+    }
 
     // Prétraitement : contraste fort + netteté pour manuscrit et imprimé
     // On upscale ×2 si résolution native < 1600px pour améliorer la lisibilité GPT
@@ -112,7 +127,7 @@ export default function ScannerPage() {
 
     autoScanTimerRef.current = setInterval(() => {
       const video = videoRef.current;
-      if (!video || video.readyState < 2) return;
+      if (!video || video.readyState < 4) return;
 
       ctx.drawImage(video, 0, 0, 80, 60);
       const frame = ctx.getImageData(0, 0, 80, 60);
@@ -338,7 +353,7 @@ export default function ScannerPage() {
                     Activer la caméra
                   </motion.button>
                 ) : (
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={captureAndAnalyse}
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => captureAndAnalyse(true)}
                     className="py-4 rounded-2xl font-bold text-lg"
                     style={{ background: "rgba(83,49,208,0.15)", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.4)" }}>
                     Capturer manuellement
