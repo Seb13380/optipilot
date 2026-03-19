@@ -111,6 +111,8 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
+  const [roiDismissed, setRoiDismissed] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("upgraded") === "1") {
@@ -126,6 +128,12 @@ function DashboardPage() {
     if (!stored) { router.replace("/login"); return; }
     const userData = JSON.parse(stored);
     setUser(userData);
+
+    // Compteur de visites pour le bloc "Pourquoi s'abonner"
+    const visits = parseInt(localStorage.getItem("optipilot_dashboard_visits") || "0", 10) + 1;
+    localStorage.setItem("optipilot_dashboard_visits", String(visits));
+    setUsageCount(visits);
+    setRoiDismissed(localStorage.getItem("optipilot_roi_dismissed") === "1");
 
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/${userData.magasinId}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
@@ -500,6 +508,93 @@ function DashboardPage() {
               <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </motion.button>
+        )}
+
+        {/* Bloc "Pourquoi s'abonner" — après 3 visites, uniquement en trial */}
+        {!loading && !roiDismissed && usageCount >= 3 && s?.trialDaysLeft !== null && s?.trialDaysLeft !== undefined && s.trialDaysLeft > 0 && s?.plan !== "pro" && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="rounded-3xl p-5 mb-4 relative"
+            style={{ background: "linear-gradient(135deg, #0d0826 0%, #1a0f45 60%, #2a1060 100%)", border: "1.5px solid rgba(167,139,250,0.4)", boxShadow: "0 6px 36px rgba(83,49,208,0.35)" }}
+          >
+            {/* Fermer */}
+            <button
+              onClick={() => { setRoiDismissed(true); localStorage.setItem("optipilot_roi_dismissed", "1"); }}
+              className="absolute top-4 right-4 p-1.5 rounded-lg opacity-40 hover:opacity-80 transition-opacity"
+              style={{ color: "#9B96DA" }}
+              aria-label="Fermer"
+            >
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+
+            {/* En-tête */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(167,139,250,0.2)" }}>
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                    stroke="#A78BFA" strokeWidth="2" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <p className="text-sm font-bold" style={{ color: "rgba(196,181,253,0.85)" }}>Vous utilisez OptiPilot depuis {usageCount} session{usageCount > 1 ? "s" : ""}</p>
+            </div>
+
+            {/* Titre */}
+            <p className="text-xl font-black text-white mb-3">Pourquoi passer en Pro ?</p>
+
+            {/* Lignes ROI */}
+            <div className="flex flex-col gap-2.5 mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">⏱️</span>
+                <div>
+                  <p className="text-sm font-semibold text-white">1 à 2 heures gagnées par jour</p>
+                  <p className="text-xs" style={{ color: "rgba(196,181,253,0.55)" }}>Saisie auto, conseils instantanés, zéro ressaisie</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-lg">💰</span>
+                <div>
+                  <p className="text-sm font-semibold text-white">+10 à 20% de panier moyen</p>
+                  <p className="text-xs" style={{ color: "rgba(196,181,253,0.55)" }}>Recommandations intelligentes = ventes mieux orientées</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-lg">📈</span>
+                <div>
+                  <p className="text-sm font-semibold text-white">Soit +800€ à +2 000€ / mois</p>
+                  <p className="text-xs" style={{ color: "rgba(196,181,253,0.55)" }}>Estimé sur votre volume actuel</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Séparateur + prix */}
+            <div className="rounded-2xl px-4 py-3 mb-4 flex items-center justify-between"
+              style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
+              <div>
+                <p className="text-base font-black text-white">249 € <span className="text-sm font-normal" style={{ color: "rgba(196,181,253,0.65)" }}>/ mois</span></p>
+                <p className="text-xs mt-0.5 font-semibold" style={{ color: "#34D399" }}>✔ Rentabilisé en 1 à 2 ventes</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs" style={{ color: "rgba(196,181,253,0.5)" }}>ROI estimé</p>
+                <p className="text-base font-black" style={{ color: "#c4b5fd" }}>× {Math.round((gainMoisEstime || 800) / 249)}-{Math.round((gainMoisEstime || 800) * 2 / 249)}x</p>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              whileHover={{ y: -2 }}
+              onClick={() => router.push("/abonnement")}
+              className="w-full py-3.5 rounded-2xl text-base font-black text-white"
+              style={{ background: "linear-gradient(135deg, #5331D0 0%, #7B5CE5 100%)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}
+            >
+              Passer en Pro maintenant →
+            </motion.button>
+          </motion.div>
         )}
 
         {/* Stats du jour — 4 tuiles */}
