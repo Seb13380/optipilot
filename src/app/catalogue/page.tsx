@@ -309,7 +309,7 @@ export default function CataloguePage() {
   const nbRecommandeesTotal = useMemo(() => MONTURES.filter((m) => scores[m.id] >= 4).length, [scores]);
 
   return (
-    <div className="page-bg min-h-screen flex flex-col pb-10">
+    <div className="min-h-screen flex flex-col pb-10" style={{ background: "linear-gradient(160deg, #0A0338 0%, #130a4a 60%, #1a0a3d 100%)" }}>
       <OptiPilotHeader
         title="Catalogue montures"
         showBack
