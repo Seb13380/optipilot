@@ -1432,91 +1432,15 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
 
 // ─── Conseiller IA ─────────────────────────────────────────
 
-interface Tip {
-  phrase: string;
-  isUpsell?: boolean;
-}
-
-function genererTips(questionnaire: Record<string, unknown>, offre: OffreVerre | null): Tip[] {
-  const tips: Tip[] = [];
-  const ecran = Number(questionnaire.tempsEcran) || 0;
-  const profession = String(questionnaire.profession || "");
-  const conduiteNuit = Boolean(questionnaire.conduiteNuit);
-  const photophobie = Boolean(questionnaire.photophobie);
-  const isProgressif = offre?.type?.toLowerCase().includes("progressif");
-
-  if (ecran >= 6) {
-    tips.push({
-      phrase: `"Avec ${ecran}h/jour sur écran, ce filtre lumière bleue va vraiment réduire votre fatigue visuelle dès le soir — c'est le retour que tous nos clients bureau me font."`,
-    });
-  } else if (ecran >= 3) {
-    tips.push({
-      phrase: `"Le filtre anti-lumière bleue est inclus — idéal pour vos ${ecran}h sur écran, vous sentirez la différence après une semaine."`,
-    });
-  }
-
-  if (conduiteNuit) {
-    tips.push({
-      phrase: `"L'antireflet premium élimine 99% des reflets des phares la nuit. C'est souvent la raison n°1 qui fait choisir cette offre pour les conducteurs."`,
-    });
-  }
-
-  if (photophobie) {
-    tips.push({
-      phrase: `"Avec votre sensibilité à la lumière, ces verres photochromiques s'adaptent automatiquement — plus besoin d'une paire de soleil séparée pour sortir."`,
-    });
-  }
-
-  if (isProgressif) {
-    tips.push({
-      phrase: `"Pour les progressifs, le temps d'adaptation est de 3 à 7 jours en général. Mais la grande majorité de nos clients oublient qu'ils en portent au bout de 2 semaines."`,
-    });
-  }
-
-  if (profession === "bureautique") {
-    tips.push({
-      phrase: `"Pour un usage bureau, l'antireflet élimine aussi les reflets des néons et de la vitre de votre écran — vos yeux fatiguent beaucoup moins."`,
-    });
-  } else if (profession === "conduite" || profession === "transport") {
-    tips.push({
-      phrase: `"Pour les conducteurs professionnels, la clarté visuelle est critique. Ces verres sont taillés exactement pour ça."`,
-    });
-  } else if (profession === "sante") {
-    tips.push({
-      phrase: `"En milieu médical vous alternez entre écran, dossiers et patients — ce profil de verre est optimisé pour ces changements constants."`,
-    });
-  }
-
-  if (offre?.nom === "Essentiel") {
-    tips.push({
-      phrase: `"Je vous signale que pour ${offre ? Math.round((offre.resteACharge * 0.3)) : 30}€ de plus environ, l'offre Confort inclut un indice plus mince et un antireflet premium — c'est l'offre que choisissent la moitié de nos clients."`,
-      isUpsell: true,
-    });
-  }
-
-  if (offre?.nom === "Confort") {
-    tips.push({
-      phrase: `"Si vous avez un budget un peu plus flexible, l'offre Premium inclut la garantie 2 ans casse + rayure — pour des lunettes que vous portez tous les jours, ça peut valoir le coup."`,
-      isUpsell: true,
-    });
-  }
-
-  // Si pas de tips spécifiques
-  if (tips.length === 0) {
-    tips.push({
-      phrase: `"Ce choix correspond parfaitement à votre profil. Les verres ${offre?.gamme || ""} sont une référence dans cette gamme."`,
-    });
-  }
-
-  return tips;
+interface ChatMessage {
+  from: "client" | "ia";
+  texte: string;
 }
 
 function ConseillerIA({
-  questionnaire,
   offre,
   open,
   onToggle,
-  onUpgrade,
 }: {
   questionnaire: Record<string, unknown>;
   offre: OffreVerre | null;
@@ -1524,7 +1448,38 @@ function ConseillerIA({
   onToggle: () => void;
   onUpgrade: () => void;
 }) {
-  const tips = genererTips(questionnaire, offre);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { from: "ia", texte: "Bonjour ! Avez-vous des questions sur votre devis, vos verres, votre correction ou vos remboursements ? Je suis là pour vous aider." },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, open]);
+
+  async function sendQuestion() {
+    const q = input.trim();
+    if (!q || loading) return;
+    setInput("");
+    setMessages((m) => [...m, { from: "client", texte: q }]);
+    setLoading(true);
+    try {
+      const contexte = offre ? `Offre choisie : ${offre.nom} — ${offre.gamme} (${offre.verrier}), indice ${offre.indice}, ${offre.prixVerres}€. Remboursement Sécu : ${offre.remboursementSecu}€, Mutuelle : ${offre.remboursementMutuelle}€. Reste à charge : ${offre.resteACharge}€.` : "";
+      const res = await fetch("/api/conseil-client", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q, contexte }),
+      });
+      const data = await res.json();
+      setMessages((m) => [...m, { from: "ia", texte: data.reponse || "Je n'ai pas pu répondre. Reformulez votre question." }]);
+    } catch {
+      setMessages((m) => [...m, { from: "ia", texte: "Une erreur est survenue. Veuillez réessayer." }]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <motion.div
@@ -1535,31 +1490,22 @@ function ConseillerIA({
       style={{ border: "1.5px solid rgba(167,139,250,0.35)", background: "rgba(83,49,208,0.1)" }}
     >
       {/* Header */}
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between px-5 py-4"
-      >
+      <button onClick={onToggle} className="w-full flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="shrink-0 w-10 h-10 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(167,139,250,0.4)" }}>
             <Image src="/assets/images/IA_Optipilot.png" alt="OptiPilot IA" width={40} height={40} className="w-full h-full object-cover" />
           </div>
           <div className="text-left">
-            <p className="text-base font-bold" style={{ color: "#a78bfa" }}>Conseiller IA</p>
-            <p className="text-sm" style={{ color: "#9B96DA" }}>Phrases à dire au client</p>
+            <p className="text-base font-bold" style={{ color: "#a78bfa" }}>Assistant optique</p>
+            <p className="text-sm" style={{ color: "#9B96DA" }}>Vous avez des questions ?</p>
           </div>
         </div>
-        <svg
-          width="20"
-          height="20"
-          fill="none"
-          viewBox="0 0 24 24"
-          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-        >
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
           <path d="M6 9l6 6 6-6" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round" />
         </svg>
       </button>
 
-      {/* Contenu */}
+      {/* Chat */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -1568,43 +1514,56 @@ function ConseillerIA({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-5 flex flex-col gap-3">
-              {tips.map((tip, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.07 }}
-                  className="rounded-xl p-4"
-                  style={{
-                    background: tip.isUpsell
-                      ? "rgba(20,5,40,0.92)"
-                      : "rgba(10,3,56,0.6)",
-                    border: tip.isUpsell
-                      ? "1px solid rgba(236,72,153,0.5)"
-                      : "1px solid rgba(83,49,208,0.2)",
-                    backdropFilter: "blur(8px)",
-                  }}
-                >
-                  <div className="flex items-start gap-3">
-                    <p
-                      className="text-sm italic leading-relaxed"
-                      style={{ color: tip.isUpsell ? "#f472b6" : "#FDFDFE" }}
+            <div className="px-4 pb-4 flex flex-col gap-3">
+              {/* Messages */}
+              <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.from === "client" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className="rounded-2xl px-4 py-2.5 text-sm leading-relaxed"
+                      style={{
+                        maxWidth: "85%",
+                        background: msg.from === "client"
+                          ? "linear-gradient(135deg, #5331D0, #7B5CE5)"
+                          : "rgba(10,3,56,0.85)",
+                        color: "#FDFDFE",
+                        border: msg.from === "ia" ? "1px solid rgba(83,49,208,0.3)" : "none",
+                      }}
                     >
-                      {tip.phrase}
-                    </p>
+                      {msg.texte}
+                    </div>
                   </div>
-                  {tip.isUpsell && (
-                    <button
-                      onClick={onUpgrade}
-                      className="mt-2 text-xs font-bold px-3 py-1.5 rounded-lg"
-                      style={{ background: "rgba(236,72,153,0.15)", color: "#f472b6" }}
-                    >
-                      Voir l&apos;offre supérieure →
-                    </button>
-                  )}
-                </motion.div>
-              ))}
+                ))}
+                {loading && (
+                  <div className="flex justify-start">
+                    <div className="rounded-2xl px-4 py-2.5 text-sm" style={{ background: "rgba(10,3,56,0.85)", color: "#9B96DA", border: "1px solid rgba(83,49,208,0.3)" }}>
+                      <span className="animate-pulse">En train de répondre…</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={bottomRef} />
+              </div>
+
+              {/* Saisie */}
+              <div className="flex gap-2 mt-1">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendQuestion()}
+                  placeholder="Posez votre question sur vos lunettes…"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ background: "rgba(8,2,40,0.8)", color: "#FDFDFE", border: "1.5px solid rgba(83,49,208,0.35)", caretColor: "#a78bfa" }}
+                />
+                <button
+                  onClick={sendQuestion}
+                  disabled={!input.trim() || loading}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-sm"
+                  style={{ background: input.trim() && !loading ? "linear-gradient(135deg, #5331D0, #7B5CE5)" : "rgba(83,49,208,0.25)", color: "white", transition: "all 0.2s" }}
+                >
+                  Envoyer
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
