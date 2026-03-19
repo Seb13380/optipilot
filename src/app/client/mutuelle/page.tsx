@@ -56,7 +56,7 @@ export default function ClientMutuellePage() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupResults, setLookupResults] = useState<BridgeClient[]>([]);
   const [lookupError, setLookupError] = useState("");
-  const [clientForm, setClientForm] = useState({ telephone: "", email: "", adresse: "" });
+  const [clientForm, setClientForm] = useState({ telephone: "", email: "", adresse: "", codePostal: "", ville: "" });
   const [createLoading, setCreateLoading] = useState(false);
 
   function frameDiff(a: ImageData, b: ImageData): number {
@@ -228,7 +228,7 @@ export default function ClientMutuellePage() {
       prenom: mutuelle.prenom || ord?.patient?.prenom || "",
       telephone: clientForm.telephone,
       email: clientForm.email,
-      adresse: clientForm.adresse,
+      adresse: clientForm.adresse ? `${clientForm.adresse}${clientForm.codePostal ? `, ${clientForm.codePostal}` : ""}${clientForm.ville ? ` ${clientForm.ville}` : ""}` : "",
       mutuelle: mutuelle.mutuelle,
       numeroMutuelle: mutuelle.numAdherent,
     };
@@ -585,7 +585,9 @@ export default function ClientMutuellePage() {
               {[
                 { key: "telephone" as const, label: "Téléphone", type: "tel", placeholder: "06 xx xx xx xx" },
                 { key: "email" as const, label: "E-mail", type: "email", placeholder: "prenom@exemple.fr" },
-                { key: "adresse" as const, label: "Adresse", type: "text", placeholder: "15 rue des Lilas, 75001 Paris" },
+                { key: "adresse" as const, label: "Adresse", type: "text", placeholder: "15 rue des Lilas" },
+                { key: "codePostal" as const, label: "Code postal", type: "text", placeholder: "13000" },
+                { key: "ville" as const, label: "Ville", type: "text", placeholder: "Marseille" },
               ].map(({ key, label, type, placeholder }) => (
                 <div key={key}>
                   <label className="block text-sm font-semibold mb-1.5" style={{ color: "#374151" }}>{label}</label>

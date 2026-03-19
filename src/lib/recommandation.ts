@@ -401,9 +401,17 @@ export function calculerRecommandations(
   const hasVerresPositifs = (ordo.odSphere || 0) > 0 || (ordo.ogSphere || 0) > 0;
 
   if (preferenceM === "percee" || preferenceM === "nylon") {
-    conseilsMonture.push(
-      `Monture ${preferenceM === "percee" ? "percée" : "nylor (demi-cerclée)"} : verres Trivex (indice 1.53) ou Polycarbonate (indice 1.59) recommandés — ces matériaux résistent mieux aux contraintes mécaniques des perçages et du fil, évitant les risques de fissure.`
-    );
+    const puissanceMax = getPuissanceMax(ordo);
+    if (puissanceMax > 4) {
+      // Forte correction : 1.53/1.59 produirait des verres très épais — préférer 1.67 ou 1.74
+      conseilsMonture.push(
+        `Monture ${preferenceM === "percee" ? "percée" : "nylor (demi-cerclée)"} avec forte correction : un indice ${puissanceMax > 6 ? "1.74" : "1.67 ou 1.74"} est fortement recommandé pour réduire l'épaisseur des verres. Ces indices se rainurent très bien et évitent les verres excessivement épais que produiraient le Trivex (1.53) ou le Polycarbonate (1.59) à cette puissance.`
+      );
+    } else {
+      conseilsMonture.push(
+        `Monture ${preferenceM === "percee" ? "percée" : "nylor (demi-cerclée)"} : verres Trivex (indice 1.53) ou Polycarbonate (indice 1.59) recommandés — ces matériaux résistent mieux aux contraintes mécaniques des perçages et du fil, évitant les risques de fissure.`
+      );
+    }
   }
   if (hasVerresPositifs) {
     conseilsMonture.push(
