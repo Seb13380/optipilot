@@ -144,12 +144,21 @@ function DashboardPage() {
 
   const s = stats;
 
-  // Calculs valeur visible
+  // Calculs ROI OptiPilot
   const caGenere = (s?.ventesJour ?? 0) * (s?.panierMoyen ?? 0);
-  const tempsGagneMin = (s?.devisJour ?? 0) * 15;
-  const tempsLabel = tempsGagneMin >= 60
-    ? `${Math.floor(tempsGagneMin / 60)}h${tempsGagneMin % 60 > 0 ? String(tempsGagneMin % 60).padStart(2, "0") : ""}`
-    : tempsGagneMin > 0 ? `${tempsGagneMin} min` : null;
+  // 10 min sans OptiPilot, 4 min avec = 6 min de gain par dossier traité
+  const fmtMin = (min: number) => min >= 60
+    ? `${Math.floor(min / 60)}h${min % 60 > 0 ? String(min % 60).padStart(2, "0") : ""}`
+    : `${min} min`;
+  const tempsGagneMin = (s?.devisJour ?? 0) * 6;
+  const tempsLabel = tempsGagneMin > 0 ? fmtMin(tempsGagneMin) : null;
+  const opportunites = Math.max(0, (s?.devisJour ?? 0) - (s?.ventesJour ?? 0));
+  const nbDevis = s?.devisJour ?? 0;
+  const simSansMin = nbDevis * 10;
+  const simAvecMin = nbDevis * 4;
+  const gainParDevisEuros = Math.round((s?.panierMoyen ?? 300) * 0.12);
+  const gainMoisEstime = Math.round(22 * (nbDevis || 3) * gainParDevisEuros);
+  const gainTempsMoisLabel = fmtMin(22 * (nbDevis || 3) * 6);
   const relancesCount = Math.max(0, (s?.devisSemaine ?? 0) - (s?.ventesSemaine ?? 0));
   const potentielRelances = relancesCount * (s?.panierMoyen ?? 0);
 
@@ -317,39 +326,75 @@ function DashboardPage() {
         </AnimatePresence>
 
         {/* Bloc ROI — valeur visible */}
+        {/* ── Bloc ROI Impact ─────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="rounded-3xl p-5 mb-4"
-          style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #2e1d6e 100%)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 28px rgba(83,49,208,0.28)" }}
+          className="rounded-3xl p-5 mb-4 overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #0f0a2e 0%, #1e1b4b 60%, #2e1d6e 100%)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 32px rgba(83,49,208,0.3)" }}
         >
-          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "rgba(167,139,250,0.65)" }}>Aujourd&apos;hui avec OptiPilot</p>
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              {loading ? (
-                <p className="text-3xl font-black" style={{ color: "rgba(255,255,255,0.4)" }}>…</p>
-              ) : caGenere > 0 ? (
-                <p className="text-4xl font-black" style={{ color: "#ffffff" }}>+{caGenere.toLocaleString("fr-FR")}<span className="text-2xl">€</span></p>
-              ) : (
-                <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.5)" }}>Démarrez votre journée</p>
-              )}
-              {tempsLabel && (
-                <p className="text-sm mt-2 flex items-center gap-1.5" style={{ color: "rgba(196,181,253,0.8)" }}>
-                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  {tempsLabel} gagnées grâce aux scans
-                </p>
-              )}
+          {/* En-tête */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(167,139,250,0.65)" }}>
+              Impact OptiPilot · Aujourd&apos;hui
+            </p>
+            <span className="text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5"
+              style={{ background: "rgba(52,211,153,0.15)", color: "#34D399" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current" style={{ animation: "pulse 2s infinite" }} />
+              En direct
+            </span>
+          </div>
+
+          {/* 3 métriques */}
+          <div className="grid grid-cols-3 gap-2.5 mb-4">
+            <div className="rounded-2xl p-3 flex flex-col gap-0.5" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.15)" }}>
+              <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>⏱️ Temps libéré</span>
+              <span className="text-xl font-black text-white">{loading ? "…" : (tempsLabel ?? "—")}</span>
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>aujourd&apos;hui</span>
             </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-xs font-semibold mb-1" style={{ color: "rgba(167,139,250,0.6)" }}>Taux transfo</p>
-              <p className="text-3xl font-black" style={{ color: "#c4b5fd" }}>{loading ? "…" : `${s?.tauxConversionJour ?? 0}%`}</p>
-              <p className="text-xs mt-1" style={{ color: "rgba(167,139,250,0.55)" }}>+32% vs marché</p>
+            <div className="rounded-2xl p-3 flex flex-col gap-0.5" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.15)" }}>
+              <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>💰 CA généré</span>
+              <span className="text-xl font-black" style={{ color: "#c4b5fd" }}>{loading ? "…" : caGenere > 0 ? `+${caGenere.toLocaleString("fr-FR")}€` : "—"}</span>
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{s?.ventesJour ?? 0} vente{(s?.ventesJour ?? 0) !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="rounded-2xl p-3 flex flex-col gap-0.5" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.15)" }}>
+              <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>📈 Opportunités</span>
+              <span className="text-xl font-black text-white">{loading ? "…" : opportunites}</span>
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>devis en cours</span>
             </div>
           </div>
+
+          {/* Simulation sans / avec */}
+          {!loading && nbDevis > 0 && (
+            <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="grid grid-cols-2">
+                <div className="px-4 py-3.5" style={{ background: "rgba(255,255,255,0.04)", borderRight: "1px solid rgba(255,255,255,0.08)" }}>
+                  <p className="text-xs font-semibold mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>Sans OptiPilot</p>
+                  <p className="text-sm font-bold" style={{ color: "rgba(255,255,255,0.4)" }}>⏱️ ~{fmtMin(simSansMin)}</p>
+                  <p className="text-sm font-bold mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>💰 Vente standard</p>
+                </div>
+                <div className="px-4 py-3.5" style={{ background: "rgba(83,49,208,0.25)" }}>
+                  <p className="text-xs font-semibold mb-2" style={{ color: "#9B96DA" }}>Avec OptiPilot ✓</p>
+                  <p className="text-sm font-black text-white">⏱️ ~{fmtMin(simAvecMin)}</p>
+                  <p className="text-sm font-black mt-0.5" style={{ color: "#34D399" }}>💰 Vente optimisée</p>
+                </div>
+              </div>
+              <div className="px-4 py-2.5 text-center" style={{ background: "rgba(52,211,153,0.08)", borderTop: "1px solid rgba(52,211,153,0.15)" }}>
+                <p className="text-xs font-bold" style={{ color: "#34D399" }}>
+                  ≈ +{gainMoisEstime.toLocaleString("fr-FR")}€ / mois estimés &middot; {gainTempsMoisLabel} / mois libérées
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Journée vide — estimation fixe */}
+          {!loading && nbDevis === 0 && (
+            <div className="rounded-2xl px-4 py-3 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>Démarrez votre première vente pour voir votre impact</p>
+              <p className="text-xs mt-1.5 font-bold" style={{ color: "#34D399" }}>Estimation mensuelle : ≈ +800€ · +22h libérées / mois</p>
+            </div>
+          )}
         </motion.div>
 
         {/* Boutons d'action */}
