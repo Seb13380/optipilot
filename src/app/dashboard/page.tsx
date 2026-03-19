@@ -110,6 +110,7 @@ function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("upgraded") === "1") {
@@ -224,14 +225,95 @@ function DashboardPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-sm font-bold px-4 py-2 rounded-xl"
-            style={{ color: "#5331D0", background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.18)" }}
-          >
-            Quitter
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLogout}
+              className="text-sm font-bold px-4 py-2 rounded-xl"
+              style={{ color: "#5331D0", background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.18)" }}
+            >
+              Quitter
+            </button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setMenuOpen(true)}
+              className="p-2 rounded-xl"
+              style={{ color: "#5331D0", background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.18)" }}
+              aria-label="Menu"
+            >
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </motion.button>
+          </div>
         </motion.div>
+
+        {/* Menu slide-in */}
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              key="menu-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50"
+              style={{ background: "rgba(2,0,23,0.7)", backdropFilter: "blur(8px)" }}
+              onClick={() => setMenuOpen(false)}
+            >
+              <motion.div
+                key="menu-panel"
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", stiffness: 320, damping: 32 }}
+                className="absolute right-0 top-0 bottom-0 flex flex-col"
+                style={{ width: 280, background: "rgba(8,2,40,0.99)", borderLeft: "1.5px solid rgba(83,49,208,0.35)", boxShadow: "-12px 0 40px rgba(0,0,0,0.5)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-6 pt-7 pb-5">
+                  <span className="text-xl font-black" style={{ color: "#FDFDFE" }}>Menu</span>
+                  <button onClick={() => setMenuOpen(false)} className="p-1.5 rounded-lg" style={{ color: "#9B96DA" }}>
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+                <nav className="flex flex-col gap-1 px-4 flex-1">
+                  {[
+                    { label: "Tableau de bord",    href: "/dashboard" },
+                    { label: "Nouveau client",     href: "/nouveau-client" },
+                    { label: "Scanner ordonnance", href: "/scanner" },
+                    { label: "Recommandations",    href: "/recommandations" },
+                    { label: "Devis",              href: "/devis" },
+                    { label: "Historique",         href: "/historique" },
+                    { label: "Rapprochements",     href: "/rapprochements" },
+                    { label: "Relances",           href: "/relances" },
+                    { label: "Configuration",      href: "/config" },
+                  ].map((item) => (
+                    <button
+                      key={item.href}
+                      onClick={() => { setMenuOpen(false); router.push(item.href); }}
+                      className="w-full text-left px-4 py-3 rounded-xl text-base font-semibold transition-colors"
+                      style={{ color: "#DDDAF5", background: "transparent" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(83,49,208,0.2)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </nav>
+                <div className="px-4 pb-8">
+                  <button
+                    onClick={() => { setMenuOpen(false); handleLogout(); }}
+                    className="w-full py-3 rounded-xl text-base font-bold"
+                    style={{ color: "#f87171", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
+                  >
+                    Se déconnecter
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Bloc ROI — valeur visible */}
         <motion.div
