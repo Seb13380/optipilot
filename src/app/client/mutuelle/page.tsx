@@ -486,11 +486,12 @@ export default function ClientMutuellePage() {
                     .map(({ label, value }, idx) => (
                       <div
                         key={label}
-                        className="flex justify-between items-center px-4 py-2 gap-3"
+                        className="flex items-center px-3 py-1.5 gap-1"
                         style={{ background: idx % 2 === 0 ? "rgba(8,2,40,0.92)" : "rgba(22,8,65,0.92)" }}
                       >
-                        <span className="text-xs font-medium shrink-0" style={{ color: "#9B96DA", width: 130 }}>{label}</span>
-                        <span className="text-xs font-semibold text-right" style={{ color: "#DDDAF5" }}>{value}</span>
+                        <span className="text-sm font-medium text-center" style={{ color: "#9B96DA", flex: 1 }}>{label}</span>
+                        <span className="w-px self-stretch" style={{ background: "rgba(83,49,208,0.25)" }} />
+                        <span className="text-sm font-bold text-center" style={{ color: "#DDDAF5", flex: 1 }}>{value}</span>
                       </div>
                     ))
                   }
