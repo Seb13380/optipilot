@@ -1029,7 +1029,9 @@ app.post("/api/rapprochements/confirmer-releve", async (req, res) => {
 app.get("/api/rapprochements/:magasinId", async (req, res) => {
   try {
     const { magasinId } = req.params;
-    const { filtre } = req.query as { filtre?: string };
+    const { filtre, mois } = req.query as { filtre?: string; mois?: string };
+    const dateLimit = mois ? (() => { const d = new Date(); d.setMonth(d.getMonth() - parseInt(mois, 10)); return d; })() : null;
+    const dateWhere = dateLimit ? { updatedAt: { gte: dateLimit } } : {};
 
     // Conditions de filtre sur les statuts TP
     let statutsWhere = {};
@@ -1083,6 +1085,7 @@ app.get("/api/rapprochements/:magasinId", async (req, res) => {
           { statutPaiementMutuelle: { not: null } },
         ],
         ...statutsWhere,
+        ...dateWhere,
       },
       include: {
         client: { select: { nom: true, prenom: true, mutuelle: true } },
@@ -1100,6 +1103,7 @@ app.get("/api/rapprochements/:magasinId", async (req, res) => {
           { statutPaiementSS: { not: null } },
           { statutPaiementMutuelle: { not: null } },
         ],
+        ...dateWhere,
       },
       select: {
         statutPaiementSS: true,

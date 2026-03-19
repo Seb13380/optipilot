@@ -683,7 +683,7 @@ function ImportReleveModal({ magasinId, backendUrl, token, onDone, onCancel }: I
         }}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">📥 Import relevé bancaire</h2>
+          <h2 className="text-lg font-bold text-white">Télécharger votre relevé bancaire</h2>
           <button onClick={onCancel} className="text-2xl" style={{ color: "rgba(255,255,255,0.4)" }}>×</button>
         </div>
 
@@ -837,8 +837,10 @@ export default function RapprochementsPage() {
   const load = useCallback(
     async (currentFiltre: string, mid: string, tok: string) => {
       try {
-        const params = currentFiltre !== "tous" ? `?filtre=${currentFiltre}` : "";
-        const r = await fetch(`${backendUrl}/api/rapprochements/${mid}${params}`, {
+        const params = new URLSearchParams();
+        if (currentFiltre !== "tous") params.set("filtre", currentFiltre);
+        params.set("mois", "3");
+        const r = await fetch(`${backendUrl}/api/rapprochements/${mid}?${params.toString()}`, {
           headers: { Authorization: `Bearer ${tok}` },
         });
         if (!r.ok) return;
@@ -912,9 +914,9 @@ export default function RapprochementsPage() {
               whileTap={{ scale: 0.9 }}
               onClick={() => setShowImport(true)}
               className="px-3 py-2 rounded-xl text-sm font-bold"
-              style={{ background: "rgba(52,211,153,0.18)", color: "#34D399" }}
+              style={{ background: "rgba(83,49,208,0.5)", color: "#C4C0FF", border: "1px solid rgba(167,139,250,0.3)" }}
             >
-              📥 Relevé
+              Relevé bancaire
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.9 }}
