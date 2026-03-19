@@ -17,6 +17,7 @@ const MENU_ITEMS = [
   { label: "Recommandations",   href: "/recommandations" },
   { label: "Devis",             href: "/devis" },
   { label: "Historique",        href: "/historique" },
+  { label: "Catalogue montures", href: "/catalogue" },
   { label: "Rapprochements",    href: "/rapprochements" },
   { label: "Configuration",     href: "/config" },
 ];

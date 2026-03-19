@@ -285,6 +285,7 @@ function DashboardPage() {
                     { label: "Recommandations",    href: "/recommandations" },
                     { label: "Devis",              href: "/devis" },
                     { label: "Historique",         href: "/historique" },
+                    { label: "Catalogue montures", href: "/catalogue" },
                     { label: "Rapprochements",     href: "/rapprochements" },
                     { label: "Relances",           href: "/relances" },
                     { label: "Configuration",      href: "/config" },
