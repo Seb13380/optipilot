@@ -272,18 +272,18 @@ export default function ComparateurPage() {
 
           {/* Verres progressifs */}
           <div className="mb-5">
-            <p className="text-base font-bold mb-3" style={{ color: "#f472b6" }}>Verres progressifs</p>
+            <p className="text-base font-bold mb-3" style={{ color: "#c084fc" }}>Verres progressifs</p>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { src: "/assets/images/prog.webp", label: "Vue de profil" },
                 { src: "/assets/images/progs.webp", label: "Zones de vision" },
                 { src: "/assets/images/progs2.webp", label: "Vue frontale" },
               ].map(({ src, label }) => (
-                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0a0338", border: "1px solid rgba(244,114,182,0.45)" }}>
+                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0a0338", border: "1px solid rgba(192,132,252,0.5)" }}>
                   <div className="relative w-full" style={{ aspectRatio: "1" }}>
-                    <Image src={src} alt={label} fill className="object-cover" sizes="33vw" />
+                    <Image src={src} alt={label} fill className="object-contain" sizes="(max-width: 768px) 33vw, 25vw" quality={95} />
                   </div>
-                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "#f472b6" }}>{label}</p>
+                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "#c084fc" }}>{label}</p>
                 </div>
               ))}
             </div>
@@ -294,17 +294,17 @@ export default function ComparateurPage() {
 
           {/* Verres Transitions */}
           <div>
-            <p className="text-base font-bold mb-3" style={{ color: "#fbbf24" }}>Verres Transitions (photochromiques)</p>
+            <p className="text-base font-bold mb-3" style={{ color: "#60a5fa" }}>Verres Transitions (photochromiques)</p>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { src: "/assets/images/transitions.webp", label: "En intérieur (clairs)" },
                 { src: "/assets/images/verres-transitions.webp", label: "En extérieur (foncés)" },
               ].map(({ src, label }) => (
-                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0a0338", border: "1px solid rgba(251,191,36,0.45)" }}>
+                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0a0338", border: "1px solid rgba(96,165,250,0.5)" }}>
                   <div className="relative w-full" style={{ aspectRatio: "4/3" }}>
-                    <Image src={src} alt={label} fill className="object-cover" sizes="50vw" />
+                    <Image src={src} alt={label} fill className="object-cover" sizes="(max-width: 768px) 50vw, 40vw" quality={95} />
                   </div>
-                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "#fbbf24" }}>{label}</p>
+                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "#60a5fa" }}>{label}</p>
                 </div>
               ))}
             </div>
