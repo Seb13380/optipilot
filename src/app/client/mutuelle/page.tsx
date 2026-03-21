@@ -52,6 +52,7 @@ export default function ClientMutuellePage() {
   const [autoCapturing, setAutoCapturing] = useState(false);
   const [cameraStarted, setCameraStarted] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupResults, setLookupResults] = useState<BridgeClient[]>([]);
@@ -464,26 +465,35 @@ export default function ClientMutuellePage() {
                   className="rounded-2xl overflow-hidden"
                   style={{ border: "1px solid rgba(83,49,208,0.45)" }}
                 >
-                  <div className="px-4 py-2.5" style={{ background: "rgba(8,2,40,0.98)" }}>
+                  <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: "rgba(8,2,40,0.98)" }}>
                     <p className="text-sm font-bold" style={{ color: "#FDFDFE" }}>Informations détectées</p>
+                    <button
+                      onClick={() => setEditing((v) => !v)}
+                      className="text-xs font-semibold px-3 py-1 rounded-xl"
+                      style={{ background: editing ? "rgba(83,49,208,0.6)" : "rgba(83,49,208,0.25)", color: "#C4C1EA", border: "1px solid rgba(83,49,208,0.5)" }}
+                    >
+                      {editing ? "Terminer" : "Modifier"}
+                    </button>
                   </div>
-                  {[
-                    { label: "Nom", value: mutuelle.nom },
-                    { label: "Prénom", value: mutuelle.prenom },
-                    { label: "Date de naissance", value: mutuelle.dateNaissance },
-                    { label: "N° sécurité sociale (NNI)", value: mutuelle.numSecu },
-                    { label: "N° adhérent", value: mutuelle.numAdherent },
-                    { label: "N° AMC", value: mutuelle.numAmc },
-                    { label: "Adresse", value: mutuelle.adresse },
-                    { label: "Code postal", value: mutuelle.codePostal },
-                    { label: "Ville", value: mutuelle.ville },
-                    { label: "Mutuelle", value: mutuelle.mutuelle },
-                    { label: "Niveau de garantie", value: mutuelle.niveauGarantie },
-                    { label: "Validité", value: mutuelle.dateValidite },
-                    { label: "Organisme", value: mutuelle.organisme },
-                  ]
-                    .filter(({ value }) => value)
-                    .map(({ label, value }, idx) => (
+                  {(
+                    [
+                      { label: "Nom", field: "nom" as keyof MutuelleData },
+                      { label: "Prénom", field: "prenom" as keyof MutuelleData },
+                      { label: "Date de naissance", field: "dateNaissance" as keyof MutuelleData },
+                      { label: "N° sécurité sociale (NNI)", field: "numSecu" as keyof MutuelleData },
+                      { label: "N° adhérent", field: "numAdherent" as keyof MutuelleData },
+                      { label: "N° AMC", field: "numAmc" as keyof MutuelleData },
+                      { label: "Adresse", field: "adresse" as keyof MutuelleData },
+                      { label: "Code postal", field: "codePostal" as keyof MutuelleData },
+                      { label: "Ville", field: "ville" as keyof MutuelleData },
+                      { label: "Mutuelle", field: "mutuelle" as keyof MutuelleData },
+                      { label: "Niveau de garantie", field: "niveauGarantie" as keyof MutuelleData },
+                      { label: "Validité", field: "dateValidite" as keyof MutuelleData },
+                      { label: "Organisme", field: "organisme" as keyof MutuelleData },
+                    ] as { label: string; field: keyof MutuelleData }[]
+                  )
+                    .filter(({ field }) => editing || mutuelle[field])
+                    .map(({ label, field }, idx) => (
                       <div
                         key={label}
                         className="flex items-center px-3 py-1.5 gap-1"
@@ -491,7 +501,17 @@ export default function ClientMutuellePage() {
                       >
                         <span className="text-sm font-medium text-center" style={{ color: "#9B96DA", flex: 1 }}>{label}</span>
                         <span className="w-px self-stretch" style={{ background: "rgba(83,49,208,0.25)" }} />
-                        <span className="text-sm font-bold text-center" style={{ color: "#DDDAF5", flex: 1 }}>{value}</span>
+                        {editing ? (
+                          <input
+                            className="text-sm font-bold text-center rounded-lg px-2 py-0.5 outline-none"
+                            style={{ color: "#DDDAF5", background: "rgba(83,49,208,0.25)", border: "1px solid rgba(83,49,208,0.5)", flex: 1 }}
+                            value={(mutuelle[field] as string) ?? ""}
+                            onChange={(e) => setMutuelle((m) => ({ ...m, [field]: e.target.value }))}
+                            placeholder="—"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold text-center" style={{ color: "#DDDAF5", flex: 1 }}>{mutuelle[field]}</span>
+                        )}
                       </div>
                     ))
                   }
