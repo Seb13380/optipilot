@@ -400,7 +400,7 @@ function DashboardPage() {
           {!loading && nbDevis === 0 && (
             <div className="rounded-2xl px-4 py-3 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
               <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>Démarrez votre première vente pour voir votre impact</p>
-              <p className="text-xs mt-1.5 font-bold" style={{ color: "#34D399" }}>Estimation mensuelle : ≈ +800€ · +22h libérées / mois</p>
+              <p className="text-xs mt-1.5 font-bold" style={{ color: "#34D399" }}>Estimation mensuelle : ≈ +900€ à +1800€ de CA +22h libérées / mois</p>
             </div>
           )}
         </motion.div>

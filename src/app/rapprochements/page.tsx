@@ -939,7 +939,7 @@ export default function RapprochementsPage() {
               className="rounded-2xl p-4"
             style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)" }}
           >
-            <p className="text-xl font-semibold" style={{ color: "#A78BFA" }}>🏥 Sécurité Sociale en attente</p>
+            <p className="text-xl font-semibold" style={{ color: "#A78BFA" }}> Sécurité Sociale en attente</p>
             <p className="text-2xl font-bold text-white mt-1">{stats.countEnAttenteSS}</p>
             <p className="text-sm mt-0.5" style={{ color: "#C4B5FD" }}>{fmt(stats.totalAttenduSS)}</p>
             </div>
@@ -947,7 +947,7 @@ export default function RapprochementsPage() {
               className="rounded-2xl p-4"
             style={{ background: "rgba(244,114,182,0.1)", border: "1px solid rgba(244,114,182,0.25)" }}
           >
-            <p className="text-xl font-semibold" style={{ color: "#F472B6" }}>🛡️ Mutuelle en attente</p>
+            <p className="text-xl font-semibold" style={{ color: "#F472B6" }}> Mutuelle en attente</p>
             <p className="text-2xl font-bold text-white mt-1">{stats.countEnAttenteMutuelle}</p>
             <p className="text-sm mt-0.5" style={{ color: "#FBCFE8" }}>{fmt(stats.totalAttenduMutuelle)}</p>
             </div>
@@ -955,7 +955,7 @@ export default function RapprochementsPage() {
               className="rounded-2xl p-4"
             style={{ background: "rgba(251,113,133,0.08)", border: "1px solid rgba(251,113,133,0.25)" }}
           >
-            <p className="text-xl font-semibold" style={{ color: "#FB7185" }}>⚠️ Problèmes</p>
+            <p className="text-xl font-semibold" style={{ color: "#FB7185" }}> Problèmes</p>
               <p className="text-2xl font-bold text-white mt-1">{stats.countProblemes}</p>
               <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>rejet / partiel</p>
             </div>
@@ -963,7 +963,7 @@ export default function RapprochementsPage() {
               className="rounded-2xl p-4"
               style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}
             >
-              <p className="text-xl font-semibold" style={{ color: "#22C55E" }}>✅ Reçus ce mois</p>
+              <p className="text-xl font-semibold" style={{ color: "#22C55E" }}> Reçus ce mois</p>
               <p className="text-2xl font-bold text-white mt-1">{fmt(stats.totalRecuMois)}</p>
               <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>encaissé</p>
             </div>

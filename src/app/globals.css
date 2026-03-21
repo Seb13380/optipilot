@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html {
+  /* Base rem = 18px → tous les utilitaires Tailwind (text-xs, text-sm…) grossissent proportionnellement */
+  font-size: 18px;
+}
+
 :root {
   --background: #f0f0fa;
   --foreground: #111827;
