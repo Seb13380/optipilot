@@ -279,15 +279,15 @@ export default function ComparateurPage() {
                 { src: "/assets/images/progs.webp", label: "Zones de vision" },
                 { src: "/assets/images/progs2.webp", label: "Vue frontale" },
               ].map(({ src, label }) => (
-                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "rgba(10,3,56,0.7)", border: "1px solid rgba(244,114,182,0.3)" }}>
+                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0a0338", border: "1px solid rgba(244,114,182,0.45)" }}>
                   <div className="relative w-full" style={{ aspectRatio: "1" }}>
                     <Image src={src} alt={label} fill className="object-cover" sizes="33vw" />
                   </div>
-                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "rgba(244,114,182,0.8)" }}>{label}</p>
+                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "#f472b6" }}>{label}</p>
                 </div>
               ))}
             </div>
-            <p className="text-xs mt-2 px-1" style={{ color: "rgba(155,150,218,0.6)" }}>
+            <p className="text-xs mt-2 px-1" style={{ color: "rgba(155,150,218,0.85)" }}>
               Le verre progressif comprend 3 zones invisibles : vision de loin (haut), intermédiaire (milieu) et de près (bas). Un seul verre pour toutes les distances.
             </p>
           </div>
@@ -300,15 +300,15 @@ export default function ComparateurPage() {
                 { src: "/assets/images/transitions.webp", label: "En intérieur (clairs)" },
                 { src: "/assets/images/verres-transitions.webp", label: "En extérieur (foncés)" },
               ].map(({ src, label }) => (
-                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "rgba(10,3,56,0.7)", border: "1px solid rgba(251,191,36,0.3)" }}>
+                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0a0338", border: "1px solid rgba(251,191,36,0.45)" }}>
                   <div className="relative w-full" style={{ aspectRatio: "4/3" }}>
                     <Image src={src} alt={label} fill className="object-cover" sizes="50vw" />
                   </div>
-                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "rgba(251,191,36,0.8)" }}>{label}</p>
+                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "#fbbf24" }}>{label}</p>
                 </div>
               ))}
             </div>
-            <p className="text-xs mt-2 px-1" style={{ color: "rgba(155,150,218,0.6)" }}>
+            <p className="text-xs mt-2 px-1" style={{ color: "rgba(155,150,218,0.85)" }}>
               Les verres Transitions s&apos;obscurcissent automatiquement au soleil et redeviennent clairs à l&apos;intérieur en 30 secondes. Ils remplacent les lunettes de soleil au quotidien.
             </p>
           </div>
