@@ -13,6 +13,8 @@ const prisma = new PrismaClient();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://optipilot.vercel.app",
+  "https://optipilot.fr",
+  "https://www.optipilot.fr",
   ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
 ];
 
