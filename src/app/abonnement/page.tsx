@@ -38,7 +38,7 @@ const PLANS = [
   {
     id: "standard",
     label: "Standard",
-    price: 199,
+    price: 249,
     unit: "/ mois",
     badge: null,
     sub: null,
@@ -47,7 +47,7 @@ const PLANS = [
   {
     id: "premium",
     label: "Premium",
-    price: 249,
+    price: 299,
     unit: "/ mois",
     badge: "Recommandé",
     sub: "Accès complet + bridge Optimum",

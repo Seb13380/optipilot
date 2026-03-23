@@ -561,7 +561,7 @@ export default function ConfigPage() {
 
                 {/* Plan actif */}
                 <div
-                  className="mt-4 mb-2 flex items-center justify-between px-5 py-4 rounded-xl"
+                  className="mt-4 mb-2 flex flex-col gap-3 px-5 py-4 rounded-xl"
                   style={{ background: "rgba(83,49,208,0.18)", border: "1.5px solid rgba(83,49,208,0.45)" }}
                 >
                   <div>
@@ -573,10 +573,10 @@ export default function ConfigPage() {
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={() => router.push("/abonnement")}
-                    className="px-5 py-3 rounded-xl text-base font-bold"
-                    style={{ background: "linear-gradient(135deg,#5331D0,#9B96DA)", color: "#fff" }}
+                    className="w-full py-3 rounded-xl text-base font-bold"
+                    style={{ background: "linear-gradient(135deg,#5331D0,#7C5CE5)", color: "#fff", boxShadow: "0 4px 16px rgba(83,49,208,0.5)" }}
                   >
-                    Gérer l&apos;abonnement →
+                    💳 Gérer l&apos;abonnement →
                   </motion.button>
                 </div>
 

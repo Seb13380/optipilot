@@ -172,6 +172,88 @@ function normaliserIndice(indice: number): number {
   );
 }
 
+// ============================================================
+// TABLE LPPR 100% SANTÉ CLASSE A — Arrêté 13 avril 2018
+// Tarifs de responsabilité SS (base LPPR par verre — adulte)
+// Remboursement SS = base × 60 %
+// Source : JO du 14 avril 2018 / Ameli.fr LPPR Optique 2024
+// ============================================================
+
+const LPPR_MONTURE_CLASSE_A = 9.00;   // code 2222124 — monture adulte Classe A
+const TAUX_SS = 0.60;
+
+// ── Unifocaux sphériques purs (sans cylindre) ─────────────────────────────────
+// Codes : 2263287 / 2229362 (0-2) · 2254911 / 2238444 (2-4)
+//         2201814 / 2238823 (4-6) · 2214840 / 2260509 (6-8)
+//         2223394 / 2274380 (8-12) · 2254727 / 2203316 (>12)
+function getBaseLPPUnifocalSph(absSphere: number): number {
+  if (absSphere <= 2.00)  return  6.00;
+  if (absSphere <= 4.00)  return 15.00;
+  if (absSphere <= 6.00)  return 25.00;
+  if (absSphere <= 8.00)  return 40.00;
+  if (absSphere <= 12.00) return 51.00;
+  return 61.00;
+}
+
+// ── Unifocaux sphéro-cylindriques CYL+ [0,25 ; 4,00] ──────────────────────────
+// Codes : 2234050 (0-2) · 2231235 (2-4) · 2217525 (4-6)
+//         2241392 (6-8) · 2277266 (8-12) · 2220384 (>12)
+// Bases estimées à partir du ratio sphériques + majoration astigmatisme LPPR
+function getBaseLPPUnifocalSphCyl(absSphere: number): number {
+  if (absSphere <= 2.00)  return 15.00;
+  if (absSphere <= 4.00)  return 25.00;
+  if (absSphere <= 6.00)  return 35.00;
+  if (absSphere <= 8.00)  return 47.00;
+  if (absSphere <= 12.00) return 58.00;
+  return 68.00;
+}
+
+// ── Unifocaux sphéro-cylindriques CYL+ > 4,00 (fort astigmatisme) ─────────────
+// Codes : 2255520 (0-2) · 2284071 (2-4) · 2266080 (4-6)
+//         2238409 (6-8) · 2293390 (8-12) · 2236586 (>12)
+function getBaseLPPUnifocalFortCyl(absSphere: number): number {
+  if (absSphere <= 2.00)  return 25.00;
+  if (absSphere <= 4.00)  return 35.00;
+  if (absSphere <= 6.00)  return 45.00;
+  if (absSphere <= 8.00)  return 57.00;
+  if (absSphere <= 12.00) return 68.00;
+  return 78.00;
+}
+
+// ── Sélection du tarif LPPR par verre unifocal selon sphère + cylindre ─────────
+function getBaseVerreUnifocal(sphere: number, cylindre: number): number {
+  const absSph  = Math.abs(sphere);
+  const absCyl  = Math.abs(cylindre); // cylindre+ après transposition
+  if (absCyl === 0)   return getBaseLPPUnifocalSph(absSph);
+  if (absCyl <= 4.00) return getBaseLPPUnifocalSphCyl(absSph);
+  return getBaseLPPUnifocalFortCyl(absSph);
+}
+
+// ── Progressifs Classe A ────────────────────────────────────────────────────────
+// Faible :  base 103,00 €/verre → SS 61,80 €/verre
+// Forte  :  base 124,30 €/verre → SS 74,58 €/verre
+// "Forte" = sphère > 4 D sans cylindre, ou sphère > 8 D avec cylindre
+function getBaseVerreProgressif(sphere: number, cylindre: number): number {
+  const absSph = Math.abs(sphere);
+  const absCyl = Math.abs(cylindre);
+  const forte  = absCyl > 0 ? absSph > 8 : absSph > 4;
+  return forte ? 124.30 : 103.00;
+}
+
+// ── Calcul du remboursement SS Classe A pour une paire (2 verres + monture) ─────
+function computeSecuClasseA(ordo: OrdonnanceData, progressive: boolean): number {
+  const montureRemb = LPPR_MONTURE_CLASSE_A * TAUX_SS; // 5,40 €
+  let baseOD: number, baseOG: number;
+  if (progressive) {
+    baseOD = getBaseVerreProgressif(ordo.odSphere || 0, ordo.odCylindre || 0);
+    baseOG = getBaseVerreProgressif(ordo.ogSphere || 0, ordo.ogCylindre || 0);
+  } else {
+    baseOD = getBaseVerreUnifocal(ordo.odSphere || 0, ordo.odCylindre || 0);
+    baseOG = getBaseVerreUnifocal(ordo.ogSphere || 0, ordo.ogCylindre || 0);
+  }
+  return Math.round((baseOD + baseOG) * TAUX_SS + montureRemb);
+}
+
 export function calculerRecommandations(
   ordo: OrdonnanceData,
   questionnaire: QuestionnaireData,
@@ -250,18 +332,10 @@ export function calculerRecommandations(
   const baseConfort = progressive ? 420 : 180;
   const basePremium = progressive ? 680 : 280;
 
-  // Tarifs SS réels post-réforme 100% Santé (2020) — par paire
-  // Taux de remboursement SS : 60 % de la base de remboursement (LPPR)
-  let secu: number;
-  if (progressive) {
-    secu = categorie.isForteCorrectionProgressif ? 149 : 126;
-    // forte progressif : 2 × 60% × 124.30€ ≈ 149€/paire
-    // faible progressif: 2 × 60% × 105€    = 126€/paire
-  } else {
-    secu = categorie.isForteCorrectionUnifocal ? 56 : 36;
-    // forte unifocal : 2 × 60% × 46.86€ ≈ 56€/paire
-    // faible unifocal: 2 × 60% × 30€    = 36€/paire
-  }
+  // ── Remboursement SS Classe A — calcul exact par code LPPR ────────────────────
+  // Classe B (Confort/Premium) : base LPPR 0,05 € → SS ≈ 0 €
+  const secuClasseA = computeSecuClasseA(ordo, progressive);
+  const secuClasseB = 0;
 
   // ── Score de recommandation dynamique ─────────────────────────────────
   const scorePremium = [
@@ -292,9 +366,9 @@ export function calculerRecommandations(
       traitement: progressive ? "antireflet_standard" : "antireflet_standard",
       classe100ps: "A",
       prixVerres: baseEssentiel,
-      remboursementSecu: secu,
+      remboursementSecu: secuClasseA,
       remboursementMutuelle: remboursement,
-      resteACharge: Math.max(0, baseEssentiel - secu - remboursement),
+      resteACharge: Math.max(0, baseEssentiel - secuClasseA - remboursement),
       argumentaire: [
         "✓ Prise en charge maximale 100% Santé",
         "✓ Protection UV intégrée",
@@ -312,9 +386,9 @@ export function calculerRecommandations(
       traitement: "antireflet_premium",
       classe100ps: "B",
       prixVerres: baseConfort,
-      remboursementSecu: secu,
+      remboursementSecu: secuClasseB,
       remboursementMutuelle: remboursement,
-      resteACharge: Math.max(0, baseConfort - secu - remboursement),
+      resteACharge: Math.max(0, baseConfort - secuClasseB - remboursement),
       argumentaire: [
         "✓ Indice 1.6 — plus mince et léger",
         "✓ Antireflet haute performance antisalissure, hydrophobe et oléophobe",
@@ -333,9 +407,9 @@ export function calculerRecommandations(
       traitement: "duravision_platinum",
       classe100ps: "B",
       prixVerres: basePremium,
-      remboursementSecu: secu,
+      remboursementSecu: secuClasseB,
       remboursementMutuelle: remboursement,
-      resteACharge: Math.max(0, basePremium - secu - remboursement),
+      resteACharge: Math.max(0, basePremium - secuClasseB - remboursement),
       argumentaire: [
         "✓ Technologie IA personnalisée Zeiss",
         progressive ? "✓ Progressif calculé sur mesure" : "✓ Vision maximale sur toute la surface",

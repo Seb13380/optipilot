@@ -268,11 +268,11 @@ function OrganismeBlock({
   return (
     <div
       className="flex-1 p-3 rounded-xl"
-      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ background: "rgba(83,49,208,0.06)", border: "1px solid rgba(83,49,208,0.15)" }}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold" style={{ color: "#9B96DA" }}>
-          {organisme === "SS" ? "🏥 Sécurité Sociale" : "🛡️ Mutuelle"}
+        <span className="text-xs font-bold" style={{ color: "#5331D0" }}>
+          {organisme === "SS" ? "🏥 Sécu. Sociale" : "🛡️ Mutuelle"}
         </span>
         {statut && <BadgeTP statut={statut} />}
       </div>
@@ -280,31 +280,31 @@ function OrganismeBlock({
       <div className="space-y-1 text-sm">
         {montantAttendu != null && (
           <div className="flex justify-between">
-            <span style={{ color: "rgba(255,255,255,0.5)" }}>Attendu</span>
-            <span className="font-semibold text-white">{fmt(montantAttendu)}</span>
+            <span style={{ color: "rgba(28,11,98,0.5)" }}>Attendu</span>
+            <span className="font-semibold" style={{ color: "#1C0B62" }}>{fmt(montantAttendu)}</span>
           </div>
         )}
         {(statut === "recu" || statut === "partiel") && montantRecu != null && (
           <div className="flex justify-between">
-            <span style={{ color: "rgba(255,255,255,0.5)" }}>Reçu</span>
-            <span className="font-semibold" style={{ color: statut === "recu" ? "#34D399" : "#F472B6" }}>
+            <span style={{ color: "rgba(28,11,98,0.5)" }}>Reçu</span>
+            <span className="font-semibold" style={{ color: statut === "recu" ? "#15803D" : "#9D174D" }}>
               {fmt(montantRecu)}
             </span>
           </div>
         )}
         {datePaiement && (
           <div className="flex justify-between">
-            <span style={{ color: "rgba(255,255,255,0.5)" }}>Date</span>
-            <span style={{ color: "rgba(255,255,255,0.7)" }}>{fmtDate(datePaiement)}</span>
+            <span style={{ color: "rgba(28,11,98,0.5)" }}>Date</span>
+            <span style={{ color: "rgba(28,11,98,0.7)" }}>{fmtDate(datePaiement)}</span>
           </div>
         )}
         {statut === "rejete" && motifRejet && (
-          <p className="mt-1 text-xs px-2 py-1 rounded-lg" style={{ background: "rgba(251,113,133,0.12)", color: "#FB7185" }}>
+          <p className="mt-1 text-xs px-2 py-1 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", color: "#991B1B" }}>
             {motifRejet}
           </p>
         )}
         {statut === "partiel" && montantAttendu != null && montantRecu != null && (
-          <p className="mt-1 text-xs" style={{ color: "#F472B6" }}>
+          <p className="mt-1 text-xs" style={{ color: "#9D174D" }}>
             Écart : {fmt(montantAttendu - montantRecu)}
           </p>
         )}
@@ -412,27 +412,28 @@ function DossierCard({ dossier, onUpdate }: DossierCardProps) {
       className="rounded-2xl p-4"
       style={{
         background: hasProbleme
-          ? "rgba(239,68,68,0.05)"
-          : "rgba(255,255,255,0.04)",
+          ? "rgba(239,68,68,0.06)"
+          : "rgba(255,255,255,0.75)",
         border: hasProbleme
-          ? "1px solid rgba(239,68,68,0.2)"
-          : "1px solid rgba(255,255,255,0.08)",
+          ? "1px solid rgba(239,68,68,0.35)"
+          : "1px solid rgba(83,49,208,0.15)",
+        boxShadow: "0 1px 8px rgba(83,49,208,0.08)",
       }}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="font-bold text-white text-base">
+          <p className="font-bold text-base" style={{ color: "#1C0B62" }}>
             {dossier.client.prenom} {dossier.client.nom}
           </p>
-          <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+          <p className="text-xs mt-0.5" style={{ color: "rgba(28,11,98,0.5)" }}>
             {dossier.client.mutuelle && <>{dossier.client.mutuelle} · </>}
             Offre {offre} · Vendu le {fmtDate(dossier.createdAt)}
           </p>
         </div>
         <div className="text-right">
-          <p className="font-bold text-white">{fmt(total)}</p>
-          <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+          <p className="font-bold" style={{ color: "#1C0B62" }}>{fmt(total)}</p>
+          <p className="text-xs mt-0.5" style={{ color: "rgba(28,11,98,0.4)" }}>
             DEV-{dossier.id.slice(-6).toUpperCase()}
           </p>
         </div>
@@ -463,7 +464,7 @@ function DossierCard({ dossier, onUpdate }: DossierCardProps) {
           />
         )}
         {!dossier.statutPaiementSS && !dossier.statutPaiementMutuelle && (
-          <p className="text-sm italic" style={{ color: "rgba(255,255,255,0.3)" }}>
+          <p className="text-sm italic" style={{ color: "rgba(28,11,98,0.4)" }}>
             Aucun suivi tiers payant configuré
           </p>
         )}
@@ -937,35 +938,37 @@ export default function RapprochementsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div
               className="rounded-2xl p-4"
-            style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)" }}
-          >
-            <p className="text-xl font-semibold" style={{ color: "#A78BFA" }}> Sécurité Sociale en attente</p>
-            <p className="text-2xl font-bold text-white mt-1">{stats.countEnAttenteSS}</p>
-            <p className="text-sm mt-0.5" style={{ color: "#C4B5FD" }}>{fmt(stats.totalAttenduSS)}</p>
-            </div>
-            <div
-              className="rounded-2xl p-4"
-            style={{ background: "rgba(244,114,182,0.1)", border: "1px solid rgba(244,114,182,0.25)" }}
-          >
-            <p className="text-xl font-semibold" style={{ color: "#F472B6" }}> Mutuelle en attente</p>
-            <p className="text-2xl font-bold text-white mt-1">{stats.countEnAttenteMutuelle}</p>
-            <p className="text-sm mt-0.5" style={{ color: "#FBCFE8" }}>{fmt(stats.totalAttenduMutuelle)}</p>
-            </div>
-            <div
-              className="rounded-2xl p-4"
-            style={{ background: "rgba(251,113,133,0.08)", border: "1px solid rgba(251,113,133,0.25)" }}
-          >
-            <p className="text-xl font-semibold" style={{ color: "#FB7185" }}> Problèmes</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.countProblemes}</p>
-              <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>rejet / partiel</p>
-            </div>
-            <div
-              className="rounded-2xl p-4"
-              style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}
+              style={{ background: "rgba(167,139,250,0.18)", border: "1px solid rgba(167,139,250,0.4)" }}
             >
-              <p className="text-xl font-semibold" style={{ color: "#22C55E" }}> Reçus ce mois</p>
-              <p className="text-2xl font-bold text-white mt-1">{fmt(stats.totalRecuMois)}</p>
-              <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>encaissé</p>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#7C3AED" }}>Sécu. Sociale</p>
+              <p className="text-3xl font-extrabold mt-1" style={{ color: "#4C1D95" }}>{stats.countEnAttenteSS}</p>
+              <p className="text-sm font-semibold mt-0.5" style={{ color: "#6D28D9" }}>{fmt(stats.totalAttenduSS)}</p>
+              <p className="text-xs mt-0.5" style={{ color: "#7C3AED" }}>en attente</p>
+            </div>
+            <div
+              className="rounded-2xl p-4"
+              style={{ background: "rgba(244,114,182,0.18)", border: "1px solid rgba(244,114,182,0.4)" }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#BE185D" }}>Mutuelle</p>
+              <p className="text-3xl font-extrabold mt-1" style={{ color: "#831843" }}>{stats.countEnAttenteMutuelle}</p>
+              <p className="text-sm font-semibold mt-0.5" style={{ color: "#9D174D" }}>{fmt(stats.totalAttenduMutuelle)}</p>
+              <p className="text-xs mt-0.5" style={{ color: "#BE185D" }}>en attente</p>
+            </div>
+            <div
+              className="rounded-2xl p-4"
+              style={{ background: "rgba(251,113,133,0.15)", border: "1px solid rgba(251,113,133,0.4)" }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#BE123C" }}>Problèmes</p>
+              <p className="text-3xl font-extrabold mt-1" style={{ color: "#881337" }}>{stats.countProblemes}</p>
+              <p className="text-xs mt-0.5" style={{ color: "#BE123C" }}>rejet / partiel</p>
+            </div>
+            <div
+              className="rounded-2xl p-4"
+              style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)" }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#15803D" }}>Reçus ce mois</p>
+              <p className="text-2xl font-extrabold mt-1" style={{ color: "#14532D" }}>{fmt(stats.totalRecuMois)}</p>
+              <p className="text-xs mt-0.5" style={{ color: "#15803D" }}>encaissé</p>
             </div>
           </div>
         )}
@@ -1009,8 +1012,8 @@ export default function RapprochementsPage() {
             >
               🔍
             </div>
-            <p className="font-bold text-white text-xl">Aucun dossier</p>
-            <p className="text-sm mt-2" style={{ color: "rgba(255,255,255,0.75)" }}>
+            <p className="font-bold text-xl" style={{ color: "#1C0B62" }}>Aucun dossier</p>
+            <p className="text-sm mt-2" style={{ color: "rgba(28,11,98,0.6)" }}>
               {filtre === "tous"
                 ? "Commencez par créer un suivi via « + Nouveau »"
                 : "Aucun dossier ne correspond à ce filtre"}
