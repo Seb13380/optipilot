@@ -62,12 +62,34 @@ a {
   border-radius: 2px;
 }
 
+/* ── Dark mode variables ── */
+html.dark {
+  --background: #0a0318;
+  --foreground: #FDFDFE;
+  --card: #0d0530;
+  --card-alt: #110640;
+  --text-muted: #9B96DA;
+  --border: rgba(83,49,208,0.35);
+}
+
+html.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
 /* Background principal des pages */
 .page-bg {
   background:
     radial-gradient(circle at 15% 20%, rgba(124,58,237,0.35), transparent 45%),
     radial-gradient(circle at 85% 80%, rgba(236,72,153,0.28), transparent 45%),
     linear-gradient(180deg, #f0f0fa 0%, #e8e8f5 100%);
+}
+
+html.dark .page-bg {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(124,58,237,0.4), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(236,72,153,0.3), transparent 45%),
+    linear-gradient(180deg, #0a0318 0%, #0f052a 100%);
 }
 
 /* Card base */

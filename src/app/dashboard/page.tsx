@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OpticianGuard from "@/components/OpticianGuard";
 import { lockSession } from "@/lib/opticianAuth";
+import { useApp } from "@/lib/AppContext";
 
 interface Stats {
   devisJour: number;
@@ -111,7 +112,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [lang, setLang] = useState<"FR" | "EN">("FR");
+  const { lang, setLang, t, theme, toggleTheme } = useApp();
   const [usageCount, setUsageCount] = useState(0);
   const [roiDismissed, setRoiDismissed] = useState(false);
 
@@ -235,11 +236,11 @@ function DashboardPage() {
               style={{ width: 50, height: 50, objectFit: "contain", filter: "drop-shadow(0 0 14px rgba(124,58,237,0.55)) drop-shadow(0 0 28px rgba(124,58,237,0.3))" }}
             />
             <div>
-              <h1 className="text-2xl font-black leading-tight" style={{ color: "#111827" }}>
-                Bonjour{user?.nom ? `, ${user.nom.split(" ")[0]}` : ""}
+              <h1 className="text-2xl font-black leading-tight" style={{ color: theme === "dark" ? "#FDFDFE" : "#111827" }}>
+                {t.greetings}{user?.nom ? `, ${user.nom.split(" ")[0]}` : ""}
               </h1>
-              <p className="text-sm mt-0.5" style={{ color: "#6b7280" }}>
-                {user?.magasinNom || "Votre magasin"} · {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+              <p className="text-sm mt-0.5" style={{ color: theme === "dark" ? "#9B96DA" : "#6b7280" }}>
+                {user?.magasinNom || "Votre magasin"} · {new Date().toLocaleDateString(lang === "EN" ? "en-GB" : "fr-FR", { weekday: "long", day: "numeric", month: "long" })}
               </p>
             </div>
           </div>
@@ -260,12 +261,25 @@ function DashboardPage() {
                 </button>
               ))}
             </div>
+            {/* Bascule jour/nuit */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl"
+              style={{ color: "#5331D0", border: "1px solid rgba(83,49,208,0.35)" }}
+              title={theme === "dark" ? "Mode jour" : "Mode nuit"}
+            >
+              {theme === "dark" ? (
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" stroke="#5331D0" strokeWidth="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              ) : (
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#5331D0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )}
+            </button>
             <button
               onClick={handleLogout}
               className="text-sm font-bold px-4 py-2 rounded-xl"
               style={{ color: "#5331D0", background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.18)" }}
             >
-              Quitter
+              {t.quit}
             </button>
             <motion.button
               whileTap={{ scale: 0.9 }}
@@ -304,7 +318,7 @@ function DashboardPage() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between px-6 pt-7 pb-5">
-                  <span className="text-xl font-black" style={{ color: "#FDFDFE" }}>Menu</span>
+                  <span className="text-xl font-black" style={{ color: "#FDFDFE" }}>{t.menu}</span>
                   <button onClick={() => setMenuOpen(false)} className="p-1.5 rounded-lg" style={{ color: "#9B96DA" }}>
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                       <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -313,16 +327,16 @@ function DashboardPage() {
                 </div>
                 <nav className="flex flex-col gap-1 px-4 flex-1">
                   {[
-                    { label: "Tableau de bord",    href: "/dashboard" },
-                    { label: "Nouveau client",     href: "/nouveau-client" },
-                    { label: "Scanner ordonnance", href: "/scanner" },
-                    { label: "Recommandations",    href: "/recommandations" },
-                    { label: "Devis",              href: "/devis" },
-                    { label: "Historique",         href: "/historique" },
-                    { label: "Catalogue montures", href: "/catalogue" },
-                    { label: "Rapprochements",     href: "/rapprochements" },
-                    { label: "Relances",           href: "/relances" },
-                    { label: "Configuration",      href: "/config" },
+                    { label: t.dashboard,        href: "/dashboard" },
+                    { label: t.newClient,        href: "/nouveau-client" },
+                    { label: t.scanPrescription, href: "/scanner" },
+                    { label: t.recommendations,  href: "/recommandations" },
+                    { label: t.quote,            href: "/devis" },
+                    { label: t.history,          href: "/historique" },
+                    { label: t.catalogue,        href: "/catalogue" },
+                    { label: t.reconciliations,  href: "/rapprochements" },
+                    { label: t.relancesTitle,    href: "/relances" },
+                    { label: t.configuration,    href: "/config" },
                   ].map((item) => (
                     <button
                       key={item.href}
@@ -342,7 +356,7 @@ function DashboardPage() {
                     className="w-full py-3 rounded-xl text-base font-bold"
                     style={{ color: "#f87171", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
                   >
-                    Se déconnecter
+                    {t.logout}
                   </button>
                 </div>
               </motion.div>

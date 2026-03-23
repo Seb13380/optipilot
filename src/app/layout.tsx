@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import OptiPilotFooter from "@/components/OptiPilotFooter";
+import { AppProvider } from "@/lib/AppContext";
 
 export const metadata: Metadata = {
   title: "OptiPilot — Copilote IA Opticien",
@@ -43,8 +44,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="antialiased page-bg">
-        {children}
-        <OptiPilotFooter />
+        <AppProvider>
+          {children}
+          <OptiPilotFooter />
+        </AppProvider>
       </body>
     </html>
   );
