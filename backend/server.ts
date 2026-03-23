@@ -1257,6 +1257,86 @@ app.get("/api/rapprochements/devis-acceptes/:magasinId", async (req, res) => {
   }
 });
 
+// ─── Équipe opticiens ─────────────────────────────────────
+
+// Lister tous les opticiens du magasin
+app.get("/api/utilisateurs/:magasinId", async (req, res) => {
+  try {
+    const requester = (req as AuthRequest).user;
+    if (!requester || requester.magasinId !== req.params.magasinId) {
+      return res.status(403).json({ error: "Accès refusé" });
+    }
+    const users = await prisma.utilisateur.findMany({
+      where: { magasinId: req.params.magasinId },
+      select: { id: true, nom: true, email: true, role: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
+    });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// Créer un opticien dans le même magasin (admin uniquement)
+app.post("/api/utilisateur", async (req, res) => {
+  try {
+    const requester = (req as AuthRequest).user;
+    if (!requester || requester.role !== "admin") {
+      return res.status(403).json({ error: "Réservé aux administrateurs" });
+    }
+    const { nom, email, motDePasse, role = "vendeur" } = req.body as {
+      nom: string; email: string; motDePasse: string; role?: string;
+    };
+    if (!nom?.trim() || !email?.trim() || !motDePasse) {
+      return res.status(400).json({ error: "Nom, email et mot de passe requis" });
+    }
+    if (motDePasse.length < 8) {
+      return res.status(400).json({ error: "Le mot de passe doit faire au moins 8 caractères" });
+    }
+    const existing = await prisma.utilisateur.findUnique({ where: { email: email.trim() } });
+    if (existing) {
+      return res.status(409).json({ error: "Un compte existe déjà avec cet email" });
+    }
+    const hash = await hashPassword(motDePasse);
+    const user = await prisma.utilisateur.create({
+      data: {
+        magasinId: requester.magasinId,
+        nom: nom.trim(),
+        email: email.trim(),
+        motDePasse: hash,
+        role: ["admin", "vendeur"].includes(role) ? role : "vendeur",
+      },
+      select: { id: true, nom: true, email: true, role: true, createdAt: true },
+    });
+    res.status(201).json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur création opticien" });
+  }
+});
+
+// Supprimer un opticien (admin uniquement, impossible de se supprimer soi-même)
+app.delete("/api/utilisateur/:id", async (req, res) => {
+  try {
+    const requester = (req as AuthRequest).user;
+    if (!requester || requester.role !== "admin") {
+      return res.status(403).json({ error: "Réservé aux administrateurs" });
+    }
+    if (requester.userId === req.params.id) {
+      return res.status(400).json({ error: "Impossible de supprimer son propre compte" });
+    }
+    const target = await prisma.utilisateur.findUnique({ where: { id: req.params.id } });
+    if (!target) return res.status(404).json({ error: "Utilisateur introuvable" });
+    if (target.magasinId !== requester.magasinId) {
+      return res.status(403).json({ error: "Accès refusé" });
+    }
+    await prisma.utilisateur.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur suppression opticien" });
+  }
+});
+
 // ─── Socket.io ────────────────────────────────────────────
 io.on("connection", (socket) => {
   console.log("Client connecté:", socket.id);

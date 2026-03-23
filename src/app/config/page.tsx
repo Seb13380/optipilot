@@ -70,6 +70,7 @@ const TABS = [
   { id: "verriers",  label: "Verriers" },
   { id: "relances",  label: "Relances" },
   { id: "bridge",    label: "Bridge" },
+  { id: "equipe",    label: "Équipe" },
   { id: "compte",    label: "Compte" },
   { id: "securite",  label: "Sécurité" },
 ];
@@ -104,6 +105,71 @@ export default function ConfigPage() {
   const [bridgeStatus, setBridgeStatus] = useState<"idle" | "ok" | "error">("idle");
   const [bridgeTesting, setBridgeTesting] = useState(false);
 
+  // ── État onglet Équipe ──
+  interface TeamMember { id: string; nom: string; email: string; role: string; createdAt: string; }
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [newOpticienNom, setNewOpticienNom] = useState("");
+  const [newOpticienEmail, setNewOpticienEmail] = useState("");
+  const [newOpticienPassword, setNewOpticienPassword] = useState("");
+  const [newOpticienRole, setNewOpticienRole] = useState("vendeur");
+  const [addingOpticien, setAddingOpticien] = useState(false);
+
+  async function loadTeam() {
+    try {
+      setTeamLoading(true);
+      const userRaw = localStorage.getItem("optipilot_user");
+      const token = localStorage.getItem("optipilot_token") || "";
+      if (!userRaw) return;
+      const u = JSON.parse(userRaw);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+      const res = await fetch(`${backendUrl}/api/utilisateurs/${u.magasinId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setTeamMembers(await res.json());
+    } catch { /* ignore */ } finally {
+      setTeamLoading(false);
+    }
+  }
+
+  async function addOpticien() {
+    if (!newOpticienNom.trim() || !newOpticienEmail.trim() || newOpticienPassword.length < 8) {
+      showToast("Nom, email et mot de passe (8 car. min.) requis");
+      return;
+    }
+    setAddingOpticien(true);
+    try {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+      const res = await fetch(`${backendUrl}/api/utilisateur`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ nom: newOpticienNom.trim(), email: newOpticienEmail.trim(), motDePasse: newOpticienPassword, role: newOpticienRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || "Erreur"); return; }
+      setTeamMembers((prev) => [...prev, data]);
+      setNewOpticienNom(""); setNewOpticienEmail(""); setNewOpticienPassword(""); setNewOpticienRole("vendeur");
+      showToast(`${data.nom} ajouté(e) ✓`);
+    } catch { showToast("Impossible de contacter le serveur"); }
+    finally { setAddingOpticien(false); }
+  }
+
+  async function deleteOpticien(id: string, nom: string) {
+    if (!confirm(`Supprimer ${nom} de l’équipe ?`)) return;
+    try {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+      const res = await fetch(`${backendUrl}/api/utilisateur/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { const d = await res.json(); showToast(d.error || "Erreur"); return; }
+      setTeamMembers((prev) => prev.filter((m) => m.id !== id));
+      showToast(`${nom} supprimé(e) ✓`);
+    } catch { showToast("Impossible de contacter le serveur"); }
+  }
+
   async function testerBridge() {
     setBridgeTesting(true);
     setBridgeStatus("idle");
@@ -129,6 +195,12 @@ export default function ConfigPage() {
       }
     } catch { /* ignore */ }
   }, []);
+
+  // Charger l'équipe à l'ouverture de l'onglet
+  useEffect(() => {
+    if (tab === "equipe") loadTeam();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   const [magasin, setMagasin] = useState<ConfigMagasin>({
     nom: "Optique Lumière",
@@ -550,6 +622,113 @@ export default function ConfigPage() {
                   ))}
                 </div>
                 <SaveButton onClick={sauvegarder} />
+              </Card>
+            </motion.div>
+          )}
+
+          {/* ── ONGLET ÉQUIPE ── */}
+          {tab === "equipe" && (
+            <motion.div key="equipe" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <Card>
+                <CardTitle>Équipe du magasin</CardTitle>
+                <p className="text-sm mt-1 mb-5" style={{ color: "rgba(155,150,218,0.8)" }}>
+                  Chaque opticien se connecte avec son propre email et mot de passe.
+                </p>
+
+                {/* Liste des opticiens */}
+                {teamLoading ? (
+                  <p className="text-base" style={{ color: "#9B96DA" }}>Chargement…</p>
+                ) : teamMembers.length === 0 ? (
+                  <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>Aucun opticien trouvé.</p>
+                ) : (
+                  <div className="flex flex-col gap-3 mb-6">
+                    {teamMembers.map((m) => (
+                      <div
+                        key={m.id}
+                        className="flex items-center justify-between px-4 py-3 rounded-xl"
+                        style={{ background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.25)" }}
+                      >
+                        <div>
+                          <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>{m.nom}</p>
+                          <p className="text-sm" style={{ color: "#9B96DA" }}>{m.email}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="text-xs px-2 py-1 rounded-full font-semibold capitalize"
+                            style={{
+                              background: m.role === "admin" ? "rgba(250,204,21,0.15)" : "rgba(83,49,208,0.2)",
+                              color: m.role === "admin" ? "#fbbf24" : "#9B96DA",
+                              border: `1px solid ${m.role === "admin" ? "rgba(250,204,21,0.3)" : "rgba(83,49,208,0.3)"}`,
+                            }}
+                          >
+                            {m.role}
+                          </span>
+                          {accountUser?.role === "admin" && m.id !== accountUser?.id && (
+                            <button
+                              onClick={() => deleteOpticien(m.id, m.nom)}
+                              className="text-xs px-3 py-1 rounded-lg font-semibold"
+                              style={{ background: "rgba(239,68,68,0.12)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.25)" }}
+                            >
+                              Retirer
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Formulaire ajouter un opticien — admin uniquement */}
+                {accountUser?.role === "admin" && (
+                  <div
+                    className="mt-2 p-5 rounded-xl flex flex-col gap-4"
+                    style={{ background: "rgba(2,0,23,0.5)", border: "1px solid rgba(83,49,208,0.3)" }}
+                  >
+                    <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Ajouter un opticien</p>
+                    {[
+                      { label: "Nom complet", value: newOpticienNom, setter: setNewOpticienNom, type: "text", placeholder: "Prénom Nom" },
+                      { label: "Email", value: newOpticienEmail, setter: setNewOpticienEmail, type: "email", placeholder: "opticien@magasin.fr" },
+                      { label: "Mot de passe", value: newOpticienPassword, setter: setNewOpticienPassword, type: "password", placeholder: "8 caractères min." },
+                    ].map(({ label, value, setter, type, placeholder }) => (
+                      <div key={label}>
+                        <label className="text-sm font-semibold mb-1 block" style={{ color: "#9B96DA" }}>{label}</label>
+                        <input
+                          type={type}
+                          value={value}
+                          onChange={(e) => setter(e.target.value)}
+                          placeholder={placeholder}
+                          className="w-full px-4 py-3 rounded-xl text-base border-2 outline-none transition-all"
+                          style={{ background: "rgba(2,0,23,0.7)", borderColor: "rgba(83,49,208,0.35)", color: "#FDFDFE" }}
+                          onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                          onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
+                        />
+                      </div>
+                    ))}
+                    <div>
+                      <label className="text-sm font-semibold mb-1 block" style={{ color: "#9B96DA" }}>Rôle</label>
+                      <div className="flex gap-3">
+                        {["vendeur", "admin"].map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => setNewOpticienRole(r)}
+                            className="flex-1 py-3 rounded-xl text-base font-semibold capitalize border-2 transition-all"
+                            style={{
+                              background: newOpticienRole === r ? "#5331D0" : "rgba(10,3,56,0.6)",
+                              borderColor: newOpticienRole === r ? "#7C5CE5" : "rgba(155,150,218,0.2)",
+                              color: "#FDFDFE",
+                            }}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <SaveButton
+                      onClick={addOpticien}
+                      label={addingOpticien ? "Création…" : "Créer le compte opticien"}
+                    />
+                  </div>
+                )}
               </Card>
             </motion.div>
           )}
