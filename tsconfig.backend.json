@@ -15,5 +15,5 @@
     }
   },
   "include": ["backend/**/*", "src/lib/**/*", "prisma/**/*"],
-  "exclude": ["node_modules", "src/app", "src/lib/opticianAuth.ts", "src/components"]
+  "exclude": ["node_modules", "src/app", "src/lib/opticianAuth.ts", "src/lib/AppContext.tsx", "src/components"]
 }
