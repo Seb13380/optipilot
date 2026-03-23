@@ -20,7 +20,7 @@ const MENU_ITEMS = [
   { label: "Catalogue montures", href: "/catalogue" },
   { label: "Rapprochements",    href: "/rapprochements" },
   { label: "Configuration",     href: "/config" },
-  { label: "💳 Mon abonnement",  href: "/abonnement" },
+  { label: "Mon abonnement",     href: "/abonnement" },
 ];
 
 export default function OptiPilotHeader({
