@@ -23,6 +23,8 @@ const MENU_ITEMS = [
   { label: "Mon abonnement",     href: "/abonnement" },
 ];
 
+const LANGS = ["FR", "EN"];
+
 export default function OptiPilotHeader({
   title,
   showBack = false,
@@ -31,6 +33,7 @@ export default function OptiPilotHeader({
 }: OptiPilotHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [lang, setLang] = useState<"FR" | "EN">("FR");
 
   return (
     <>
@@ -90,6 +93,22 @@ export default function OptiPilotHeader({
         {/* Right */}
         <div className="min-w-20 flex items-center justify-end gap-2">
           {rightAction}
+          {/* Sélecteur de langue */}
+          <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid rgba(83,49,208,0.35)" }}>
+            {LANGS.map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l as "FR" | "EN")}
+                className="px-2.5 py-1 text-xs font-bold transition-all"
+                style={{
+                  background: lang === l ? "#5331D0" : "transparent",
+                  color: lang === l ? "#fff" : "rgba(83,49,208,0.7)",
+                }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setMenuOpen(true)}

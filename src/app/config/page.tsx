@@ -206,9 +206,10 @@ export default function ConfigPage() {
               onClick={() => setTab(t.id)}
               className="px-6 py-3 rounded-xl text-lg font-semibold whitespace-nowrap border-2 transition-all"
               style={{
-                background: tab === t.id ? "rgba(83,49,208,0.25)" : "rgba(10,3,56,0.6)",
-                borderColor: tab === t.id ? "#5331D0" : "rgba(155,150,218,0.2)",
-                color: tab === t.id ? "#9B96DA" : "#FDFDFE",
+                background: tab === t.id ? "#5331D0" : "rgba(10,3,56,0.6)",
+                borderColor: tab === t.id ? "#7C5CE5" : "rgba(155,150,218,0.2)",
+                color: "#FDFDFE",
+                boxShadow: tab === t.id ? "0 2px 12px rgba(83,49,208,0.5)" : "none",
               }}
             >
               {t.label}

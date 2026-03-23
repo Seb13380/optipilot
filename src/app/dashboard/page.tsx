@@ -111,6 +111,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [lang, setLang] = useState<"FR" | "EN">("FR");
   const [usageCount, setUsageCount] = useState(0);
   const [roiDismissed, setRoiDismissed] = useState(false);
 
@@ -243,6 +244,22 @@ function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Sélecteur de langue */}
+            <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid rgba(83,49,208,0.35)" }}>
+              {(["FR", "EN"] as const).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  className="px-2.5 py-1 text-xs font-bold transition-all"
+                  style={{
+                    background: lang === l ? "#5331D0" : "transparent",
+                    color: lang === l ? "#fff" : "rgba(83,49,208,0.7)",
+                  }}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
             <button
               onClick={handleLogout}
               className="text-sm font-bold px-4 py-2 rounded-xl"

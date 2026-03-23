@@ -185,7 +185,7 @@ export default function ComparateurPage() {
           className="mb-8"
         >
           <h2 className="text-xl font-black mb-1" style={{ color: "#FDFDFE" }}>Épaisseur des verres</h2>
-          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.7)" }}>
+          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.95)" }}>
             Plus l&apos;indice est élevé, plus les verres sont fins — à correction identique.
           </p>
           <div className="grid grid-cols-3 gap-4">
@@ -202,7 +202,7 @@ export default function ComparateurPage() {
                 <div className="text-center">
                   <p className="text-lg font-black" style={{ color: n.couleur }}>{n.nom}</p>
                   <p className="text-sm font-semibold mt-0.5" style={{ color: "#FDFDFE" }}>Indice {n.indice}</p>
-                  <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>{n.lensLabel}</p>
+                  <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.9)" }}>{n.lensLabel}</p>
                 </div>
               </motion.div>
             ))}
@@ -217,7 +217,7 @@ export default function ComparateurPage() {
           className="mb-8"
         >
           <h2 className="text-xl font-black mb-1" style={{ color: "#FDFDFE" }}>Champ de vision — Progressif</h2>
-          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.7)" }}>
+          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.95)" }}>
             Le progressif HD offre des zones de vision plus larges et une transition plus douce.
           </p>
           <div className="grid grid-cols-2 gap-5">
@@ -230,13 +230,13 @@ export default function ComparateurPage() {
                   <text x="60" y="34" textAnchor="middle" fontSize="10" fill="#22c55e">Loin</text>
                   <line x1="30" y1="54" x2="90" y2="54" stroke="rgba(34,197,94,0.3)" strokeWidth="1.5"/>
                   <ellipse cx="60" cy="80" rx="20" ry="18" fill="rgba(34,197,94,0.1)" stroke="rgba(34,197,94,0.4)" strokeWidth="1.5" strokeDasharray="4 3"/>
-                  <text x="60" y="84" textAnchor="middle" fontSize="9" fill="rgba(34,197,94,0.7)">Interméd.</text>
+                  <text x="60" y="84" textAnchor="middle" fontSize="9" fill="rgba(34,197,94,0.95)">Interméd.</text>
                   <line x1="40" y1="98" x2="80" y2="98" stroke="rgba(34,197,94,0.3)" strokeWidth="1.5"/>
                   <ellipse cx="60" cy="122" rx="15" ry="20" fill="rgba(34,197,94,0.15)" stroke="#22c55e" strokeWidth="1.5"/>
                   <text x="60" y="127" textAnchor="middle" fontSize="10" fill="#22c55e">Près</text>
                 </svg>
               </div>
-              <p className="text-xs text-center mt-2" style={{ color: "rgba(155,150,218,0.6)" }}>Zones de vision étroites</p>
+              <p className="text-xs text-center mt-2" style={{ color: "rgba(155,150,218,0.9)" }}>Zones de vision étroites</p>
             </div>
             {/* HD */}
             <div className="rounded-2xl p-5" style={{ background: "rgba(124,95,236,0.1)", border: "1.5px solid rgba(124,95,236,0.45)" }}>
@@ -247,13 +247,13 @@ export default function ComparateurPage() {
                   <text x="60" y="32" textAnchor="middle" fontSize="10" fill="#7c5fec">Loin (large)</text>
                   <line x1="14" y1="52" x2="106" y2="52" stroke="rgba(124,95,236,0.3)" strokeWidth="1.5"/>
                   <ellipse cx="60" cy="80" rx="32" ry="20" fill="rgba(124,95,236,0.1)" stroke="rgba(124,95,236,0.4)" strokeWidth="1.5" strokeDasharray="4 3"/>
-                  <text x="60" y="84" textAnchor="middle" fontSize="9" fill="rgba(124,95,236,0.8)">Interméd. (confort)</text>
+                  <text x="60" y="84" textAnchor="middle" fontSize="9" fill="rgba(124,95,236,1)">Interméd. (confort)</text>
                   <line x1="28" y1="100" x2="92" y2="100" stroke="rgba(124,95,236,0.3)" strokeWidth="1.5"/>
                   <ellipse cx="60" cy="125" rx="28" ry="22" fill="rgba(124,95,236,0.15)" stroke="#7c5fec" strokeWidth="1.5"/>
                   <text x="60" y="130" textAnchor="middle" fontSize="10" fill="#7c5fec">Près (large)</text>
                 </svg>
               </div>
-              <p className="text-xs text-center mt-2" style={{ color: "rgba(155,150,218,0.6)" }}>Zones plus larges, transition douce</p>
+              <p className="text-xs text-center mt-2" style={{ color: "rgba(155,150,218,0.9)" }}>Zones plus larges, transition douce</p>
             </div>
           </div>
         </motion.section>
@@ -266,7 +266,7 @@ export default function ComparateurPage() {
           className="mb-8"
         >
           <h2 className="text-xl font-black mb-1" style={{ color: "#FDFDFE" }}>Photos réelles des verres</h2>
-          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.7)" }}>
+          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.95)" }}>
             Voici à quoi ressemblent les verres progressifs et les verres Transitions en conditions réelles.
           </p>
 
@@ -345,7 +345,7 @@ export default function ComparateurPage() {
                 {f.values.map((v, j) => (
                   <div key={j} className="p-3 flex flex-col items-center gap-1">
                     <TickIcon value={f.ticks[j]} />
-                    <p className="text-xs text-center" style={{ color: "rgba(155,150,218,0.7)" }}>{v}</p>
+                    <p className="text-xs text-center" style={{ color: "rgba(155,150,218,0.95)" }}>{v}</p>
                   </div>
                 ))}
               </div>
@@ -353,9 +353,9 @@ export default function ComparateurPage() {
           </div>
           {/* Légende */}
           <div className="flex gap-5 mt-3 px-1">
-            <div className="flex items-center gap-1.5"><TickIcon value="yes"/><span className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>Inclus</span></div>
-            <div className="flex items-center gap-1.5"><TickIcon value="partial"/><span className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>Version standard</span></div>
-            <div className="flex items-center gap-1.5"><TickIcon value={false}/><span className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>Non inclus</span></div>
+            <div className="flex items-center gap-1.5"><TickIcon value="yes"/><span className="text-xs" style={{ color: "rgba(155,150,218,0.9)" }}>Inclus</span></div>
+            <div className="flex items-center gap-1.5"><TickIcon value="partial"/><span className="text-xs" style={{ color: "rgba(155,150,218,0.9)" }}>Version standard</span></div>
+            <div className="flex items-center gap-1.5"><TickIcon value={false}/><span className="text-xs" style={{ color: "rgba(155,150,218,0.9)" }}>Non inclus</span></div>
           </div>
         </motion.section>
 
@@ -367,7 +367,7 @@ export default function ComparateurPage() {
           className="mb-8"
         >
           <h2 className="text-xl font-black mb-2" style={{ color: "#FDFDFE" }}>À quoi servent les traitements ?</h2>
-          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.6)" }}>Ces traitements sont appliqués sur la surface du verre.</p>
+          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.95)" }}>Ces traitements sont appliqués sur la surface du verre.</p>
           <div className="grid grid-cols-1 gap-4">
             {TRAITEMENTS.map((t, i) => (
               <motion.div
@@ -388,7 +388,7 @@ export default function ComparateurPage() {
                       {t.pourqui}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed" style={{ color: "rgba(155,150,218,0.8)" }}>{t.description}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: "rgba(155,150,218,0.95)" }}>{t.description}</p>
                 </div>
               </motion.div>
             ))}
