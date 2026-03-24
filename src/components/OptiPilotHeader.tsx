@@ -158,7 +158,7 @@ export default function OptiPilotHeader({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
-              className="fixed top-0 right-0 bottom-0 z-50 flex flex-col py-8 px-6 gap-3"
+              className="fixed top-0 right-0 bottom-0 z-50 flex flex-col"
               style={{
                 width: "72vw",
                 maxWidth: 320,
@@ -167,7 +167,8 @@ export default function OptiPilotHeader({
                 boxShadow: "-8px 0 40px rgba(0,0,0,0.6)",
               }}
             >
-              <div className="flex items-center justify-between mb-4">
+              {/* En-tête fixe */}
+              <div className="flex items-center justify-between px-6 pt-8 pb-4 shrink-0">
                 <span className="text-xl font-black" style={{ color: "#FDFDFE" }}>{t.menu}</span>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
@@ -181,30 +182,35 @@ export default function OptiPilotHeader({
                 </motion.button>
               </div>
 
-              {MENU_KEYS.map((item, i) => (
-                <motion.button
-                  key={item.href}
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => { setMenuOpen(false); router.push(item.href); }}
-                  className="w-full text-left px-4 py-4 rounded-2xl font-semibold text-lg transition-all"
-                  style={{ color: "#FDFDFE", background: "rgba(83,49,208,0.12)", border: "1px solid rgba(83,49,208,0.25)" }}
-                >
-                  {t[item.key]}
-                </motion.button>
-              ))}
+              {/* Items scrollables */}
+              <div className="flex-1 overflow-y-auto px-6 flex flex-col gap-3 pb-4">
+                {MENU_KEYS.map((item, i) => (
+                  <motion.button
+                    key={item.href}
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => { setMenuOpen(false); router.push(item.href); }}
+                    className="w-full text-left px-4 py-4 rounded-2xl font-semibold text-lg transition-all shrink-0"
+                    style={{ color: "#FDFDFE", background: "rgba(83,49,208,0.12)", border: "1px solid rgba(83,49,208,0.25)" }}
+                  >
+                    {t[item.key]}
+                  </motion.button>
+                ))}
+              </div>
 
-              <div className="flex-1" />
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={() => { setMenuOpen(false); localStorage.clear(); router.push("/login"); }}
-                className="w-full text-left px-4 py-4 rounded-2xl font-semibold text-lg"
-                style={{ color: "#fca5a5", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}
-              >
-                {t.logout}
-              </motion.button>
+              {/* Bouton déconnexion fixe en bas */}
+              <div className="px-6 pb-8 shrink-0">
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => { setMenuOpen(false); localStorage.clear(); router.push("/login"); }}
+                  className="w-full text-left px-4 py-4 rounded-2xl font-semibold text-lg"
+                  style={{ color: "#fca5a5", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}
+                >
+                  {t.logout}
+                </motion.button>
+              </div>
             </motion.div>
           </>
         )}
