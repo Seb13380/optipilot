@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 
 // ─── Traductions ──────────────────────────────────────────
 export const T = {
@@ -339,6 +339,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function toggleTheme() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   }
+
+  // ── Déconnexion automatique après 30 min d'inactivité ────────────────────
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+
+  useEffect(() => {
+    function resetTimer() {
+      // Ne rien faire si l'utilisateur n'est pas connecté
+      if (!localStorage.getItem("optipilot_token")) return;
+
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      inactivityTimer.current = setTimeout(() => {
+        localStorage.removeItem("optipilot_token");
+        localStorage.removeItem("optipilot_user");
+        window.location.href = "/login";
+      }, INACTIVITY_MS);
+    }
+
+    const events = ["mousemove", "keydown", "touchstart", "click", "scroll"];
+    events.forEach((e) => window.addEventListener(e, resetTimer, { passive: true }));
+
+    // Démarrer le timer dès le montage si connecté
+    resetTimer();
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, resetTimer));
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <AppContext.Provider value={{ lang, setLang, t: T[lang] as Record<string, string>, theme, toggleTheme }}>

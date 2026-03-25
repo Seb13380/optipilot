@@ -357,19 +357,19 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 {
-                  icon: "⏱️",
+                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="1.5"/><path d="M12 6v6l4 2" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                   title: "6 à 10 min de saisie par client",
                   desc: "Ordonnances copiées à la main, calculs remboursements chronophages, devis assemblés manuellement… un luxe de temps que les grandes enseignes n'ont plus.",
                   accent: "#ef4444",
                 },
                 {
-                  icon: "📉",
+                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 17 22 17 22 11" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                   title: "1 devis sur 3 ne se concrétise pas",
                   desc: "Le client « réfléchit » et ne revient pas. Sans relance structurée, ce chiffre d'affaires est définitivement perdu.",
                   accent: "#f59e0b",
                 },
                 {
-                  icon: "🏪",
+                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 22V12h6v10" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                   title: "La concurrence digitalise son expérience",
                   desc: "Les grandes enseignes investissent dans des outils numériques. L'optique indépendante peine à offrir la même fluidité, la même confiance client.",
                   accent: "#8b5cf6",
@@ -384,7 +384,7 @@ export default function LandingPage() {
                       boxShadow: `0 4px 24px ${item.accent}10`,
                     }}
                   >
-                    <span className="text-4xl">{item.icon}</span>
+                    <div>{item.icon}</div>
                     <h3 className="text-xl font-black mt-4 mb-3" style={{ color: "#1C0B62" }}>{item.title}</h3>
                     <p className="text-base leading-relaxed" style={{ color: "#6b7280" }}>{item.desc}</p>
                   </div>
@@ -415,28 +415,28 @@ export default function LandingPage() {
               {[
                 {
                   step: "01",
-                  icon: "📸",
+                  icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.5"/></svg>,
                   title: "Scannez l'ordonnance en 10 secondes",
                   desc: "L'IA lit et extrait toutes les données optométriques (sphère, cylindre, addition, axe) directement depuis la photo. Fini la saisie manuelle.",
                   color: "#5331D0",
                 },
                 {
                   step: "02",
-                  icon: "🤖",
+                  icon: <img src="/assets/images/IA_Optipilot.png" alt="IA OptiPilot" width={48} height={48} style={{ objectFit: "cover", borderRadius: 8 }} />,
                   title: "L'IA recommande les verres idéaux",
                   desc: "En croisant l'ordonnance, le questionnaire lifestyle (conduite de nuit, sport, écrans…) et le budget, OptiPilot génère 3 offres adaptées et argumentées.",
                   color: "#7c3aed",
                 },
                 {
                   step: "03",
-                  icon: "💬",
+                  icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke="white" strokeWidth="1.5"/><line x1="12" y1="18" x2="12.01" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>,
                   title: "Présentez le devis en live sur tablette",
                   desc: "Retournez la tablette vers votre client. Il voit les 3 offres, les remboursements en temps réel, les restes à charge. Il comprend, fait confiance, choisit.",
                   color: "#a855f7",
                 },
                 {
                   step: "04",
-                  icon: "🔔",
+                  icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                   title: "Relancez automatiquement les devis oubliés",
                   desc: "OptiPilot détecte les devis sans réponse et vous alerte. Chaque relance au bon moment, sans effort. Plus aucun potentiel client ne tombe dans l'oubli.",
                   color: "#c084fc",
@@ -451,7 +451,7 @@ export default function LandingPage() {
                     }}
                   >
                     <div
-                      className="shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center text-2xl"
+                      className="shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden"
                       style={{ background: `${item.color}25`, border: `1.5px solid ${item.color}40` }}
                     >
                       {item.icon}
@@ -488,7 +488,7 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { value: 6, suffix: " min", label: "gagnées par dossier", sub: "vs 10 min sans OptiPilot" },
+                { value: 6, suffix: " min", label: "par dossier avec OptiPilot", sub: "au lieu de 10 à 16 min sans outil" },
                 { value: 15, suffix: "%", label: "de panier moyen en plus", sub: "grâce aux recommandations IA" },
                 { value: 1500, suffix: "€", label: "de CA/mois estimés", sub: "+900€ à +1 800€ selon le volume" },
                 { value: 22, suffix: "h", label: "libérées par mois", sub: "pour vous concentrer sur vos clients" },
@@ -525,15 +525,15 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {[
-                { icon: "📸", title: "Scanner d'ordonnances par IA", desc: "Extraction automatique de toutes les données en moins de 10 secondes." },
-                { icon: "🤖", title: "Recommandations personnalisées", desc: "3 offres adaptées au profil visuel, aux habitudes de vie et au budget du client." },
-                { icon: "🏥", title: "Calcul mutuelle en temps réel", desc: "Remboursements Sécu et mutuelle calculés automatiquement selon les tarifs LPPR." },
-                { icon: "📱", title: "Mode tablette client", desc: "Interface premium pour présenter le devis directement au client, face à face." },
-                { icon: "🔔", title: "Relances automatisées", desc: "Aucun devis n'est oublié. Alertes intelligentes sur les dossiers sans réponse." },
-                { icon: "📊", title: "Tableau de bord ROI", desc: "Consultez votre impact en direct : temps libéré, CA généré, taux de conversion." },
-                { icon: "👥", title: "Multi-opticiens par magasin", desc: "Chaque opticien a son propre accès. Gestion d'équipe intégrée." },
-                { icon: "📁", title: "Historique client complet", desc: "Ordonnances, devis, ventes, tout est archivé et consultable en un clic." },
-                { icon: "🔍", title: "Comparateur de verres", desc: "Guide visuel illustré pour aider le client à comprendre les différences entre verres." },
+                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="#5331D0" strokeWidth="1.5"/></svg>, title: "Scanner d'ordonnances par IA", desc: "Extraction automatique de toutes les données en moins de 10 secondes." },
+                { icon: <img src="/assets/images/IA_Optipilot.png" alt="IA OptiPilot" width={28} height={28} style={{ borderRadius: 6 }} />, title: "Recommandations personnalisées", desc: "3 offres adaptées au profil visuel, aux habitudes de vie et au budget du client." },
+                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 12l2 2 4-4" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, title: "Calcul mutuelle en temps réel", desc: "Remboursements Sécu et mutuelle calculés automatiquement selon les tarifs LPPR." },
+                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke="#5331D0" strokeWidth="1.5"/><line x1="12" y1="18" x2="12.01" y2="18" stroke="#5331D0" strokeWidth="2" strokeLinecap="round"/></svg>, title: "Mode tablette client", desc: "Interface premium pour présenter le devis directement au client, face à face." },
+                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, title: "Relances automatisées", desc: "Aucun devis n'est oublié. Alertes intelligentes sur les dossiers sans réponse." },
+                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="12" width="4" height="9" rx="1" stroke="#5331D0" strokeWidth="1.5"/><rect x="10" y="7" width="4" height="14" rx="1" stroke="#5331D0" strokeWidth="1.5"/><rect x="17" y="3" width="4" height="18" rx="1" stroke="#5331D0" strokeWidth="1.5"/></svg>, title: "Tableau de bord ROI", desc: "Consultez votre impact en direct : temps libéré, CA généré, taux de conversion." },
+                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="7" r="4" stroke="#5331D0" strokeWidth="1.5"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, title: "Multi-opticiens par magasin", desc: "Chaque opticien a son propre accès. Gestion d'équipe intégrée." },
+                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, title: "Historique client complet", desc: "Ordonnances, devis, ventes, tout est archivé et consultable en un clic." },
+                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#5331D0" strokeWidth="1.5"/><path d="M21 21l-4.35-4.35" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round"/></svg>, title: "Comparateur de verres", desc: "Guide visuel illustré pour aider le client à comprendre les différences entre verres." },
               ].map((item, i) => (
                 <Reveal key={i} delay={(i % 3) * 0.08}>
                   <div
@@ -544,7 +544,7 @@ export default function LandingPage() {
                       boxShadow: "0 2px 12px rgba(83,49,208,0.06)",
                     }}
                   >
-                    <span className="text-3xl">{item.icon}</span>
+                    <div>{item.icon}</div>
                     <h3 className="text-base font-black mt-3 mb-1.5" style={{ color: "#1C0B62" }}>{item.title}</h3>
                     <p className="text-sm leading-relaxed" style={{ color: "#6b7280" }}>{item.desc}</p>
                   </div>
