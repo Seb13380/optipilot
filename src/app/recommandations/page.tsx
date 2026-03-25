@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
 import OpticianGuard from "@/components/OpticianGuard";
+import { useApp } from "@/lib/AppContext";
 import type { OffreVerre, RecommandationResult } from "@/lib/recommandation";
 import { calculerRecommandations, getCategorieCorrection } from "@/lib/recommandation";
 import { repondreQuestion, questionsSuggerees, type ContexteClient, type ReponseConseiller } from "@/lib/conseillerOpticien";
@@ -31,6 +32,7 @@ function estDansReseau(nomMutuelle: string): boolean {
 
 export default function RecommandationsPage() {
   const router = useRouter();
+  const { t } = useApp();
   const [result, setResult] = useState<RecommandationResult | null>(null);
   const [selected, setSelected] = useState<"Essentiel" | "Confort" | "Premium" | null>("Confort");
   const [loading, setLoading] = useState(true);
@@ -235,7 +237,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
               </svg>
             </div>
             <p className="text-2xl font-bold" style={{ color: "#FDFDFE" }}>
-              Calcul des recommandations...
+              {t.calculating}
             </p>
           </div>
         ) : result ? (
@@ -295,7 +297,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
             )}
 
             {/* Cartes des 3 offres */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {result.offres.map((offre, i) => {
                 const couleur = COULEURS[offre.nom];
                 const isSelected = selected === offre.nom;
@@ -388,7 +390,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     >
                       <div>
                         <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
-                          Prix verres
+                          {t.lensPrice}
                         </p>
                         <p className="text-xl font-bold" style={{ color: "#FDFDFE" }}>
                           {offre.prixVerres}€
@@ -396,7 +398,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                       </div>
                       <div className="text-center">
                         <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
-                          Remboursement
+                          {t.reimbursement}
                         </p>
                         <p className="text-xl font-bold text-green-400">
                           {offre.remboursementSecu + offre.remboursementMutuelle}€
@@ -404,7 +406,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                       </div>
                       <div className="text-right">
                         <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
-                          Reste à charge
+                          {t.outOfPocket}
                         </p>
                         <p className="text-3xl font-black" style={{ color: couleur.text }}>
                           {Math.round(offre.resteACharge)}€
@@ -427,7 +429,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                           className="w-full py-5 rounded-2xl text-white font-bold text-xl mt-4"
                           style={{ background: `linear-gradient(135deg, ${couleur.border}, ${couleur.badge})` }}
                         >
-                          Choisir cette offre →
+                          {t.chooseOffer}
                         </motion.button>
                       )}
                     </AnimatePresence>
@@ -525,7 +527,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 <rect x="3" y="3" width="8" height="18" rx="2" stroke="#FDFDFE" strokeWidth="2"/>
                 <rect x="13" y="7" width="8" height="14" rx="2" stroke="#FDFDFE" strokeWidth="2"/>
               </svg>
-              <span className="text-xl font-bold" style={{ color: "#FDFDFE" }}>Comparer visuellement les verres →</span>
+              <span className="text-xl font-bold" style={{ color: "#FDFDFE" }}>{t.compareVisually}</span>
             </motion.button>
 
             {/* ─── Conseiller OptiPilot — Chat Expert ─── */}
@@ -545,8 +547,8 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   <Image src="/assets/images/IA_Optipilot.png" alt="Conseiller" width={48} height={48} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-base font-black" style={{ color: "#FDFDFE" }}>Conseiller OptiPilot</p>
-                  <p className="text-sm" style={{ color: "#9B96DA" }}>Posez vos questions — je connais votre ordonnance et vos besoins</p>
+                  <p className="text-base font-black" style={{ color: "#FDFDFE" }}>{t.advisorTitle}</p>
+                  <p className="text-sm" style={{ color: "#9B96DA" }}>{t.advisorSub}</p>
                 </div>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0 transition-transform" style={{ transform: chatOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
                   <path d="M6 9l6 6 6-6" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -564,7 +566,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     {/* Questions suggérées */}
                     {chatMessages.length === 0 && (
                       <div className="mb-4">
-                        <p className="text-sm font-semibold mb-3" style={{ color: "rgba(155,150,218,0.7)" }}>Questions fréquentes pour votre profil :</p>
+                        <p className="text-sm font-semibold mb-3" style={{ color: "rgba(155,150,218,0.7)" }}>{t.frequentQuestions}</p>
                         <div className="flex flex-wrap gap-2">
                           {questionsSuggerees(contexteConseiller).map((q, i) => (
                             <button
@@ -621,7 +623,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") envoyerQuestion(chatInput); }}
-                        placeholder="Posez votre question…"
+                        placeholder={t.askQuestion}
                         className="flex-1 px-4 py-3 rounded-xl text-base outline-none"
                         style={{ background: "rgba(83,49,208,0.12)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.35)" }}
                       />
@@ -653,7 +655,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     )}
 
                     <p className="text-xs mt-3 text-center" style={{ color: "rgba(155,150,218,0.4)" }}>
-                      Conseils généraux uniquement — votre opticien est votre référence pour les décisions finales.
+                      {t.advisorDisclaimer}
                     </p>
                   </motion.div>
                 )}

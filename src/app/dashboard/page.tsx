@@ -32,8 +32,8 @@ interface User {
 const MENU_ITEMS = [
   {
     id: "scanner",
-    label: "Scanner\nOrdonnance",
-    description: "Extraction auto des données",
+    labelKey: "scanPrescriptionTitle",
+    descKey: "scanDescription",
     icon: (
       <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
         <rect x="3" y="3" width="7" height="7" rx="1" stroke="white" strokeWidth="2" />
@@ -48,8 +48,8 @@ const MENU_ITEMS = [
   },
   {
     id: "nouveau-client",
-    label: "Nouveau\nClient",
-    description: "Fiche · Mutuelle · Antécédents",
+    labelKey: "newClientTitle",
+    descKey: "newClientDescription",
     icon: (
       <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
         <circle cx="12" cy="8" r="4" stroke="white" strokeWidth="2" />
@@ -63,8 +63,8 @@ const MENU_ITEMS = [
   },
   {
     id: "historique",
-    label: "Historique",
-    description: "Devis, ventes et stats",
+    labelKey: "historyTitle",
+    descKey: "historyDescription",
     icon: (
       <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
         <rect x="3" y="4" width="18" height="17" rx="2" stroke="white" strokeWidth="2" />
@@ -79,8 +79,8 @@ const MENU_ITEMS = [
   },
   {
     id: "relances",
-    label: "Relances",
-    description: "Clients sans réponse",
+    labelKey: "relancesTitle",
+    descKey: "relancesDescription",
     icon: (
       <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
         <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -192,8 +192,8 @@ function DashboardPage() {
                 </svg>
               </div>
               <div>
-                <p className="font-bold text-lg" style={{ color: "#4ade80" }}>Abonnement activé avec succès !</p>
-                <p className="text-sm mt-0.5" style={{ color: "#86efac" }}>Bienvenue sur OptiPilot Pro — toutes les fonctionnalités sont maintenant disponibles.</p>
+                <p className="font-bold text-lg" style={{ color: "#4ade80" }}>{t.subscriptionActivated}</p>
+                <p className="text-sm mt-0.5" style={{ color: "#86efac" }}>{t.subscriptionActivatedSub}</p>
               </div>
             </motion.div>
           )}
@@ -210,14 +210,14 @@ function DashboardPage() {
               style={{ background: s.trialDaysLeft <= 2 ? "rgba(239,68,68,0.15)" : "rgba(139,92,246,0.18)", border: `1px solid ${s.trialDaysLeft <= 2 ? "rgba(239,68,68,0.4)" : "rgba(139,92,246,0.5)"}` }}
             >
               <span style={{ color: s.trialDaysLeft <= 2 ? "#ef4444" : "#a78bfa" }} className="font-semibold text-base">
-                Période d'essai — {s.trialDaysLeft} jour{s.trialDaysLeft > 1 ? "s" : ""} restant{s.trialDaysLeft > 1 ? "s" : ""}
+                {t.trialPeriod} — {s.trialDaysLeft} {t.daysRemaining}{s.trialDaysLeft > 1 ? "s" : ""}
               </span>
               <button
                 onClick={() => router.push("/abonnement")}
                 className="text-sm font-bold px-4 py-2 rounded-xl"
                 style={{ background: "linear-gradient(135deg,#5331D0,#9B96DA)", color: "#fff" }}
               >
-                Passer Pro →
+                {t.goPro}
               </button>
             </motion.div>
           )}
@@ -229,24 +229,24 @@ function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center justify-between pt-6 pb-5"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
             <img
               src="/assets/images/Logo-OptiPilot.png"
               alt="OptiPilot"
-              style={{ width: 50, height: 50, objectFit: "contain", filter: "drop-shadow(0 0 14px rgba(124,58,237,0.55)) drop-shadow(0 0 28px rgba(124,58,237,0.3))" }}
+              style={{ width: 50, height: 50, objectFit: "contain", flexShrink: 0, filter: "drop-shadow(0 0 14px rgba(124,58,237,0.55)) drop-shadow(0 0 28px rgba(124,58,237,0.3))" }}
             />
-            <div>
-              <h1 className="text-2xl font-black leading-tight" style={{ color: theme === "dark" ? "#FDFDFE" : "#111827" }}>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-black leading-tight truncate" style={{ color: theme === "dark" ? "#FDFDFE" : "#111827" }}>
                 {t.greetings}{user?.nom ? `, ${user.nom.split(" ")[0]}` : ""}
               </h1>
-              <p className="text-sm mt-0.5" style={{ color: theme === "dark" ? "#9B96DA" : "#6b7280" }}>
+              <p className="text-xs sm:text-sm mt-0.5 truncate" style={{ color: theme === "dark" ? "#9B96DA" : "#6b7280" }}>
                 {user?.magasinNom || "Votre magasin"} · {new Date().toLocaleDateString(lang === "EN" ? "en-GB" : "fr-FR", { weekday: "long", day: "numeric", month: "long" })}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Sélecteur de langue */}
-            <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid rgba(83,49,208,0.35)" }}>
+            {/* Sélecteur de langue — masqué sur mobile */}
+            <div className="hidden sm:flex rounded-lg overflow-hidden" style={{ border: "1px solid rgba(83,49,208,0.35)" }}>
               {(["FR", "EN"] as const).map((l) => (
                 <button
                   key={l}
@@ -261,10 +261,10 @@ function DashboardPage() {
                 </button>
               ))}
             </div>
-            {/* Bascule jour/nuit */}
+            {/* Bascule jour/nuit — masquée sur mobile */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl"
+              className="hidden sm:flex p-2 rounded-xl"
               style={{ color: "#5331D0", border: "1px solid rgba(83,49,208,0.35)" }}
               title={theme === "dark" ? "Mode jour" : "Mode nuit"}
             >
@@ -274,9 +274,10 @@ function DashboardPage() {
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#5331D0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               )}
             </button>
+            {/* Quit — masqué sur mobile */}
             <button
               onClick={handleLogout}
-              className="text-sm font-bold px-4 py-2 rounded-xl"
+              className="hidden sm:flex text-sm font-bold px-4 py-2 rounded-xl"
               style={{ color: "#5331D0", background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.18)" }}
             >
               {t.quit}
@@ -323,6 +324,27 @@ function DashboardPage() {
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                       <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                     </svg>
+                  </button>
+                </div>
+                {/* Langue + thème — visibles sur mobile uniquement */}
+                <div className="flex sm:hidden items-center gap-2 px-6 pb-4">
+                  <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid rgba(83,49,208,0.35)" }}>
+                    {(["FR", "EN"] as const).map((l) => (
+                      <button key={l} onClick={() => { setLang(l); }} className="px-3 py-1.5 text-sm font-bold"
+                        style={{ background: lang === l ? "#5331D0" : "transparent", color: lang === l ? "#fff" : "rgba(83,49,208,0.7)" }}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={toggleTheme} className="p-2 rounded-xl" style={{ color: "#5331D0", border: "1px solid rgba(83,49,208,0.35)" }}>
+                    {theme === "dark" ? (
+                      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" stroke="#5331D0" strokeWidth="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    ) : (
+                      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#5331D0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    )}
+                  </button>
+                  <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="flex-1 py-1.5 rounded-xl text-sm font-bold" style={{ color: "#fca5a5", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                    {t.logout}
                   </button>
                 </div>
                 <nav className="flex flex-col gap-1 px-4 flex-1">
@@ -376,31 +398,31 @@ function DashboardPage() {
           {/* En-tête */}
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(167,139,250,0.65)" }}>
-              Impact OptiPilot · Aujourd&apos;hui
+              {t.impactTitle}
             </p>
             <span className="text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5"
               style={{ background: "rgba(52,211,153,0.15)", color: "#34D399" }}>
               <span className="w-1.5 h-1.5 rounded-full bg-current" style={{ animation: "pulse 2s infinite" }} />
-              En direct
+              {t.liveNow}
             </span>
           </div>
 
           {/* 3 métriques */}
           <div className="grid grid-cols-3 gap-2.5 mb-4">
             <div className="rounded-2xl p-3 flex flex-col gap-0.5" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.15)" }}>
-              <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>⏱️ Temps libéré</span>
+              <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>⏱️ {t.timeFreed}</span>
               <span className="text-xl font-black text-white">{loading ? "…" : (tempsLabel ?? "—")}</span>
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>aujourd&apos;hui</span>
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{t.today}</span>
             </div>
             <div className="rounded-2xl p-3 flex flex-col gap-0.5" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.15)" }}>
-              <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>💰 CA généré</span>
+              <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>💰 {t.caGenerated}</span>
               <span className="text-xl font-black" style={{ color: "#c4b5fd" }}>{loading ? "…" : caGenere > 0 ? `+${caGenere.toLocaleString("fr-FR")}€` : "—"}</span>
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{s?.ventesJour ?? 0} vente{(s?.ventesJour ?? 0) !== 1 ? "s" : ""}</span>
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{s?.ventesJour ?? 0} {t.sales}</span>
             </div>
             <div className="rounded-2xl p-3 flex flex-col gap-0.5" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.15)" }}>
-              <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>📈 Opportunités</span>
+              <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>📈 {t.opportunities}</span>
               <span className="text-xl font-black text-white">{loading ? "…" : opportunites}</span>
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>devis en cours</span>
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{t.quotesInProgress}</span>
             </div>
           </div>
 
@@ -409,19 +431,19 @@ function DashboardPage() {
             <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="grid grid-cols-2">
                 <div className="px-4 py-3.5" style={{ background: "rgba(255,255,255,0.04)", borderRight: "1px solid rgba(255,255,255,0.08)" }}>
-                  <p className="text-xs font-semibold mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>Sans OptiPilot</p>
+                  <p className="text-xs font-semibold mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>{t.withoutOptiPilot}</p>
                   <p className="text-sm font-bold" style={{ color: "rgba(255,255,255,0.4)" }}>⏱️ ~{fmtMin(simSansMin)}</p>
-                  <p className="text-sm font-bold mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>💰 Vente standard</p>
+                  <p className="text-sm font-bold mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>💰 {t.standardSale}</p>
                 </div>
                 <div className="px-4 py-3.5" style={{ background: "rgba(83,49,208,0.25)" }}>
-                  <p className="text-xs font-semibold mb-2" style={{ color: "#9B96DA" }}>Avec OptiPilot ✓</p>
+                  <p className="text-xs font-semibold mb-2" style={{ color: "#9B96DA" }}>{t.withOptiPilot}</p>
                   <p className="text-sm font-black text-white">⏱️ ~{fmtMin(simAvecMin)}</p>
-                  <p className="text-sm font-black mt-0.5" style={{ color: "#34D399" }}>💰 Vente optimisée</p>
+                  <p className="text-sm font-black mt-0.5" style={{ color: "#34D399" }}>💰 {t.optimizedSale}</p>
                 </div>
               </div>
               <div className="px-4 py-2.5 text-center" style={{ background: "rgba(52,211,153,0.08)", borderTop: "1px solid rgba(52,211,153,0.15)" }}>
                 <p className="text-xs font-bold" style={{ color: "#34D399" }}>
-                  ≈ +{gainMoisEstime.toLocaleString("fr-FR")}€ / mois estimés &middot; {gainTempsMoisLabel} / mois libérées
+                ≈ +{gainMoisEstime.toLocaleString("fr-FR")}€ / {lang === "EN" ? "month" : "mois"} · {gainTempsMoisLabel} / {lang === "EN" ? "month" : "mois"} {t.timeFreed.toLowerCase()}
                 </p>
               </div>
             </div>
@@ -430,8 +452,8 @@ function DashboardPage() {
           {/* Journée vide — estimation fixe */}
           {!loading && nbDevis === 0 && (
             <div className="rounded-2xl px-4 py-3 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>Démarrez votre première vente pour voir votre impact</p>
-              <p className="text-xs mt-1.5 font-bold" style={{ color: "#34D399" }}>Estimation mensuelle : ≈ +900€ à +1800€ de CA +22h libérées / mois</p>
+              <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>{t.startFirstSale}</p>
+              <p className="text-xs mt-1.5 font-bold" style={{ color: "#34D399" }}>{t.monthlyEstimate} : ≈ +900€ à +1800€ de CA +22h {t.timeFreed.toLowerCase()} / {lang === "EN" ? "month" : "mois"}</p>
             </div>
           )}
         </motion.div>
@@ -457,10 +479,10 @@ function DashboardPage() {
             >
               <div className="opacity-95">{item.icon}</div>
               <span className="text-white text-xl font-bold text-center leading-snug" style={{ whiteSpace: "pre-line" }}>
-                {item.label}
+                {t[item.labelKey]}
               </span>
               <span className="text-white text-sm font-medium text-center" style={{ opacity: 0.65 }}>
-                {item.description}
+                {t[item.descKey]}
               </span>
             </motion.button>
           ))}
@@ -495,10 +517,10 @@ function DashboardPage() {
             </div>
             <div className="text-left">
               <p className="text-xl font-black leading-tight" style={{ color: "#FFFFFF" }}>
-                Lancer l&apos;expérience client
+                {t.launchClient}
               </p>
               <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
-                Ordonnance · Mutuelle · Questionnaire · Montures
+                {t.launchClientSub}
               </p>
             </div>
           </div>
@@ -575,7 +597,7 @@ function DashboardPage() {
             </div>
 
             {/* Titre */}
-            <p className="text-xl font-black text-white mb-3">Pourquoi passer en Pro ?</p>
+            <p className="text-xl font-black text-white mb-3">{t.whyPro}</p>
 
             {/* Lignes ROI */}
             <div className="flex flex-col gap-2.5 mb-4">
@@ -623,19 +645,19 @@ function DashboardPage() {
               className="w-full py-3.5 rounded-2xl text-base font-black text-white"
               style={{ background: "linear-gradient(135deg, #5331D0 0%, #7B5CE5 100%)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}
             >
-              Passer en Pro maintenant →
+              {t.upgradeNow}
             </motion.button>
           </motion.div>
         )}
 
         {/* Stats du jour — 4 tuiles */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mb-4">
-          <h2 className="text-xl font-bold mb-3" style={{ color: "#374151" }}> Aujourd&apos;hui</h2>
+          <h2 className="text-xl font-bold mb-3" style={{ color: "#374151" }}>{t.todayTitle}</h2>
           <div className="grid grid-cols-4 gap-3">
-            <StatTile value={loading ? "…" : s?.devisJour ?? 0} label="Devis établis" accent="#5331D0" />
-            <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label="Ventes" accent="#ec4899" />
-            <StatTile value={loading ? "…" : `${s?.tauxConversionJour ?? 0}%`} label="Conversion" accent="#7c3aed" />
-            <StatTile value={loading ? "…" : `${s?.panierMoyen ?? 0}€`} label="Panier moyen" accent="#3b82f6" />
+            <StatTile value={loading ? "…" : s?.devisJour ?? 0} label={t.quotesEstablished} accent="#5331D0" />
+            <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label={t.salesTitle} accent="#ec4899" />
+            <StatTile value={loading ? "…" : `${s?.tauxConversionJour ?? 0}%`} label={t.conversionLabel} accent="#7c3aed" />
+            <StatTile value={loading ? "…" : `${s?.panierMoyen ?? 0}€`} label={t.avgCart} accent="#3b82f6" />
           </div>
         </motion.div>
 
@@ -650,15 +672,15 @@ function DashboardPage() {
             className="rounded-2xl p-5"
             style={{ background: "rgba(8,2,40,0.96)", border: "1px solid rgba(83,49,208,0.55)" }}
           >
-            <h3 className="text-lg font-bold mb-4" style={{ color: "#FDFDFE" }}>Cette semaine</h3>
+            <h3 className="text-lg font-bold mb-4" style={{ color: "#FDFDFE" }}>{t.thisWeek}</h3>
             <div className="flex flex-col gap-3">
-              <BarStat label="Devis" value={s?.devisSemaine ?? 0} max={20} color="#a78bfa" loading={loading} />
-              <BarStat label="Ventes" value={s?.ventesSemaine ?? 0} max={20} color="#f472b6" loading={loading} />
-              <BarStat label="Nouveaux clients" value={s?.clientsSemaine ?? 0} max={10} color="#93c5fd" loading={loading} />
+              <BarStat label={t.quotesLabel} value={s?.devisSemaine ?? 0} max={20} color="#a78bfa" loading={loading} />
+              <BarStat label={t.salesTitle} value={s?.ventesSemaine ?? 0} max={20} color="#f472b6" loading={loading} />
+              <BarStat label={t.newClientsLabel} value={s?.clientsSemaine ?? 0} max={10} color="#93c5fd" loading={loading} />
             </div>
             <div className="mt-4 pt-3" style={{ borderTop: "1px solid rgba(83,49,208,0.4)" }}>
               <p className="text-sm font-semibold" style={{ color: "#C4C1EA" }}>
-                Taux de conversion : <span style={{ color: "#c4b5fd" }}>{s?.tauxConversionSemaine ?? 0}%</span>
+                {t.conversionRate} : <span style={{ color: "#c4b5fd" }}>{s?.tauxConversionSemaine ?? 0}%</span>
               </p>
             </div>
           </motion.div>
@@ -671,11 +693,11 @@ function DashboardPage() {
             className="rounded-2xl p-5"
             style={{ background: "rgba(8,2,40,0.96)", border: "1px solid rgba(83,49,208,0.55)" }}
           >
-            <h3 className="text-lg font-bold mb-4" style={{ color: "#FDFDFE" }}>Clients</h3>
+            <h3 className="text-lg font-bold mb-4" style={{ color: "#FDFDFE" }}>{t.clientsTitle}</h3>
             <div className="flex flex-col gap-4">
-              <BigStat value={loading ? "…" : s?.totalClients ?? 0} label="Total clients" color="#93c5fd" />
-              <BigStat value={loading ? "…" : s?.clientsSemaine ?? 0} label="Cette semaine" color="#f472b6" />
-              <BigStat value={loading ? "…" : s?.clientsMois ?? 0} label="Ce mois" color="#c4b5fd" />
+              <BigStat value={loading ? "…" : s?.totalClients ?? 0} label={t.totalClients} color="#93c5fd" />
+              <BigStat value={loading ? "…" : s?.clientsSemaine ?? 0} label={t.thisWeek} color="#f472b6" />
+              <BigStat value={loading ? "…" : s?.clientsMois ?? 0} label={t.thisMonth} color="#c4b5fd" />
             </div>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -683,7 +705,7 @@ function DashboardPage() {
               className="mt-4 w-full py-2.5 rounded-xl text-sm font-bold"
               style={{ background: "rgba(83,49,208,0.45)", color: "#DDDAF5" }}
             >
-              Voir tous les clients →
+              {t.viewAllClients}
             </motion.button>
           </motion.div>
 
@@ -695,11 +717,11 @@ function DashboardPage() {
             className="rounded-2xl p-5"
             style={{ background: "rgba(8,2,40,0.96)", border: "1px solid rgba(83,49,208,0.55)" }}
           >
-            <h3 className="text-lg font-bold mb-4" style={{ color: "#FDFDFE" }}>Derniers devis</h3>
+            <h3 className="text-lg font-bold mb-4" style={{ color: "#FDFDFE" }}>{t.recentQuotes}</h3>
             {loading ? (
-              <p style={{ color: "#C4C1EA" }} className="text-sm">Chargement…</p>
+              <p style={{ color: "#C4C1EA" }} className="text-sm">{t.loading}</p>
             ) : !s?.recentDevis?.length ? (
-              <p style={{ color: "#C4C1EA" }} className="text-sm">Aucun devis pour l&apos;instant</p>
+              <p style={{ color: "#C4C1EA" }} className="text-sm">{t.noQuotesYet}</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {s.recentDevis.map((d) => (
@@ -711,7 +733,7 @@ function DashboardPage() {
                       </p>
                     </div>
                     <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: `${STATUT_COLORS[d.statut] ?? "#9B96DA"}22`, color: STATUT_COLORS[d.statut] ?? "#9B96DA" }}>
-                      {STATUT_LABELS[d.statut] ?? d.statut}
+                      {d.statut === "accepté" ? t.statusAccepted : d.statut === "en_cours" ? t.statusInProgress : d.statut === "refusé" ? t.statusRefused : d.statut}
                     </span>
                   </div>
                 ))}
@@ -723,7 +745,7 @@ function DashboardPage() {
               className="mt-4 w-full py-2.5 rounded-xl text-sm font-bold"
               style={{ background: "rgba(83,49,208,0.45)", color: "#DDDAF5" }}
             >
-              Voir tout l&apos;historique →
+              {t.viewAllHistory}
             </motion.button>
           </motion.div>
         </div>
@@ -892,6 +914,7 @@ function OpportunitesSansStats({
   loading: boolean;
   onNavigate: (href: string) => void;
 }) {
+  const { t } = useApp();
   const ops = genererOpportunites(stats);
   if (loading || ops.length === 0) return null;
 
@@ -902,7 +925,7 @@ function OpportunitesSansStats({
       transition={{ delay: 0.55 }}
       className="mt-4"
     >
-      <h2 className="text-xl font-bold mb-3" style={{ color: "#DDDAF5" }}>Opportunités détectées</h2>
+      <h2 className="text-xl font-bold mb-3" style={{ color: "#DDDAF5" }}>{t.detectedOpportunities}</h2>
       <div className="flex flex-col gap-3">
         {ops.map((op, i) => {
           const style = NIVEAU_STYLES[op.niveau];
