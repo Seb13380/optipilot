@@ -4,8 +4,11 @@ import OptiPilotFooter from "@/components/OptiPilotFooter";
 import { AppProvider } from "@/lib/AppContext";
 
 export const metadata: Metadata = {
-  title: "OptiPilot — Copilote IA Opticien",
-  description: "Logiciel IA complémentaire pour opticiens",
+  title: {
+    default: "OptiPilot — Copilote IA pour Opticiens Indépendants",
+    template: "%s | OptiPilot",
+  },
+  description: "OptiPilot est le logiciel IA pour opticiens indépendants. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle, relances automatiques. Essai gratuit 14 jours.",
   manifest: "/manifest.json",
   icons: {
     icon: [
