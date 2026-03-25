@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
 import { analyserOrdonnance } from "@/lib/analyseOrdonnance";
+import { useApp } from "@/lib/AppContext";
 
 interface OrdonnanceData {
   civilite?: string;
@@ -30,6 +31,7 @@ const STABLE_FRAMES_NEEDED = 12; // ~1.2s à 10fps
 
 export default function ScannerPage() {
   const router = useRouter();
+  const { t } = useApp();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const prevFrameRef = useRef<ImageData | null>(null);
@@ -266,7 +268,7 @@ export default function ScannerPage() {
 
   return (
     <div className="page-bg min-h-screen flex flex-col">
-      <OptiPilotHeader title="Scanner l'ordonnance" showBack onBack={() => router.push("/dashboard")} />
+      <OptiPilotHeader title={t.scanTitle} showBack onBack={() => router.push("/dashboard")} />
 
       <main className="flex-1 flex flex-col px-5 pt-5 pb-8 w-full">
         <AnimatePresence mode="wait">
@@ -282,9 +284,9 @@ export default function ScannerPage() {
                   <path d="M12 8v4M12 16h.01" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
                 <div>
-                  <p className="text-sm font-bold" style={{ color: "#5331D0" }}>Conseils pour un scan réussi</p>
+                  <p className="text-sm font-bold" style={{ color: "#5331D0" }}>{t.scanTips}</p>
                   <p className="text-sm mt-1 leading-relaxed" style={{ color: "#6b7280" }}>
-                    Posez l&apos;ordonnance sur une surface plane · bonne lumière (pas de reflet) · la capture est automatique dès que l&apos;image est stable
+                    {t.scanTipsBody}
                   </p>
                 </div>
               </div>
@@ -315,16 +317,16 @@ export default function ScannerPage() {
                 {cameraStarted && (
                   <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-6" style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.75))" }}>
                     {autoCapturing ? (
-                      <p className="text-center font-bold text-xl" style={{ color: "#22c55e" }}>✓ Capture en cours…</p>
+                      <p className="text-center font-bold text-xl" style={{ color: "#22c55e" }}>{t.captureInProgress}</p>
                     ) : stableProgress > 0 ? (
                       <>
-                        <p className="text-center font-bold text-lg text-white mb-2">Ne bougez plus…</p>
+                        <p className="text-center font-bold text-lg text-white mb-2">{t.holdStill}</p>
                         <div className="w-full h-2 rounded-full" style={{ background: "rgba(255,255,255,0.2)" }}>
                           <div className="h-2 rounded-full transition-all" style={{ width: `${stableProgress}%`, background: stableProgress > 70 ? "#22c55e" : "#facc15" }} />
                         </div>
                       </>
                     ) : (
-                      <p className="text-center font-bold text-xl text-white">Placez l'ordonnance dans le cadre</p>
+                      <p className="text-center font-bold text-xl text-white">{t.placeInFrame}</p>
                     )}
                   </div>
                 )}
@@ -338,8 +340,8 @@ export default function ScannerPage() {
                         <circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.5" />
                       </svg>
                     </div>
-                    <p className="text-white font-bold text-2xl text-center">Appareil photo</p>
-                    <p className="font-semibold text-lg text-center" style={{ color: "#9B96DA" }}>La photo sera prise automatiquement</p>
+                    <p className="text-white font-bold text-2xl text-center">{t.cameraTitle}</p>
+                    <p className="font-semibold text-lg text-center" style={{ color: "#9B96DA" }}>{t.autoCapture}</p>
                   </div>
                 )}
               </div>
@@ -350,13 +352,13 @@ export default function ScannerPage() {
                   <motion.button whileTap={{ scale: 0.97 }} onClick={startCamera}
                     className="py-5 rounded-2xl text-white font-bold text-xl"
                     style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                    Activer la caméra
+                    {t.enableCamera}
                   </motion.button>
                 ) : (
                   <motion.button whileTap={{ scale: 0.97 }} onClick={() => captureAndAnalyse(true)}
                     className="py-4 rounded-2xl font-bold text-lg"
                     style={{ background: "rgba(83,49,208,0.15)", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.4)" }}>
-                    Capturer manuellement
+                    {t.captureManually}
                   </motion.button>
                 )}
               </div>
@@ -366,7 +368,7 @@ export default function ScannerPage() {
           {/* ── ÉTAPE 2 : APERÇU ── */}
           {step === "preview" && (
             <motion.div key="preview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
-              <p className="text-center font-bold text-xl" style={{ color: "#111827" }}>Vérifiez la photo</p>
+              <p className="text-center font-bold text-xl" style={{ color: "#111827" }}>{t.checkPhoto}</p>
               <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: "#f3f4f6", minHeight: 280, border: "1.5px solid #e5e7eb" }}>
                 {imageDataUrl ? (
                   <img src={imageDataUrl} alt="Ordonnance" className="w-full object-contain" style={{ maxHeight: 400 }} />
@@ -377,7 +379,7 @@ export default function ScannerPage() {
                       <path d="M3 9h18" stroke="currentColor" strokeWidth="2"/>
                       <circle cx="8" cy="14" r="1.5" fill="currentColor"/>
                     </svg>
-                    <p className="font-bold text-base" style={{ color: "#9ca3af" }}>Aucune capture</p>
+                    <p className="font-bold text-base" style={{ color: "#9ca3af" }}>{t.noCapture}</p>
                   </div>
                 )}
               </div>
@@ -385,12 +387,12 @@ export default function ScannerPage() {
                 <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                   className="flex-1 py-5 rounded-2xl font-bold text-lg"
                   style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}>
-                  Reprendre
+                  {t.retake}
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={analyseOrdonnance}
                   className="flex-1 py-5 rounded-2xl text-white font-bold text-lg"
                   style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                  Analyser
+                  {t.analyze}
                 </motion.button>
               </div>
             </motion.div>
@@ -406,8 +408,8 @@ export default function ScannerPage() {
                       <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" />
                     </svg>
                   </div>
-                  <p className="text-2xl font-bold text-white">Analyse en cours…</p>
-                  <p className="text-lg" style={{ color: "#9B96DA" }}>L'IA lit votre ordonnance</p>
+                  <p className="text-2xl font-bold text-white">{t.analyzingPrescription}</p>
+                  <p className="text-lg" style={{ color: "#9B96DA" }}>{t.aiReading}</p>
                 </div>
               ) : scanError ? (
                 <div className="flex flex-col gap-5">
@@ -416,13 +418,13 @@ export default function ScannerPage() {
                       <path d="M12 9v4M12 17h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
                       <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
                     </svg>
-                    <p className="font-bold text-xl text-white mb-1">Lecture impossible</p>
+                    <p className="font-bold text-xl text-white mb-1">{t.cannotRead}</p>
                     <p className="text-lg" style={{ color: "#fca5a5" }}>{scanError}</p>
                   </div>
                   <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                     className="py-5 rounded-2xl text-white font-bold text-xl"
                     style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                    Reprendre le scan
+                    {t.retryScan}
                   </motion.button>
                 </div>
               ) : (
@@ -431,7 +433,7 @@ export default function ScannerPage() {
                     <div className="flex items-center gap-3 mb-5">
                       <span className="px-3 py-1.5 rounded-full font-bold text-base text-white" style={{ background: editMode ? "#ec4899" : "#22c55e" }}>
                       </span>
-                      <h2 className="text-xl font-bold" style={{ color: "#FDFDFE" }}>Résultats de l'ordonnance</h2>
+                      <h2 className="text-xl font-bold" style={{ color: "#FDFDFE" }}>{t.prescriptionResults}</h2>
                     </div>
 
                     {/* ─── Analyse clinique ─── */}
@@ -454,7 +456,7 @@ export default function ScannerPage() {
                               </svg>
                             </div>
                             <div className="flex-1">
-                              <p className="text-base font-bold uppercase tracking-wider" style={{ color: analyse.couleur }}>Analyse OptiPilot</p>
+                              <p className="text-base font-bold uppercase tracking-wider" style={{ color: analyse.couleur }}>{t.analyzeTitle}</p>
                               <p className="text-2xl font-black" style={{ color: "#FDFDFE" }}>
                                 {analyse.typeCorrection}
                                 <span className="ml-2 text-lg font-semibold px-3 py-1 rounded-full" style={{ background: `${analyse.couleur}20`, color: analyse.couleur }}>
@@ -488,13 +490,13 @@ export default function ScannerPage() {
                           {/* Indice + Type verre */}
                           <div className="flex gap-3 mt-3">
                             <div className="flex-1 rounded-xl p-2.5 text-center" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.25)" }}>
-                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Indice recommandé</p>
+                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>{t.recommendedIndex}</p>
                               <p className="text-lg font-bold mt-1" style={{ color: "#FDFDFE" }}>{analyse.indiceRecommande}</p>
                             </div>
                             <div className="flex-1 rounded-xl p-2.5 text-center" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.25)" }}>
-                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Type de verre</p>
+                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>{t.lensTypeLabel}</p>
                               <p className="text-lg font-bold mt-1" style={{ color: "#FDFDFE" }}>
-                                {analyse.typeVerre === "progressif" ? "Progressif" : "Unifocal"}
+                                {analyse.typeVerre === "progressif" ? t.progressive : t.unifocal}
                                 {analyse.presbytie && <span className="text-base ml-1" style={{ color: analyse.couleur }}>({analyse.presbytie})</span>}
                               </p>
                             </div>
@@ -506,7 +508,7 @@ export default function ScannerPage() {
                     {/* Bienvenue + édition patient en mode correction */}
                     {editMode ? (
                       <div className="mb-4 rounded-xl p-4 flex flex-col gap-3" style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.3)" }}>
-                        <p className="text-sm font-bold" style={{ color: "#f472b6" }}>Correction du patient</p>
+                        <p className="text-sm font-bold" style={{ color: "#f472b6" }}>{t.patientEdit}</p>
                         <div className="flex gap-2">
                           <select value={ordonnance.civilite || ""}
                             onChange={(e) => setOrdonnance((p) => ({ ...p, civilite: e.target.value }))}
@@ -529,22 +531,22 @@ export default function ScannerPage() {
                     ) : (ordonnance.nomPatient || ordonnance.prenomPatient) && (
                       <div className="mb-4 px-4 py-3 rounded-xl" style={{ background: "rgba(83,49,208,0.15)", border: "1px solid rgba(83,49,208,0.3)" }}>
                         <p className="font-bold text-xl" style={{ color: "#FDFDFE" }}>
-                          {normaliseCivilite(ordonnance.civilite)} {[ordonnance.prenomPatient, ordonnance.nomPatient].filter(Boolean).join(" ")}{magasinNom ? `, Bienvenue chez ${magasinNom}` : ", Bienvenue !"}
+                          {normaliseCivilite(ordonnance.civilite)} {[ordonnance.prenomPatient, ordonnance.nomPatient].filter(Boolean).join(" ")}{magasinNom ? `, ${t.welcomeAt} ${magasinNom}` : `, ${t.welcomeExcl}`}
                         </p>
                       </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-4">
-                      <OrdonnanceSection label="OD — Œil Droit" sphere={ordonnance.odSphere} cylindre={ordonnance.odCylindre} axe={ordonnance.odAxe} addition={ordonnance.odAddition} color="#5331D0"
+                      <OrdonnanceSection label={t.rightEye} sphere={ordonnance.odSphere} cylindre={ordonnance.odCylindre} axe={ordonnance.odAxe} addition={ordonnance.odAddition} color="#5331D0"
                         onChange={(field, val) => setOrdonnance((prev) => ({ ...prev, [`od${field.charAt(0).toUpperCase() + field.slice(1)}`]: val }))} />
-                      <OrdonnanceSection label="OG — Œil Gauche" sphere={ordonnance.ogSphere} cylindre={ordonnance.ogCylindre} axe={ordonnance.ogAxe} addition={ordonnance.ogAddition} color="#5331D0"
+                      <OrdonnanceSection label={t.leftEye} sphere={ordonnance.ogSphere} cylindre={ordonnance.ogCylindre} axe={ordonnance.ogAxe} addition={ordonnance.ogAddition} color="#5331D0"
                         onChange={(field, val) => setOrdonnance((prev) => ({ ...prev, [`og${field.charAt(0).toUpperCase() + field.slice(1)}`]: val }))} />
                     </div>
 
                     <div className="mt-4 flex flex-col gap-2">
                       {editMode ? (
                         <>
-                          <p className="text-sm font-bold mb-1" style={{ color: "#f472b6" }}>Correction du médecin et de la date</p>
+                          <p className="text-sm font-bold mb-1" style={{ color: "#f472b6" }}>{t.doctorEdit}</p>
                           <input value={ordonnance.prescripteur || ""} placeholder="Dr. Prénom NOM"
                             onChange={(e) => setOrdonnance((p) => ({ ...p, prescripteur: e.target.value }))}
                             className="w-full px-3 py-2 rounded-lg text-base outline-none"
@@ -589,7 +591,7 @@ export default function ScannerPage() {
                       <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                         className="flex-1 py-4 rounded-2xl font-bold text-base"
                         style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}>
-                        Reprendre la photo
+                        {t.retakePhoto}
                       </motion.button>
                       <motion.button whileTap={{ scale: 0.97 }} onClick={() => setEditMode((v) => !v)}
                         className="flex-1 py-4 rounded-2xl font-bold text-base"
@@ -598,13 +600,13 @@ export default function ScannerPage() {
                           color: "#FDFDFE",
                           border: editMode ? "2px solid #a78bfa" : "2px solid rgba(83,49,208,0.35)"
                         }}>
-                        {editMode ? "Fermer correction" : "Corriger manuellement"}
+                        {editMode ? t.closeEdit : t.editManually}
                       </motion.button>
                     </div>
                     <motion.button whileTap={{ scale: 0.97 }} onClick={confirmerOrdonnance}
                       className="py-5 rounded-2xl text-white font-bold text-xl"
                       style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                      ✓ Confirmer
+                      {t.confirmPrescription}
                     </motion.button>
                   </div>
                 </>

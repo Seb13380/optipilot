@@ -562,82 +562,138 @@ export default function LandingPage() {
             background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(83,49,208,0.08) 0%, transparent 70%)",
           }}
         >
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <Reveal>
               <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#5331D0" }}>Tarifs</p>
               <h2 className="text-3xl md:text-4xl font-black text-center mb-4" style={{ color: "#1C0B62" }}>
-                Simple. Transparent. Rentabilisé en 2 ventes.
+                Simple et transparent
               </h2>
               <p className="text-center text-lg mb-14" style={{ color: "#6b7280" }}>
-                Un seul abonnement, accès complet à toutes les fonctionnalités.
+                Deux formules selon vos besoins. Rentabilisé en 1 à 2 ventes supplémentaires par mois.
               </p>
             </Reveal>
 
-            <Reveal delay={0.1}>
-              <div
-                className="relative rounded-3xl p-10 mx-auto max-w-lg"
-                style={{
-                  background: "linear-gradient(160deg, #0a0318 0%, #1e1b4b 100%)",
-                  border: "2px solid rgba(167,139,250,0.5)",
-                  boxShadow: "0 20px 60px rgba(83,49,208,0.35)",
-                }}
-              >
-                {/* Badge */}
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span
-                    className="px-5 py-1.5 rounded-full text-sm font-black text-white"
-                    style={{ background: "linear-gradient(135deg,#5331D0,#a855f7)" }}
-                  >
-                    ★ Plan Pro
-                  </span>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
-                <div className="text-center mb-8 mt-2">
-                  <span className="text-6xl font-black text-white">249<span className="text-3xl font-bold" style={{ color: "#9B96DA" }}>€</span></span>
-                  <p className="text-base mt-1" style={{ color: "#9B96DA" }}>par mois, tout inclus</p>
-                </div>
-
-                <ul className="flex flex-col gap-3.5 mb-8">
-                  {[
-                    "Scanner IA d'ordonnances illimité",
-                    "Recommandations IA personnalisées",
-                    "Calcul remboursements Sécu + mutuelle",
-                    "Mode tablette client premium",
-                    "Relances automatisées",
-                    "Tableau de bord ROI en temps réel",
-                    "Multi-opticiens par magasin",
-                    "Historique client & archivage devis",
-                    "Support prioritaire",
-                  ].map((feat) => (
-                    <li key={feat} className="flex items-center gap-3">
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(83,49,208,0.3)" }}>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                          <path d="M2 6l3 3 5-5" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </span>
-                      <span className="text-base font-medium" style={{ color: "#DDDAF5" }}>{feat}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  whileHover={{ y: -3 }}
-                  onClick={scrollToDemo}
-                  className="w-full py-5 rounded-2xl text-xl font-black text-white"
-                  style={{ background: "linear-gradient(135deg,#5331D0,#7B5CE5)", boxShadow: "0 6px 24px rgba(83,49,208,0.5)" }}
+              {/* ── Plan Standard ── */}
+              <Reveal delay={0.1}>
+                <div
+                  className="rounded-3xl p-8 h-full flex flex-col"
+                  style={{
+                    background: "linear-gradient(160deg, #0a0318 0%, #1a1440 100%)",
+                    border: "1.5px solid rgba(83,49,208,0.4)",
+                  }}
                 >
-                  Démarrer l&apos;essai gratuit →
-                </motion.button>
+                  <div className="mb-6">
+                    <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: "#9B96DA" }}>Standard</p>
+                    <div className="flex items-end gap-1 mb-1">
+                      <span className="text-5xl font-black text-white">249</span>
+                      <span className="text-2xl font-bold mb-1" style={{ color: "#9B96DA" }}>€</span>
+                      <span className="text-base mb-1.5 ml-1" style={{ color: "#9B96DA" }}>/&nbsp;mois</span>
+                    </div>
+                    <p className="text-sm" style={{ color: "rgba(155,150,218,0.55)" }}>L&apos;essentiel pour équiper votre point de vente</p>
+                  </div>
 
-                <p className="text-center text-sm mt-4" style={{ color: "rgba(155,150,218,0.6)" }}>
-                  Essai gratuit 14 jours · Sans engagement · Résiliable à tout moment
-                </p>
-                <p className="text-center text-xs mt-2 font-bold" style={{ color: "#34D399" }}>
-                  ✔ Rentabilisé en 1 à 2 ventes supplémentaires par mois
-                </p>
-              </div>
-            </Reveal>
+                  <ul className="flex flex-col gap-3 mb-8 flex-1">
+                    {[
+                      "Scan ordonnance IA illimité",
+                      "Analyse automatique (myopie, astigmatisme, presbytie…)",
+                      "Questionnaire client intelligent",
+                      "Génération de 3 devis (Essentiel / Confort / Premium)",
+                      "Calcul reste à charge Sécu + mutuelle",
+                      "Export PDF et dossier client",
+                      "Copilote IA pendant la vente",
+                      "Interface optimisée tablette",
+                    ].map((feat) => (
+                      <li key={feat} className="flex items-start gap-3">
+                        <svg className="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M3 8l3.5 3.5L13 4.5" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span className="text-sm font-medium" style={{ color: "#DDDAF5" }}>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ y: -2 }}
+                    onClick={scrollToDemo}
+                    className="w-full py-4 rounded-2xl text-base font-bold text-white"
+                    style={{ background: "rgba(83,49,208,0.55)", border: "2px solid rgba(83,49,208,0.6)" }}
+                  >
+                    Démarrer l&apos;essai gratuit
+                  </motion.button>
+                </div>
+              </Reveal>
+
+              {/* ── Plan Premium ── */}
+              <Reveal delay={0.2}>
+                <div
+                  className="relative rounded-3xl p-8 h-full flex flex-col"
+                  style={{
+                    background: "linear-gradient(160deg, #0a0318 0%, #1e1b4b 100%)",
+                    border: "2px solid rgba(167,139,250,0.6)",
+                    boxShadow: "0 20px 60px rgba(83,49,208,0.3)",
+                  }}
+                >
+                  {/* Badge recommandé */}
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <span
+                      className="px-5 py-1.5 rounded-full text-sm font-black text-white whitespace-nowrap"
+                      style={{ background: "linear-gradient(135deg,#5331D0,#a855f7)" }}
+                    >
+                      Recommandé
+                    </span>
+                  </div>
+
+                  <div className="mb-6 mt-2">
+                    <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: "#a78bfa" }}>Premium</p>
+                    <div className="flex items-end gap-1 mb-1">
+                      <span className="text-5xl font-black text-white">299</span>
+                      <span className="text-2xl font-bold mb-1" style={{ color: "#9B96DA" }}>€</span>
+                      <span className="text-base mb-1.5 ml-1" style={{ color: "#9B96DA" }}>/&nbsp;mois</span>
+                    </div>
+                    <p className="text-sm" style={{ color: "rgba(155,150,218,0.55)" }}>Accès complet — idéal pour maximiser votre chiffre d&apos;affaires</p>
+                  </div>
+
+                  <ul className="flex flex-col gap-3 mb-8 flex-1">
+                    {[
+                      { text: "Tout le plan Standard", highlight: true },
+                      { text: "IA commerciale avancée (profil client, correction, activité)", highlight: false },
+                      { text: "Tableau de bord business (panier moyen, options vendues…)", highlight: false },
+                      { text: "Optimisation panier moyen — suggestions premium rentables", highlight: false },
+                      { text: "Recommandation de montures selon le profil client", highlight: false },
+                      { text: "Historique client intelligent (corrections précédentes, propositions)", highlight: false },
+                      { text: "Statistiques de vente par vendeur", highlight: false },
+                      { text: "Coach vendeur IA — argumentaire commercial en temps réel", highlight: false },
+                      { text: "Rapport mensuel IA (analyse ventes et opportunités)", highlight: false },
+                    ].map(({ text, highlight }) => (
+                      <li key={text} className="flex items-start gap-3">
+                        <svg className="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M3 8l3.5 3.5L13 4.5" stroke={highlight ? "#34D399" : "#a78bfa"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span className="text-sm font-medium" style={{ color: highlight ? "#34D399" : "#DDDAF5" }}>{text}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ y: -2 }}
+                    onClick={scrollToDemo}
+                    className="w-full py-4 rounded-2xl text-base font-black text-white"
+                    style={{ background: "linear-gradient(135deg,#5331D0,#7B5CE5)", boxShadow: "0 6px 24px rgba(83,49,208,0.45)" }}
+                  >
+                    Démarrer l&apos;essai gratuit
+                  </motion.button>
+
+                  <p className="text-center text-xs mt-3" style={{ color: "rgba(155,150,218,0.5)" }}>
+                    14 jours gratuits · Sans engagement · Résiliable à tout moment
+                  </p>
+                </div>
+              </Reveal>
+
+            </div>
           </div>
         </section>
 

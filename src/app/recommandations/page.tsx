@@ -205,9 +205,9 @@ export default function RecommandationsPage() {
   }
 
   const PROFILS: Record<string, string> = {
-  Essentiel: "100% Santé · budget maîtrisé · correction simple",
-  Confort:   "Quotidien · écrans · conduite · meilleur rapport qualité/prix",
-  Premium:   "Forte correction · exigence visuelle maximale · précision",
+  Essentiel: t.profileEssentiel,
+  Confort:   t.profileConfort,
+  Premium:   t.profilePremium,
 };
 
 const COULEURS: Record<string, { bg: string; border: string; badge: string; text: string }> = {
@@ -220,7 +220,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
     <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
-        title="Recommandations OptiPilot"
+        title={`${t.recommendations} OptiPilot`}
         showBack
         onBack={() => router.push("/questionnaire")}
       />
@@ -256,9 +256,9 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     <Image src="/assets/images/IA_Optipilot.png" alt="OptiPilot IA" width={56} height={56} className="w-full h-full object-cover" />
                   </div>
                   <p className="text-base font-semibold leading-snug" style={{ color: "#a89cf7" }}>
-                    OptiPilot estime que l&apos;offre{" "}
+                    {t.optiPilotEstimates}{" "}
                     <span className="font-black" style={{ color: "#FDFDFE" }}>{offreRecommandee.nom}</span>{" "}
-                    vous apportera le meilleur rapport qualité / prix pour votre profil.
+                    {t.bestForProfile}
                   </p>
                 </motion.div>
               ) : null;
@@ -275,9 +275,8 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 {/* Intro personnalisée */}
                 <p className="text-xl font-bold mb-5" style={{ color: "#FDFDFE" }}>
                   {clientCivilite && clientNom
-                    ? <>{clientCivilite} <span style={{ color: "#a89cf7" }}>{clientNom}</span>, d&apos;après </>
-                    : "D'après "}
-                  l&apos;analyse de votre correction et vos réponses au questionnaire, nous vous recommandons&nbsp;:
+                    ? <>{clientCivilite} <span style={{ color: "#a89cf7" }}>{clientNom}</span>{t.analysisPrefix}</>
+                    : t.analysisTitle}
                 </p>
                 {/* Liste des conseils */}
                 <ul className="flex flex-col gap-4">
@@ -291,7 +290,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   ))}
                 </ul>
                 <p className="text-base mt-4 font-medium" style={{ color: "rgba(155,150,218,0.6)" }}>
-                  Demandez à votre opticien{magasinNom ? <> <span className="font-bold" style={{ color: "#a89cf7" }}>{magasinNom}</span></> : ""} pour plus d&apos;informations.
+                  {t.askOptician}{magasinNom ? <> <span className="font-bold" style={{ color: "#a89cf7" }}>{magasinNom}</span></> : ""} {t.forMoreInfo}
                 </p>
               </motion.div>
             )}
@@ -323,7 +322,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                           className="px-3.5 py-1.5 rounded-full text-base font-bold text-white"
                           style={{ background: couleur.badge }}
                         >
-                          ★ {offre.badge}
+                          ★ {t.recommendedBadge}
                         </span>
                       </div>
                     )}
@@ -448,7 +447,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 style={{ background: "rgba(30,10,80,0.92)", border: "2px solid rgba(192,132,252,0.9)" }}
               >
                 <p className="text-lg font-bold mb-3" style={{ color: "#e9d5ff" }}>
-                  Conseils spécifiques à votre monture
+                  {t.frameAdviceTitle}
                 </p>
                 <ul className="flex flex-col gap-3">
                   {result.conseilsMonture.map((conseil, i) => (
@@ -478,13 +477,13 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 style={{ background: "rgba(15,5,65,0.93)", border: "2px solid rgba(124,58,237,0.9)" }}
               >
                 <p className="text-base font-bold mb-3 uppercase tracking-widest" style={{ color: "#c4b5fd" }}>
-                  Données opticien — puissances méridionales
+                  {t.opticianData}
                 </p>
                 <div className="flex flex-col gap-2 text-base" style={{ color: "#ddd6fe", fontFamily: "monospace" }}>
                   <div className="flex gap-2 items-start">
                     <span className="shrink-0 font-bold" style={{ color: "#c084fc" }}>OD</span>
                     <span>
-                      Puissance max : <strong>{result.puissancesMax.od.toFixed(2)} D</strong>
+                      {t.maxPower} : <strong>{result.puissancesMax.od.toFixed(2)} D</strong>
                       {" · "}cyl+ : {result.transpositions.od.sphere >= 0 ? "+" : ""}{result.transpositions.od.sphere.toFixed(2)}
                       {" ("}
                       {result.transpositions.od.cylindre >= 0 ? "+" : ""}{result.transpositions.od.cylindre.toFixed(2)}
@@ -495,7 +494,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   <div className="flex gap-2 items-start">
                     <span className="shrink-0 font-bold" style={{ color: "#c084fc" }}>OG</span>
                     <span>
-                      Puissance max : <strong>{result.puissancesMax.og.toFixed(2)} D</strong>
+                      {t.maxPower} : <strong>{result.puissancesMax.og.toFixed(2)} D</strong>
                       {" · "}cyl+ : {result.transpositions.og.sphere >= 0 ? "+" : ""}{result.transpositions.og.sphere.toFixed(2)}
                       {" ("}
                       {result.transpositions.og.cylindre >= 0 ? "+" : ""}{result.transpositions.og.cylindre.toFixed(2)}
@@ -505,8 +504,8 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   </div>
                   <div className="mt-1 pt-2" style={{ borderTop: "1px solid rgba(124,58,237,0.3)" }}>
                     <span style={{ color: "#9B96DA" }}>
-                      Puissance retenue pour l&apos;indice : <strong style={{ color: "#a78bfa" }}>{result.puissancesMax.max.toFixed(2)} D</strong>
-                      {" → "}indice recommandé : <strong style={{ color: "#e879f9" }}>{result.indiceMin}</strong>
+                      {t.powerForIndex} : <strong style={{ color: "#a78bfa" }}>{result.puissancesMax.max.toFixed(2)} D</strong>
+                      {" → "}{t.recommendedIndex.toLowerCase()} : <strong style={{ color: "#e879f9" }}>{result.indiceMin}</strong>
                     </span>
                   </div>
                 </div>
@@ -683,7 +682,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: "#f472b6" }}>
-                      Équipement complémentaire recommandé
+                      {t.supplementaryEquip}
                     </p>
                     <p className="text-lg font-black" style={{ color: "#FDFDFE" }}>
                       {result.secondePaire.titre}
@@ -697,7 +696,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   className="p-4 rounded-xl"
                   style={{ background: "rgba(236,72,153,0.18)", border: "1px solid rgba(236,72,153,0.6)" }}
                 >
-                  <p className="text-base font-bold mb-1" style={{ color: "#f9a8d4" }}>Conseil opticien</p>
+                  <p className="text-base font-bold mb-1" style={{ color: "#f9a8d4" }}>{t.opticianAdvice}</p>
                   <p className="text-base" style={{ color: "#FDFDFE" }}>
                     {result.secondePaire.conseil}
                   </p>
