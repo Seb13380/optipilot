@@ -8,9 +8,9 @@ import Image from "next/image";
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
   const [display, setDisplay] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true });
+  const inView = useInView(ref, { once: false });
   useEffect(() => {
-    if (!inView) return;
+    if (!inView) { setDisplay(0); return; }
     let start = 0;
     const duration = 1400;
     const step = 16;
@@ -28,7 +28,7 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
 // ─── Fade-in-up wrapper ───────────────────────────────────
 function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: false, margin: "-80px" });
   return (
     <motion.div
       ref={ref}
@@ -44,7 +44,7 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 // ─── Fade-in depuis la gauche ─────────────────────────────
 function RevealLeft({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: false, margin: "-80px" });
   return (
     <motion.div
       ref={ref}
@@ -60,7 +60,7 @@ function RevealLeft({ children, delay = 0 }: { children: React.ReactNode; delay?
 // ─── Fade-in depuis la droite ─────────────────────────────
 function RevealRight({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: false, margin: "-80px" });
   return (
     <motion.div
       ref={ref}
@@ -76,7 +76,7 @@ function RevealRight({ children, delay = 0 }: { children: React.ReactNode; delay
 // ─── Fade-in-up + hover lift (cartes interactives) ────────
 function RevealCard({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: false, margin: "-80px" });
   return (
     <motion.div
       ref={ref}
@@ -134,6 +134,8 @@ export default function LandingPage() {
   const router = useRouter();
   const [navScrolled, setNavScrolled] = useState(false);
   const [demoSent, setDemoSent] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState("");
   const [demoForm, setDemoForm] = useState({ nom: "", email: "", magasin: "", tel: "" });
   const demoRef = useRef<HTMLElement>(null);
 
@@ -153,16 +155,26 @@ export default function LandingPage() {
     demoRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
-  function handleDemoSubmit(e: React.FormEvent) {
+  async function handleDemoSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const body = encodeURIComponent(
-      `Nom : ${demoForm.nom}\nMagasin : ${demoForm.magasin}\nTél : ${demoForm.tel}\n\nDemande de démo OptiPilot.`
-    );
-    window.open(
-      `mailto:sgdigitalweb13@gmail.com?subject=Demande de d%C3%A9mo OptiPilot — ${encodeURIComponent(demoForm.magasin)}&body=${body}`,
-      "_blank"
-    );
-    setDemoSent(true);
+    setDemoLoading(true);
+    setDemoError("");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demoForm),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Erreur lors de l'envoi");
+      }
+      setDemoSent(true);
+    } catch (err: unknown) {
+      setDemoError(err instanceof Error ? err.message : "Une erreur est survenue. Veuillez réessayer.");
+    } finally {
+      setDemoLoading(false);
+    }
   }
 
   return (
@@ -893,12 +905,30 @@ export default function LandingPage() {
 
                   <motion.button
                     whileTap={{ scale: 0.97 }}
+                    whileHover={{ y: demoLoading ? 0 : -2 }}
                     type="submit"
-                    className="w-full py-5 rounded-2xl text-xl font-black text-white mt-2"
-                    style={{ background: "linear-gradient(135deg,#5331D0,#7B5CE5)", boxShadow: "0 6px 24px rgba(83,49,208,0.5)" }}
+                    disabled={demoLoading}
+                    className="w-full py-5 rounded-2xl text-xl font-black text-white mt-2 flex items-center justify-center gap-3"
+                    style={{
+                      background: demoLoading ? "rgba(83,49,208,0.55)" : "linear-gradient(135deg,#5331D0,#7B5CE5)",
+                      boxShadow: "0 6px 24px rgba(83,49,208,0.5)",
+                      cursor: demoLoading ? "not-allowed" : "pointer",
+                    }}
                   >
-                    Demander ma démo gratuite →
+                    {demoLoading ? (
+                      <>
+                        <motion.span
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+                          style={{ display: "inline-block", width: 20, height: 20, borderRadius: "50%", border: "2.5px solid rgba(255,255,255,0.3)", borderTopColor: "#fff" }}
+                        />
+                        Envoi en cours…
+                      </>
+                    ) : "Demander ma démo gratuite →"}
                   </motion.button>
+                  {demoError && (
+                    <p className="text-center text-sm font-semibold mt-1" style={{ color: "#f87171" }}>{demoError}</p>
+                  )}
                   <p className="text-center text-xs" style={{ color: "rgba(155,150,218,0.5)" }}>
                     Aucun engagement · Réponse sous 24h · Données RGPD sécurisées
                   </p>
