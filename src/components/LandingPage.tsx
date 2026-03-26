@@ -41,6 +41,55 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   );
 }
 
+// ─── Fade-in depuis la gauche ─────────────────────────────
+function RevealLeft({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, x: -44 }}
+      animate={inView ? { opacity: 1, x: 0 } : {}}
+      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── Fade-in depuis la droite ─────────────────────────────
+function RevealRight({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, x: 44 }}
+      animate={inView ? { opacity: 1, x: 0 } : {}}
+      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── Fade-in-up + hover lift (cartes interactives) ────────
+function RevealCard({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 28 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      whileHover={{ y: -6, transition: { duration: 0.22, ease: "easeOut" } }}
+      transition={{ duration: 0.55, delay, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 // ─── FAQ Item ─────────────────────────────────────────────
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -281,7 +330,12 @@ export default function LandingPage() {
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10"
+            >
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 whileHover={{ y: -3 }}
@@ -302,12 +356,21 @@ export default function LandingPage() {
               >
                 Se connecter
               </a>
-            </div>
+            </motion.div>
 
             {/* Trust badges */}
             <div className="flex flex-wrap items-center justify-center gap-5">
-              {["✓ Essai gratuit 14 jours", "✓ Sans engagement", "✓ Données RGPD sécurisées"].map((t) => (
-                <span key={t} className="text-sm font-semibold" style={{ color: "#6b7280" }}>{t}</span>
+              {["✓ Essai gratuit 14 jours", "✓ Sans engagement", "✓ Données RGPD sécurisées"].map((badge, i) => (
+                <motion.span
+                  key={badge}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, delay: 0.85 + i * 0.1 }}
+                  className="text-sm font-semibold"
+                  style={{ color: "#6b7280" }}
+                >
+                  {badge}
+                </motion.span>
               ))}
             </div>
 
@@ -375,7 +438,7 @@ export default function LandingPage() {
                   accent: "#8b5cf6",
                 },
               ].map((item, i) => (
-                <Reveal key={i} delay={i * 0.1}>
+                <RevealCard key={i} delay={i * 0.1}>
                   <div
                     className="rounded-3xl p-7 h-full"
                     style={{
@@ -388,7 +451,7 @@ export default function LandingPage() {
                     <h3 className="text-xl font-black mt-4 mb-3" style={{ color: "#1C0B62" }}>{item.title}</h3>
                     <p className="text-base leading-relaxed" style={{ color: "#6b7280" }}>{item.desc}</p>
                   </div>
-                </Reveal>
+                </RevealCard>
               ))}
             </div>
           </div>
@@ -441,8 +504,10 @@ export default function LandingPage() {
                   desc: "OptiPilot détecte les devis sans réponse et vous alerte. Chaque relance au bon moment, sans effort. Plus aucun potentiel client ne tombe dans l'oubli.",
                   color: "#c084fc",
                 },
-              ].map((item, i) => (
-                <Reveal key={i} delay={i * 0.1}>
+              ].map((item, i) => {
+                const Rev = i % 2 === 0 ? RevealLeft : RevealRight;
+                return (
+                <Rev key={i} delay={i * 0.1}>
                   <div
                     className="flex flex-col sm:flex-row items-start gap-6 p-7 rounded-3xl"
                     style={{
@@ -464,8 +529,9 @@ export default function LandingPage() {
                       <p className="text-base leading-relaxed" style={{ color: "#9B96DA" }}>{item.desc}</p>
                     </div>
                   </div>
-                </Reveal>
-              ))}
+                </Rev>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -493,7 +559,7 @@ export default function LandingPage() {
                 { value: 1500, suffix: "€", label: "de CA/mois estimés", sub: "+900€ à +1 800€ selon le volume" },
                 { value: 22, suffix: "h", label: "libérées par mois", sub: "pour vous concentrer sur vos clients" },
               ].map((item, i) => (
-                <Reveal key={i} delay={i * 0.08}>
+                <RevealCard key={i} delay={i * 0.08}>
                   <div
                     className="rounded-3xl p-7 flex flex-col items-center text-center"
                     style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}
@@ -504,7 +570,7 @@ export default function LandingPage() {
                     <p className="text-base font-bold mt-2 text-white">{item.label}</p>
                     <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.6)" }}>{item.sub}</p>
                   </div>
-                </Reveal>
+                </RevealCard>
               ))}
             </div>
           </div>
@@ -535,7 +601,7 @@ export default function LandingPage() {
                 { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, title: "Historique client complet", desc: "Ordonnances, devis, ventes, tout est archivé et consultable en un clic." },
                 { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#5331D0" strokeWidth="1.5"/><path d="M21 21l-4.35-4.35" stroke="#5331D0" strokeWidth="1.5" strokeLinecap="round"/></svg>, title: "Comparateur de verres", desc: "Guide visuel illustré pour aider le client à comprendre les différences entre verres." },
               ].map((item, i) => (
-                <Reveal key={i} delay={(i % 3) * 0.08}>
+                <RevealCard key={i} delay={(i % 3) * 0.08}>
                   <div
                     className="rounded-2xl p-6 h-full"
                     style={{
@@ -548,7 +614,7 @@ export default function LandingPage() {
                     <h3 className="text-base font-black mt-3 mb-1.5" style={{ color: "#1C0B62" }}>{item.title}</h3>
                     <p className="text-sm leading-relaxed" style={{ color: "#6b7280" }}>{item.desc}</p>
                   </div>
-                </Reveal>
+                </RevealCard>
               ))}
             </div>
           </div>
@@ -576,7 +642,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
               {/* ── Plan Standard ── */}
-              <Reveal delay={0.1}>
+              <RevealLeft delay={0.1}>
                 <div
                   className="rounded-3xl p-8 h-full flex flex-col"
                   style={{
@@ -624,10 +690,10 @@ export default function LandingPage() {
                     Démarrer l&apos;essai gratuit
                   </motion.button>
                 </div>
-              </Reveal>
+              </RevealLeft>
 
               {/* ── Plan Premium ── */}
-              <Reveal delay={0.2}>
+              <RevealRight delay={0.2}>
                 <div
                   className="relative rounded-3xl p-8 h-full flex flex-col"
                   style={{
@@ -691,7 +757,7 @@ export default function LandingPage() {
                     14 jours gratuits · Sans engagement · Résiliable à tout moment
                   </p>
                 </div>
-              </Reveal>
+              </RevealRight>
 
             </div>
           </div>
@@ -851,6 +917,7 @@ export default function LandingPage() {
           }}
         >
           <div className="max-w-5xl mx-auto">
+            <Reveal>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
               <div>
                 <div className="flex items-center gap-2 mb-4">
@@ -878,6 +945,8 @@ export default function LandingPage() {
                 </ul>
               </div>
             </div>
+            </Reveal>
+            <Reveal delay={0.15}>
             <div className="flex flex-col sm:flex-row items-center justify-between pt-6" style={{ borderTop: "1px solid rgba(155,150,218,0.12)" }}>
               <p className="text-xs" style={{ color: "rgba(155,150,218,0.4)" }}>
                 © {new Date().getFullYear()} SG Digital Web — OptiPilot. Tous droits réservés.
@@ -886,6 +955,7 @@ export default function LandingPage() {
                 Connexion opticien
               </a>
             </div>
+            </Reveal>
           </div>
         </footer>
       </div>
