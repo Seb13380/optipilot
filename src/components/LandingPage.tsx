@@ -813,7 +813,7 @@ export default function LandingPage() {
           <div className="max-w-2xl mx-auto">
             <Reveal>
               <h2 className="text-3xl md:text-4xl font-black text-center mb-3 text-white">
-                Prêt à transformer votre cabinet ?
+                Prêt à transformer votre centre optique?
               </h2>
               <p className="text-center text-lg mb-10" style={{ color: "#9B96DA" }}>
                 Réservez une démo gratuite de 30 minutes. On vous montre comment OptiPilot s&apos;adapte concrètement à votre magasin.

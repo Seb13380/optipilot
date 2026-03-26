@@ -110,6 +110,25 @@ export default function ClientPage() {
       className="min-h-screen flex flex-col"
       style={{ background: "radial-gradient(circle at 15% 20%, rgba(124,58,237,0.35), transparent 45%), radial-gradient(circle at 85% 80%, rgba(236,72,153,0.28), transparent 45%), linear-gradient(180deg, #f0f0fa 0%, #e8e8f5 100%)" }}
     >
+      {/* Orbes flottantes futuristes */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+        <motion.div
+          animate={{ x: [0, 22, -10, 0], y: [0, -28, 14, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: "absolute", top: "6%", left: "4%", width: 340, height: 340, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%)" }}
+        />
+        <motion.div
+          animate={{ x: [0, -16, 20, 0], y: [0, 22, -18, 0] }}
+          transition={{ duration: 27, repeat: Infinity, ease: "easeInOut", delay: 6 }}
+          style={{ position: "absolute", bottom: "8%", right: "2%", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, rgba(236,72,153,0.18) 0%, transparent 70%)" }}
+        />
+        <motion.div
+          animate={{ x: [0, 14, -22, 0], y: [0, 18, -12, 0] }}
+          transition={{ duration: 34, repeat: Infinity, ease: "easeInOut", delay: 12 }}
+          style={{ position: "absolute", top: "42%", right: "8%", width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(83,49,208,0.14) 0%, transparent 70%)" }}
+        />
+      </div>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

@@ -393,10 +393,16 @@ function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
           className="rounded-3xl p-5 mb-4 overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #0f0a2e 0%, #1e1b4b 60%, #2e1d6e 100%)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 32px rgba(83,49,208,0.3)" }}
+          style={{ background: "linear-gradient(135deg, #0f0a2e 0%, #1e1b4b 60%, #2e1d6e 100%)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 32px rgba(83,49,208,0.3)", position: "relative" }}
         >
+          {/* Scan line holographique */}
+          <motion.div
+            animate={{ x: ["-100%", "200%"] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: "linear", repeatDelay: 6 }}
+            style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%)", pointerEvents: "none", zIndex: 0 }}
+          />
           {/* En-tête */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4" style={{ position: "relative", zIndex: 1 }}>
             <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(167,139,250,0.65)" }}>
               {t.impactTitle}
             </p>
@@ -463,11 +469,11 @@ function DashboardPage() {
           {MENU_ITEMS.map((item, i) => (
             <motion.button
               key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
+              initial={{ opacity: 0, y: 28, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: i * 0.09, type: "spring", stiffness: 300, damping: 26 }}
               whileTap={{ scale: 0.95 }}
-              whileHover={{ y: -4 }}
+              whileHover={{ y: -6, scale: 1.025, transition: { duration: 0.22, ease: "easeOut" } }}
               onClick={() => router.push(item.href)}
               className="rounded-3xl p-6 flex flex-col items-center gap-2"
               style={{
@@ -651,15 +657,22 @@ function DashboardPage() {
         )}
 
         {/* Stats du jour — 4 tuiles */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mb-4">
-          <h2 className="text-xl font-bold mb-3" style={{ color: "#374151" }}>{t.todayTitle}</h2>
+        <div className="mb-4">
+          <motion.h2
+            initial={{ opacity: 0, x: -14 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.24, duration: 0.4 }}
+            className="text-xl font-bold mb-3" style={{ color: "#374151" }}
+          >
+            {t.todayTitle}
+          </motion.h2>
           <div className="grid grid-cols-4 gap-3">
-            <StatTile value={loading ? "…" : s?.devisJour ?? 0} label={t.quotesEstablished} accent="#5331D0" />
-            <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label={t.salesTitle} accent="#ec4899" />
-            <StatTile value={loading ? "…" : `${s?.tauxConversionJour ?? 0}%`} label={t.conversionLabel} accent="#7c3aed" />
-            <StatTile value={loading ? "…" : `${s?.panierMoyen ?? 0}€`} label={t.avgCart} accent="#3b82f6" />
+            <StatTile value={loading ? "…" : s?.devisJour ?? 0} label={t.quotesEstablished} accent="#5331D0" delay={0.28} />
+            <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label={t.salesTitle} accent="#ec4899" delay={0.35} />
+            <StatTile value={loading ? "…" : `${s?.tauxConversionJour ?? 0}%`} label={t.conversionLabel} accent="#7c3aed" delay={0.42} />
+            <StatTile value={loading ? "…" : `${s?.panierMoyen ?? 0}€`} label={t.avgCart} accent="#3b82f6" delay={0.49} />
           </div>
-        </motion.div>
+        </div>
 
         {/* Semaine + Clients + Devis récents */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -669,6 +682,7 @@ function DashboardPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.32 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="rounded-2xl p-5"
             style={{ background: "rgba(8,2,40,0.96)", border: "1px solid rgba(83,49,208,0.55)" }}
           >
@@ -690,6 +704,7 @@ function DashboardPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.38 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="rounded-2xl p-5"
             style={{ background: "rgba(8,2,40,0.96)", border: "1px solid rgba(83,49,208,0.55)" }}
           >
@@ -714,6 +729,7 @@ function DashboardPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.44 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="rounded-2xl p-5"
             style={{ background: "rgba(8,2,40,0.96)", border: "1px solid rgba(83,49,208,0.55)" }}
           >
@@ -758,9 +774,13 @@ function DashboardPage() {
   );
 }
 
-function StatTile({ value, label, accent }: { value: number | string; label: string; accent: string }) {
+function StatTile({ value, label, accent, delay = 0 }: { value: number | string; label: string; accent: string; delay?: number }) {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.45, ease: "easeOut" }}
+      whileHover={{ y: -6, boxShadow: `0 14px 32px ${accent}28`, transition: { duration: 0.2 } }}
       className="rounded-2xl p-4 flex flex-col"
       style={{
         background: "#ffffff",
@@ -776,7 +796,7 @@ function StatTile({ value, label, accent }: { value: number | string; label: str
       </div>
       <span className="text-3xl font-black leading-none" style={{ color: "#111827" }}>{value}</span>
       <span className="text-xs font-semibold mt-1.5 leading-tight" style={{ color: "#9ca3af" }}>{label}</span>
-    </div>
+    </motion.div>
   );
 }
 
