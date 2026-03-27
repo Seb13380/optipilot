@@ -314,17 +314,19 @@ export default function LandingPage() {
             className="max-w-4xl mx-auto"
           >
             {/* Badge */}
-            <span
+            <motion.span
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold mb-8"
               style={{ background: "rgba(83,49,208,0.1)", color: "#5331D0", border: "1px solid rgba(83,49,208,0.2)" }}
             >
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               Conçu pour les opticiens indépendants
-            </span>
+            </motion.span>
 
-            <h1 className="text-4xl md:text-6xl font-black leading-tight mb-6" style={{ color: "#1C0B62" }}>
-              Le Copilote IA des
-              <br />
+            {/* Accroche principale */}
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.08] mb-5" style={{ color: "#1C0B62" }}>
               <span
                 style={{
                   background: "linear-gradient(135deg, #5331D0 0%, #a855f7 100%)",
@@ -332,13 +334,28 @@ export default function LandingPage() {
                   WebkitTextFillColor: "transparent",
                 }}
               >
-                Opticiens Indépendants
+                2 scans.
               </span>
+              <br />
+              Tout est prêt.
             </h1>
 
-            <p className="text-xl md:text-2xl font-medium mb-10 max-w-2xl mx-auto leading-relaxed" style={{ color: "#4b5563" }}>
-              Gagnez <strong style={{ color: "#5331D0" }}>2 heures par jour</strong>, augmentez votre panier moyen de{" "}
-              <strong style={{ color: "#5331D0" }}>+15%</strong> et ne perdez plus aucun devis.
+            {/* Promesse secondaire */}
+            <p className="text-2xl md:text-3xl font-black mb-5 max-w-2xl mx-auto leading-snug" style={{ color: "#374151" }}>
+              Gagnez des heures chaque semaine
+              <br className="hidden sm:block" />
+              <span style={{ color: "#5331D0" }}> et augmentez vos ventes.</span>
+            </p>
+
+            {/* Sous-titre détaillé */}
+            <p className="text-lg md:text-xl font-medium mb-10 max-w-2xl mx-auto leading-relaxed" style={{ color: "#6b7280" }}>
+              Ordonnance et mutuelle analysées{" "}
+              <strong style={{ color: "#374151" }}>en quelques secondes.</strong>
+              <br className="hidden sm:block" />
+              OptiPilot automatise vos devis, guide vos clients
+              <br className="hidden sm:block" />
+              et optimise chaque vente pour{" "}
+              <strong style={{ color: "#5331D0" }}>augmenter votre panier moyen.</strong>
             </p>
 
             {/* CTAs */}
@@ -372,7 +389,7 @@ export default function LandingPage() {
 
             {/* Trust badges */}
             <div className="flex flex-wrap items-center justify-center gap-5">
-              {["✓ Essai gratuit 14 jours", "✓ Sans engagement", "✓ Données RGPD sécurisées"].map((badge, i) => (
+              {["✓ Essai gratuit 14 jours", "✓ Sans engagement", "✓ Données RGPD sécurisées", "📈 Jusqu'à +15% de panier moyen"].map((badge, i) => (
                 <motion.span
                   key={badge}
                   initial={{ opacity: 0, y: 10 }}
