@@ -347,16 +347,29 @@ export default function LandingPage() {
               <span style={{ color: "#5331D0" }}> et augmentez vos ventes.</span>
             </p>
 
-            {/* Sous-titre détaillé */}
-            <p className="text-lg md:text-xl font-medium mb-10 max-w-2xl mx-auto leading-relaxed" style={{ color: "#6b7280" }}>
-              Ordonnance et mutuelle analysées{" "}
-              <strong style={{ color: "#374151" }}>en quelques secondes.</strong>
-              <br className="hidden sm:block" />
-              OptiPilot automatise vos devis, guide vos clients
-              <br className="hidden sm:block" />
-              et optimise chaque vente pour{" "}
-              <strong style={{ color: "#5331D0" }}>augmenter votre panier moyen.</strong>
-            </p>
+            {/* Sous-titre détaillé — liste à points */}
+            <ul className="text-base md:text-lg mb-10 max-w-xl mx-auto flex flex-col gap-3 text-left">
+              {[
+                { text: "Ordonnance et mutuelle analysées ", bold: "en quelques secondes.", color: "#374151" },
+                { text: "Devis générés automatiquement, ", bold: "zéro ressaisie.", color: "#374151" },
+                { text: "Clients guidés à chaque étape pour ", bold: "augmenter votre panier moyen.", color: "#5331D0" },
+              ].map((item, i) => (
+                <motion.li
+                  key={i}
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.45, delay: 0.35 + i * 0.1 }}
+                  className="flex items-start gap-3"
+                >
+                  <span className="mt-1 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(83,49,208,0.12)" }}>
+                    <svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#5331D0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </span>
+                  <span style={{ color: "#6b7280" }}>
+                    {item.text}<strong style={{ color: item.color }}>{item.bold}</strong>
+                  </span>
+                </motion.li>
+              ))}
+            </ul>
 
             {/* CTAs */}
             <motion.div
@@ -403,33 +416,7 @@ export default function LandingPage() {
               ))}
             </div>
 
-            {/* Hero image placeholder – screenshot of dashboard */}
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="mt-16 relative mx-auto rounded-3xl overflow-hidden shadow-2xl"
-              style={{
-                maxWidth: 860,
-                border: "1.5px solid rgba(83,49,208,0.2)",
-                background: "linear-gradient(135deg,#0a0318,#1e1b4b)",
-                aspectRatio: "16/9",
-              }}
-            >
-              <div className="absolute inset-0 flex items-center justify-center flex-col gap-4">
-                <Image
-                  src="/assets/images/Logo-OptiPilot.png"
-                  alt="Aperçu OptiPilot dashboard"
-                  width={80}
-                  height={80}
-                  className="object-contain opacity-50"
-                />
-                <p className="text-sm font-semibold opacity-50 text-white">Aperçu du tableau de bord OptiPilot</p>
-              </div>
-              {/* Decorative coloured orbs */}
-              <div className="absolute top-8 left-12 w-40 h-40 rounded-full opacity-30" style={{ background: "radial-gradient(#5331D0, transparent)" }} />
-              <div className="absolute bottom-8 right-12 w-32 h-32 rounded-full opacity-20" style={{ background: "radial-gradient(#a855f7, transparent)" }} />
-            </motion.div>
+
           </motion.div>
         </section>
 
