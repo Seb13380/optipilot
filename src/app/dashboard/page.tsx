@@ -164,6 +164,7 @@ function DashboardPage() {
   const tempsLabel = tempsGagneMin > 0 ? fmtMin(tempsGagneMin) : null;
   const opportunites = Math.max(0, (s?.devisJour ?? 0) - (s?.ventesJour ?? 0));
   const nbDevis = s?.devisJour ?? 0;
+  const isEstimated = !loading && nbDevis === 0;
   const simSansMin = nbDevis * 10;
   const simAvecMin = nbDevis * 4;
   const gainParDevisEuros = Math.round((s?.panierMoyen ?? 300) * 0.12);
@@ -417,18 +418,18 @@ function DashboardPage() {
           <div className="grid grid-cols-3 gap-2.5 mb-4">
             <div className="rounded-2xl p-3 flex flex-col gap-0.5" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.15)" }}>
               <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>⏱️ {t.timeFreed}</span>
-              <span className="text-xl font-black text-white">{loading ? "…" : (tempsLabel ?? "—")}</span>
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{t.today}</span>
+              <span className="text-xl font-black" style={{ color: isEstimated ? "#fbbf24" : "white" }}>{loading ? "…" : (nbDevis > 0 ? (tempsLabel ?? "0 min") : "~18 min")}</span>
+              <span className="text-xs" style={{ color: isEstimated ? "rgba(251,191,36,0.55)" : "rgba(255,255,255,0.3)" }}>{isEstimated ? (lang === "EN" ? "estimate" : "estimation") : t.today}</span>
             </div>
             <div className="rounded-2xl p-3 flex flex-col gap-0.5" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.15)" }}>
               <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>💰 {t.caGenerated}</span>
-              <span className="text-xl font-black" style={{ color: "#c4b5fd" }}>{loading ? "…" : caGenere > 0 ? `+${caGenere.toLocaleString("fr-FR")}€` : "—"}</span>
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{s?.ventesJour ?? 0} {t.sales}</span>
+              <span className="text-xl font-black" style={{ color: isEstimated ? "#fbbf24" : "#c4b5fd" }}>{loading ? "…" : (caGenere > 0 ? `+${caGenere.toLocaleString("fr-FR")}€` : `~+${Math.round((s?.panierMoyen ?? 300) * 0.4).toLocaleString("fr-FR")}€`)}</span>
+              <span className="text-xs" style={{ color: isEstimated ? "rgba(251,191,36,0.55)" : "rgba(255,255,255,0.3)" }}>{isEstimated ? (lang === "EN" ? "estimate" : "estimation") : `${s?.ventesJour ?? 0} ${t.sales}`}</span>
             </div>
             <div className="rounded-2xl p-3 flex flex-col gap-0.5" style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.15)" }}>
               <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.7)" }}>📈 {t.opportunities}</span>
-              <span className="text-xl font-black text-white">{loading ? "…" : opportunites}</span>
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{t.quotesInProgress}</span>
+              <span className="text-xl font-black" style={{ color: isEstimated ? "#fbbf24" : "white" }}>{loading ? "…" : (nbDevis > 0 ? opportunites : 2)}</span>
+              <span className="text-xs" style={{ color: isEstimated ? "rgba(251,191,36,0.55)" : "rgba(255,255,255,0.3)" }}>{isEstimated ? (lang === "EN" ? "estimate" : "estimation") : t.quotesInProgress}</span>
             </div>
           </div>
 
@@ -455,11 +456,13 @@ function DashboardPage() {
             </div>
           )}
 
-          {/* Journée vide — estimation fixe */}
+          {/* Journée vide — estimation mise en valeur */}
           {!loading && nbDevis === 0 && (
-            <div className="rounded-2xl px-4 py-3 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.45)" }}>{t.startFirstSale}</p>
-              <p className="text-xs mt-1.5 font-bold" style={{ color: "#34D399" }}>{t.monthlyEstimate} : ≈ +900€ à +1800€ de CA +22h {t.timeFreed.toLowerCase()} / {lang === "EN" ? "month" : "mois"}</p>
+            <div className="rounded-2xl px-4 py-4 text-center" style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)" }}>
+              <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: "rgba(52,211,153,0.65)" }}>💰 {t.monthlyEstimate}</p>
+              <p className="text-2xl font-black" style={{ color: "#34D399" }}>≈ +900€ à +1 800€</p>
+              <p className="text-xs mt-1" style={{ color: "rgba(52,211,153,0.55)" }}>+ 22h {t.timeFreed.toLowerCase()} / {lang === "EN" ? "month" : "mois"}</p>
+              <p className="text-xs mt-2 font-medium" style={{ color: "rgba(255,255,255,0.3)" }}>{t.startFirstSale}</p>
             </div>
           )}
         </motion.div>
