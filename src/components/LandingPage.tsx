@@ -337,7 +337,7 @@ export default function LandingPage() {
                 2 scans.
               </span>
               <br />
-              Tout est prêt.
+              Votre Prise en charge est prête!
             </h1>
 
             {/* Promesse secondaire */}
@@ -418,6 +418,65 @@ export default function LandingPage() {
 
 
           </motion.div>
+        </section>
+
+        {/* ══════════════════════════ VIDÉO EXPLAINER ══════════════════════════ */}
+        <section className="py-16 px-6" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(83,49,208,0.04) 50%, transparent 100%)" }}>
+          <div className="max-w-3xl mx-auto">
+            <Reveal>
+              {/* En-tête */}
+              <div className="text-center mb-8">
+                <p className="text-sm font-black uppercase tracking-widest mb-2" style={{ color: "#5331D0" }}>Présentation</p>
+                <h2 className="text-3xl md:text-4xl font-black mb-3" style={{ color: "#1C0B62" }}>
+                  Je vous explique{" "}
+                  <span style={{ background: "linear-gradient(135deg, #5331D0 0%, #a855f7 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                    OptiPilot
+                  </span>
+                </h2>
+                <p className="text-lg" style={{ color: "#6b7280" }}>
+                  Découvrez comment OptiPilot transforme votre quotidien en quelques minutes.
+                </p>
+              </div>
+
+              {/* Player vidéo */}
+              <div
+                className="rounded-3xl overflow-hidden relative"
+                style={{
+                  background: "#0a0338",
+                  border: "2px solid rgba(83,49,208,0.35)",
+                  boxShadow: "0 20px 60px rgba(83,49,208,0.25), 0 4px 20px rgba(0,0,0,0.15)",
+                  padding: "3px",
+                }}
+              >
+                <div className="rounded-3xl overflow-hidden" style={{ background: "#000" }}>
+                  <video
+                    controls
+                    playsInline
+                    className="w-full block"
+                    style={{ maxHeight: "480px", objectFit: "contain" }}
+                    preload="metadata"
+                  >
+                    <source src="/assets/videos/OptiPilot%20-%20La%20R%C3%A9volution%20des%20Opticiens.mp4" type="video/mp4" />
+                    Votre navigateur ne supporte pas la lecture vidéo.
+                  </video>
+                </div>
+              </div>
+
+              {/* CTA sous la vidéo */}
+              <div className="flex justify-center mt-8">
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ y: -3 }}
+                  onClick={scrollToDemo}
+                  className="text-base font-bold px-8 py-4 rounded-2xl text-white flex items-center gap-2"
+                  style={{ background: "linear-gradient(135deg, #5331D0, #a855f7)", boxShadow: "0 6px 20px rgba(83,49,208,0.4)" }}
+                >
+                  Demander une démo gratuite
+                  <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </motion.button>
+              </div>
+            </Reveal>
+          </div>
         </section>
 
         {/* ══════════════════════════ PROBLÈME ══════════════════════════ */}
