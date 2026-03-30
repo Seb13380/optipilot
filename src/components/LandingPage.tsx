@@ -456,7 +456,7 @@ export default function LandingPage() {
                     style={{ maxHeight: "480px", objectFit: "contain" }}
                     preload="metadata"
                   >
-                    <source src="/assets/videos/OptiPilot%20-%20La%20R%C3%A9volution%20des%20Opticiens.mp4" type="video/mp4" />
+                    <source src="/assets/videos/OptiPilot%20_%20Le%20futur%20de%20l'optique_1080p_caption.mp4" type="video/mp4" />
                     Votre navigateur ne supporte pas la lecture vidéo.
                   </video>
                 </div>
