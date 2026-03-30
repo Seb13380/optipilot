@@ -439,7 +439,7 @@ function DashboardPage() {
             <div className="mb-4" style={{ position: "relative", zIndex: 1 }}>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.65)" }}>
-                  🎯 {nbDevis > 0 ? `${potentielPct}% du potentiel journalier atteint` : (lang === "EN" ? "Start your first sale to unlock tracking" : "Démarrez votre première vente pour suivre l'impact")}
+                  {nbDevis > 0 ? `${potentielPct}% du potentiel journalier atteint` : (lang === "EN" ? "Start your first sale to unlock tracking" : "Démarrez votre première vente pour suivre l'impact")}
                 </span>
                 <span className="text-xs font-bold" style={{ color: nbDevis > 0 ? "#e879f9" : "rgba(196,181,253,0.3)" }}>
                   {nbDevis}/5
