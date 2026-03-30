@@ -172,6 +172,7 @@ function DashboardPage() {
   const gainTempsMoisLabel = fmtMin(22 * (nbDevis || 3) * 6);
   const relancesCount = Math.max(0, (s?.devisSemaine ?? 0) - (s?.ventesSemaine ?? 0));
   const potentielRelances = relancesCount * (s?.panierMoyen ?? 0);
+  const potentielPct = Math.min(100, Math.round((nbDevis / 5) * 100));
 
   return (
     <div className="page-bg min-h-screen flex flex-col">
@@ -187,7 +188,7 @@ function DashboardPage() {
               className="mb-4 px-5 py-4 rounded-2xl flex items-center gap-4"
               style={{ background: "rgba(34,197,94,0.12)", border: "1.5px solid rgba(34,197,94,0.45)" }}
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(34,197,94,0.2)" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.2)" }}>
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <path d="M5 13l4 4L19 7" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -433,6 +434,34 @@ function DashboardPage() {
             </div>
           </div>
 
+          {/* Barre de progression journalière */}
+          {!loading && (
+            <div className="mb-4" style={{ position: "relative", zIndex: 1 }}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.65)" }}>
+                  🎯 {nbDevis > 0 ? `${potentielPct}% du potentiel journalier atteint` : (lang === "EN" ? "Start your first sale to unlock tracking" : "Démarrez votre première vente pour suivre l'impact")}
+                </span>
+                <span className="text-xs font-bold" style={{ color: nbDevis > 0 ? "#e879f9" : "rgba(196,181,253,0.3)" }}>
+                  {nbDevis}/5
+                </span>
+              </div>
+              <div className="rounded-full overflow-hidden" style={{ height: 7, background: "rgba(167,139,250,0.15)" }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${potentielPct}%` }}
+                  transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
+                  className="h-full rounded-full"
+                  style={{ background: nbDevis > 0 ? "linear-gradient(90deg, #5331D0, #e879f9)" : "rgba(167,139,250,0.25)" }}
+                />
+              </div>
+              {nbDevis > 0 && (
+                <p className="text-xs mt-1 text-right" style={{ color: "rgba(196,181,253,0.35)" }}>
+                  {t.basedOnActivity}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Simulation sans / avec */}
           {!loading && nbDevis > 0 && (
             <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
@@ -463,6 +492,7 @@ function DashboardPage() {
               <p className="text-2xl font-black" style={{ color: "#e879f9" }}>≈ +900€ à +1 800€</p>
               <p className="text-xs mt-1" style={{ color: "rgba(232,121,249,0.55)" }}>+ 22h {t.timeFreed.toLowerCase()} / {lang === "EN" ? "month" : "mois"}</p>
               <p className="text-xs mt-2 font-medium" style={{ color: "rgba(255,255,255,0.3)" }}>{t.startFirstSale}</p>
+              <p className="text-xs mt-1" style={{ color: "rgba(232,121,249,0.3)" }}>{t.basedOnActivity}</p>
             </div>
           )}
         </motion.div>
@@ -555,7 +585,7 @@ function DashboardPage() {
             style={{ background: "rgba(239,68,68,0.07)", border: "1.5px solid rgba(239,68,68,0.22)", transition: "all 0.2s ease" }}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(239,68,68,0.12)" }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(239,68,68,0.12)" }}>
                 <svg width="17" height="17" fill="none" viewBox="0 0 24 24">
                   <path d="M12 9v4M12 17h.01" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round"/>
                   <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#ef4444" strokeWidth="2" strokeLinejoin="round"/>
@@ -595,7 +625,7 @@ function DashboardPage() {
 
             {/* En-tête */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: "rgba(167,139,250,0.2)" }}>
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
