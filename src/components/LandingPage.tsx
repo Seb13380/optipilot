@@ -281,22 +281,13 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
-            <a
-              href="/login"
-              className="hidden sm:inline-flex text-sm font-bold px-4 py-2 rounded-xl transition-colors"
-              style={{ color: "#5331D0", border: "1px solid rgba(83,49,208,0.3)" }}
-            >
-              Connexion
-            </a>
-            <button
-              onClick={scrollToDemo}
-              className="text-sm font-bold px-4 py-2 rounded-xl text-white"
-              style={{ background: "#5331D0", boxShadow: "0 4px 14px rgba(83,49,208,0.4)" }}
-            >
-              Demander une démo
-            </button>
-          </div>
+          <a
+            href="/login"
+            className="hidden sm:inline-flex text-sm font-bold px-4 py-2 rounded-xl transition-colors"
+            style={{ color: "#5331D0", border: "1px solid rgba(83,49,208,0.3)" }}
+          >
+            Connexion
+          </a>
         </motion.nav>
 
         {/* ══════════════════════════ HERO ══════════════════════════ */}
@@ -326,7 +317,9 @@ export default function LandingPage() {
             </motion.span>
 
             {/* Accroche principale */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.08] mb-5" style={{ color: "#1C0B62" }}>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.08] mb-6" style={{ color: "#1C0B62" }}>
+              Redevenez opticien.
+              <br />
               <span
                 style={{
                   background: "linear-gradient(135deg, #5331D0 0%, #a855f7 100%)",
@@ -334,49 +327,43 @@ export default function LandingPage() {
                   WebkitTextFillColor: "transparent",
                 }}
               >
-                2 scans.
+                On s&apos;occupe du reste.
               </span>
-              <br />
-              Votre Prise en charge est prête!
             </h1>
 
-            {/* Promesse secondaire */}
-            <p className="text-2xl md:text-3xl font-black mb-5 max-w-2xl mx-auto leading-snug" style={{ color: "#374151" }}>
-              Gagnez des heures chaque semaine
-              <br className="hidden sm:block" />
-              <span style={{ color: "#5331D0" }}> et augmentez vos ventes.</span>
+            {/* Sous-titre */}
+            <p className="text-lg md:text-xl mb-3 max-w-2xl mx-auto leading-relaxed" style={{ color: "#374151" }}>
+              Vous passez trop de temps sur les prises en charge, pas assez à vendre.
+            </p>
+            <p className="text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed" style={{ color: "#6b7280" }}>
+              OptiPilot automatise vos PEC, génère vos devis et vous aide à{" "}
+              <strong style={{ color: "#5331D0" }}>augmenter votre panier moyen à chaque client.</strong>
             </p>
 
-            {/* Sous-titre détaillé — liste à points */}
-            <ul className="text-base md:text-lg mb-10 max-w-xl mx-auto flex flex-col gap-3 text-left">
+            {/* Proof stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex flex-wrap items-center justify-center gap-4 mb-10"
+            >
               {[
-                { text: "Ordonnance et mutuelle analysées ", bold: "en quelques secondes.", color: "#374151" },
-                { text: "Devis générés automatiquement, ", bold: "zéro ressaisie.", color: "#374151" },
-                { text: "Clients guidés à chaque étape pour ", bold: "augmenter votre panier moyen.", color: "#5331D0" },
+                { stat: "Jusqu'à 2h gagnées / jour", detail: "= 2 à 4 clients en plus" },
+                { stat: "+10 à +25%", detail: "de panier moyen" },
               ].map((item, i) => (
-                <motion.li
-                  key={i}
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.45, delay: 0.35 + i * 0.1 }}
-                  className="flex items-start gap-3"
-                >
-                  <span className="mt-1 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(83,49,208,0.12)" }}>
-                    <svg width="11" height="11" fill="none" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#5331D0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </span>
-                  <span style={{ color: "#6b7280" }}>
-                    {item.text}<strong style={{ color: item.color }}>{item.bold}</strong>
-                  </span>
-                </motion.li>
+                <div key={i} className="px-5 py-3 rounded-2xl" style={{ background: "rgba(83,49,208,0.08)", border: "1px solid rgba(83,49,208,0.18)" }}>
+                  <p className="text-base font-black" style={{ color: "#5331D0" }}>{item.stat}</p>
+                  <p className="text-xs font-semibold" style={{ color: "#6b7280" }}>{item.detail}</p>
+                </div>
               ))}
-            </ul>
+            </motion.div>
 
-            {/* CTAs */}
+            {/* CTA unique */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10"
+              transition={{ duration: 0.6, delay: 0.45 }}
+              className="flex flex-col items-center gap-3 mb-10"
             >
               <motion.button
                 whileTap={{ scale: 0.97 }}
@@ -391,12 +378,8 @@ export default function LandingPage() {
                 Demander une démo gratuite
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </motion.button>
-              <a
-                href="/login"
-                className="w-full sm:w-auto text-xl font-bold px-8 py-5 rounded-2xl text-center transition-all"
-                style={{ color: "#5331D0", border: "2px solid rgba(83,49,208,0.3)" }}
-              >
-                Se connecter
+              <a href="/login" className="text-sm font-semibold transition-colors" style={{ color: "rgba(83,49,208,0.6)" }}>
+                Déjà inscrit ? Se connecter →
               </a>
             </motion.div>
 
@@ -462,19 +445,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* CTA sous la vidéo */}
-              <div className="flex justify-center mt-8">
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  whileHover={{ y: -3 }}
-                  onClick={scrollToDemo}
-                  className="text-base font-bold px-8 py-4 rounded-2xl text-white flex items-center gap-2"
-                  style={{ background: "linear-gradient(135deg, #5331D0, #a855f7)", boxShadow: "0 6px 20px rgba(83,49,208,0.4)" }}
-                >
-                  Demander une démo gratuite
-                  <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </motion.button>
-              </div>
+
             </Reveal>
           </div>
         </section>
@@ -834,6 +805,58 @@ export default function LandingPage() {
                 </div>
               </RevealRight>
 
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════ TÉMOIGNAGES ══════════════════════════ */}
+        <section className="py-20 px-6" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(83,49,208,0.06) 0%, transparent 70%)" }}>
+          <div className="max-w-5xl mx-auto">
+            <Reveal>
+              <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#5331D0" }}>Ils nous font confiance</p>
+              <h2 className="text-3xl md:text-4xl font-black text-center mb-14" style={{ color: "#1C0B62" }}>
+                Des opticiens indépendants<br className="hidden sm:block" /> qui ont transformé leur quotidien
+              </h2>
+            </Reveal>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                {
+                  quote: "Depuis que j'utilise OptiPilot, je passe moins de 4 minutes par dossier au lieu de 12. Mon panier moyen a augmenté de 18% en 3 mois.",
+                  name: "Laurent M.",
+                  magasin: "Optique du Soleil — Lyon",
+                  initials: "LM",
+                },
+                {
+                  quote: "Le mode tablette client est bluffant. Les clients voient leurs remboursements en direct, ils comprennent, ils font confiance — et ils achètent.",
+                  name: "Sandrine K.",
+                  magasin: "Optique Lumière — Bordeaux",
+                  initials: "SK",
+                },
+                {
+                  quote: "J'avais peur d'un outil trop complexe. En une heure j'étais opérationnel. Maintenant je ne pourrais plus m'en passer.",
+                  name: "Thomas R.",
+                  magasin: "Mon Opticien — Nantes",
+                  initials: "TR",
+                },
+              ].map((item, i) => (
+                <RevealCard key={i} delay={i * 0.1}>
+                  <div className="rounded-3xl p-7 h-full flex flex-col gap-5" style={{ background: "#fff", border: "1.5px solid rgba(83,49,208,0.12)", boxShadow: "0 4px 24px rgba(83,49,208,0.06)" }}>
+                    <div className="flex gap-1">
+                      {[...Array(5)].map((_, s) => (
+                        <svg key={s} width="16" height="16" viewBox="0 0 24 24" fill="#5331D0"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                      ))}
+                    </div>
+                    <p className="text-base leading-relaxed flex-1" style={{ color: "#374151" }}>&ldquo;{item.quote}&rdquo;</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0" style={{ background: "linear-gradient(135deg, #5331D0, #a855f7)" }}>{item.initials}</div>
+                      <div>
+                        <p className="text-sm font-black" style={{ color: "#1C0B62" }}>{item.name}</p>
+                        <p className="text-xs" style={{ color: "#6b7280" }}>{item.magasin}</p>
+                      </div>
+                    </div>
+                  </div>
+                </RevealCard>
+              ))}
             </div>
           </div>
         </section>
