@@ -312,7 +312,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold mb-8"
               style={{ background: "rgba(83,49,208,0.1)", color: "#5331D0", border: "1px solid rgba(83,49,208,0.2)" }}
             >
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="none"/><path d="M9 7h2v2H9zm0 4h2v6H9zm4-4h2v2h-2zm0 4h2v6h-2z" fill="none"/><circle cx="12" cy="12" r="10" stroke="#5331D0" strokeWidth="1.5"/><path d="M8 12l3 3 5-5" stroke="#5331D0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               Conçu pour les opticiens indépendants
             </motion.span>
 
@@ -349,7 +349,7 @@ export default function LandingPage() {
             >
               {[
                 { stat: "Jusqu'à 2h gagnées / jour", detail: "= 2 à 4 clients en plus" },
-                { stat: "1 600 € gagnés / mois, en moyenne", detail: "soit +19 000 € par an en moyenne" },
+                { stat: "1 600 € gagnés / mois", detail: "soit +19 000 € par an en moyenne" },
               ].map((item, i) => (
                 <div key={i} className="px-5 py-3 rounded-2xl" style={{ background: "rgba(83,49,208,0.08)", border: "1px solid rgba(83,49,208,0.18)" }}>
                   <p className="text-base font-black" style={{ color: "#5331D0" }}>{item.stat}</p>
