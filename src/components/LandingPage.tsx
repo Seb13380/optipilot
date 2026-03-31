@@ -8,9 +8,9 @@ import Image from "next/image";
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
   const [display, setDisplay] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: false });
+  const inView = useInView(ref, { once: true });
   useEffect(() => {
-    if (!inView) { setDisplay(0); return; }
+    if (!inView) return;
     let start = 0;
     const duration = 1400;
     const step = 16;
@@ -199,7 +199,7 @@ export default function LandingPage() {
                   "@type": "Offer",
                   price: "249",
                   priceCurrency: "EUR",
-                  description: "Plan Pro — accès complet, essai gratuit 14 jours",
+                  description: "Plan Pro — accès complet, essai gratuit 30 jours",
                 },
                 publisher: {
                   "@type": "Organization",
@@ -215,7 +215,7 @@ export default function LandingPage() {
                     name: "Comment fonctionne l'essai gratuit OptiPilot ?",
                     acceptedAnswer: {
                       "@type": "Answer",
-                      text: "L'essai gratuit dure 14 jours avec accès complet à toutes les fonctionnalités. Aucune carte bancaire requise à l'inscription. À l'issue de la période, vous choisissez librement de continuer ou non.",
+                      text: "L'essai gratuit dure 30 jours avec accès complet à toutes les fonctionnalités. Aucune carte bancaire requise à l'inscription. À l'issue de la période, vous choisissez librement de continuer ou non.",
                     },
                   },
                   {
@@ -313,7 +313,7 @@ export default function LandingPage() {
               style={{ background: "rgba(83,49,208,0.1)", color: "#5331D0", border: "1px solid rgba(83,49,208,0.2)" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="none"/><path d="M9 7h2v2H9zm0 4h2v6H9zm4-4h2v2h-2zm0 4h2v6h-2z" fill="none"/><circle cx="12" cy="12" r="10" stroke="#5331D0" strokeWidth="1.5"/><path d="M8 12l3 3 5-5" stroke="#5331D0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Conçu pour les opticiens indépendants
+              Conçu par un opticien diplômé · Pour les indépendants
             </motion.span>
 
             {/* Accroche principale */}
@@ -336,8 +336,7 @@ export default function LandingPage() {
               Vous passez trop de temps sur les prises en charge, pas assez à vendre.
             </p>
             <p className="text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed" style={{ color: "#6b7280" }}>
-              OptiPilot automatise vos PEC, génère vos devis et vous aide à{" "}
-              <strong style={{ color: "#5331D0" }}>augmenter votre panier moyen à chaque client.</strong>
+              Pendant qu&apos;OptiPilot gère mutuelles et devis, vous faites ce que vous aimez&nbsp;: soigner et conseiller vos clients.
             </p>
 
             {/* Proof stats */}
@@ -385,7 +384,7 @@ export default function LandingPage() {
 
             {/* Trust badges */}
             <div className="flex flex-wrap items-center justify-center gap-5">
-              {["✓ Essai gratuit 14 jours", "✓ Sans engagement", "✓ Données RGPD sécurisées", "📈 Jusqu'à +20% de panier moyen"].map((badge, i) => (
+              {["✓ Essai gratuit 30 jours", "✓ Sans engagement", "✓ Sans carte bancaire", "✓ Données hébergées en France (RGPD)"].map((badge, i) => (
                 <motion.span
                   key={badge}
                   initial={{ opacity: 0, y: 10 }}
@@ -401,6 +400,15 @@ export default function LandingPage() {
 
 
           </motion.div>
+        </section>
+
+        {/* ══════════════════════════ BANNIÈRE OFFRE FONDATEUR ══════════════════════════ */}
+        <section className="py-4 px-6" style={{ background: "linear-gradient(90deg, #5331D0 0%, #a855f7 100%)" }}>
+          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
+            <span className="text-white font-black text-base">⚡ Offre Fondateur — 199€/mois à vie</span>
+            <span className="text-white/80 text-sm">pour les 10 premiers opticiens.</span>
+            <span className="text-white text-xs font-black px-3 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.2)" }}>🔥 Places limitées — Contactez-nous</span>
+          </div>
         </section>
 
         {/* ══════════════════════════ VIDÉO EXPLAINER ══════════════════════════ */}
@@ -456,10 +464,10 @@ export default function LandingPage() {
             <Reveal>
               <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#5331D0" }}>Le constat</p>
               <h2 className="text-3xl md:text-4xl font-black text-center mb-4" style={{ color: "#1C0B62" }}>
-                Ce que vivent les opticiens indépendants chaque jour
+                Vous reconnaissez-vous dans ces situations&nbsp;?
               </h2>
               <p className="text-center text-lg mb-14" style={{ color: "#6b7280" }}>
-                Sans outil adapté, chaque consultation coûte du temps et de l&apos;argent.
+                Chaque minute perdue sur une PEC, c&apos;est un client de moins. Chaque devis sans relance, c&apos;est du chiffre d&apos;affaires qui s&apos;évapore.
               </p>
             </Reveal>
 
@@ -467,19 +475,19 @@ export default function LandingPage() {
               {[
                 {
                   icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="1.5"/><path d="M12 6v6l4 2" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                  title: "6 à 10 min de saisie par client",
-                  desc: "Ordonnances copiées à la main, calculs remboursements chronophages, devis assemblés manuellement… un luxe de temps que les grandes enseignes n'ont plus.",
+                  title: "Jusqu'à 10 minutes perdues par client — pour de la saisie administrative",
+                  desc: "Ordonnance recopieé à la main. Remboursements calculés un par un. Devis assemblé manuellement. Sur 10 clients par jour, c'est près de 2 heures que vous ne passerez pas avec vos clients. Les grandes enseignes ont automatisé tout ça. OptiPilot vous donne le même avantage.",
                   accent: "#ef4444",
                 },
                 {
                   icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 17 22 17 22 11" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                  title: "1 devis sur 3 ne se concrétise pas",
+                  title: "1 devis sur 3 s'évapore — sans jamais être relancé",
                   desc: "Le client « réfléchit » et ne revient pas. Sans relance structurée, ce chiffre d'affaires est définitivement perdu.",
                   accent: "#f59e0b",
                 },
                 {
                   icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 22V12h6v10" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                  title: "La concurrence digitalise son expérience",
+                  title: "Optic 2000, Krys, Afflelou investissent. L'écart se creuse.",
                   desc: "Les grandes enseignes investissent dans des outils numériques. L'optique indépendante peine à offrir la même fluidité, la même confiance client.",
                   accent: "#8b5cf6",
                 },
@@ -532,15 +540,15 @@ export default function LandingPage() {
                 {
                   step: "02",
                   icon: <img src="/assets/images/IA_Optipilot.png" alt="IA OptiPilot" width={48} height={48} style={{ objectFit: "cover", borderRadius: 8 }} />,
-                  title: "L'IA recommande les verres idéaux",
-                  desc: "En croisant l'ordonnance, le questionnaire lifestyle (conduite de nuit, sport, écrans…) et le budget, OptiPilot génère 3 offres adaptées et argumentées.",
+                  title: "OptiPilot construit 3 devis sur-mesure — argumentés et prêts à présenter",
+                  desc: "OptiPilot croise l'ordonnance, les habitudes de vie (conduite de nuit, sport, écrans) et le budget de votre client. Il génère 3 offres prêtes à présenter — avec les arguments pour chaque. Vous n'avez plus qu'à guider le choix.",
                   color: "#7c3aed",
                 },
                 {
                   step: "03",
                   icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke="white" strokeWidth="1.5"/><line x1="12" y1="18" x2="12.01" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>,
                   title: "Présentez le devis en live sur tablette",
-                  desc: "Retournez la tablette vers votre client. Il voit les 3 offres, les remboursements en temps réel, les restes à charge. Il comprend, fait confiance, choisit.",
+                  desc: "Retournez la tablette. Votre client voit ses remboursements en temps réel, son reste à charge au centime près. La transparence crée la confiance. La confiance crée la vente. Et le client qui comprend son remboursement choisit souvent la meilleure option.",
                   color: "#a855f7",
                 },
                 {
@@ -582,6 +590,28 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ══════════════════════════ COMPATIBILITÉ LOGICIELS ══════════════════════════ */}
+        <section className="py-14 px-6" style={{ background: "linear-gradient(160deg, #0a0318 0%, #1e1b4b 100%)" }}>
+          <div className="max-w-5xl mx-auto">
+            <Reveal>
+              <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#a89cf7" }}>Compatibilité</p>
+              <h2 className="text-2xl md:text-3xl font-black text-center mb-3 text-white">Compatible avec votre logiciel actuel</h2>
+              <p className="text-center text-base mb-10" style={{ color: "#9B96DA" }}>
+                OptiPilot ne remplace pas votre logiciel de caisse \u2014 il le complète. Il fonctionne en parallèle de&nbsp;:
+              </p>
+            </Reveal>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              {["BB Soft", "iGest", "Optosoftware", "GEO Optique"].map((name) => (
+                <div key={name} className="px-6 py-3 rounded-2xl font-bold text-white text-sm" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(155,150,218,0.25)" }}>{name}</div>
+              ))}
+            </div>
+            <p className="text-center text-xs mt-6" style={{ color: "rgba(155,150,218,0.5)" }}>
+              Votre logiciel n&apos;est pas dans la liste ?{" "}
+              <a href="#demo" onClick={(e) => { e.preventDefault(); scrollToDemo(); }} className="underline hover:text-white transition-colors">Parlez-nous-en lors de votre démo.</a>
+            </p>
+          </div>
+        </section>
+
         {/* ══════════════════════════ CHIFFRES CLÉS ══════════════════════════ */}
         <section
           id="chiffres"
@@ -591,19 +621,19 @@ export default function LandingPage() {
           <div className="max-w-5xl mx-auto">
             <Reveal>
               <h2 className="text-3xl md:text-4xl font-black text-center mb-4 text-white">
-                Des résultats concrets, pas des promesses
+                Ce que les opticiens gagnent avec OptiPilot
               </h2>
               <p className="text-center text-lg mb-16" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Basés sur l&apos;utilisation quotidienne d&apos;OptiPilot par des opticiens indépendants.
+                Estimations basées sur les données réelles du secteur optique indépendant français (Synom, FNO 2024).
               </p>
             </Reveal>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
                 { value: 6, suffix: " min", label: "par dossier avec OptiPilot", sub: "au lieu de 10 à 16 min sans outil" },
-                { value: 15, suffix: "%", label: "de panier moyen en plus", sub: "grâce aux recommandations IA" },
-                { value: 1500, suffix: "€", label: "de CA/mois estimés", sub: "+900€ à +1 800€ selon le volume" },
-                { value: 22, suffix: "h", label: "libérées par mois", sub: "pour vous concentrer sur vos clients" },
+                { value: 15, suffix: "%", label: "de panier moyen en plus", sub: "grâce aux recommandations personnalisées" },
+                { value: 1500, suffix: "€", label: "de chiffre d'affaires en plus / mois", sub: "estimation conservative pour 10 ventes/jour" },
+                { value: 22, suffix: "h", label: "libérées par mois", sub: "pour vos clients, votre famille, votre développement" },
               ].map((item, i) => (
                 <RevealCard key={i} delay={i * 0.08}>
                   <div
@@ -800,7 +830,7 @@ export default function LandingPage() {
                   </motion.button>
 
                   <p className="text-center text-xs mt-3" style={{ color: "rgba(155,150,218,0.5)" }}>
-                    14 jours gratuits · Sans engagement · Résiliable à tout moment
+                    30 jours gratuits · Sans engagement · Résiliable à tout moment
                   </p>
                 </div>
               </RevealRight>
@@ -821,19 +851,19 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 {
-                  quote: "Depuis que j'utilise OptiPilot, je passe moins de 4 minutes par dossier au lieu de 12. Mon panier moyen a augmenté de 18% en 3 mois.",
+                  quote: "Je ne pensais pas qu'un outil pouvait changer autant ma façon de travailler. Mes clients comprennent leur devis en 2 minutes, ils hésitent moins, et ils repartent souvent avec des options qu'ils n'auraient pas choisies avant.",
                   name: "Laurent M.",
                   magasin: "Optique du Soleil — Lyon",
                   initials: "LM",
                 },
                 {
-                  quote: "Le mode tablette client est bluffant. Les clients voient leurs remboursements en direct, ils comprennent, ils font confiance — et ils achètent.",
+                  quote: "Le mode tablette client est bluffant. Les clients voient leurs remboursements en direct — plus de questions, plus d'hésitation. Ils font confiance, et ça se ressent sur les ventes.",
                   name: "Sandrine K.",
                   magasin: "Optique Lumière — Bordeaux",
                   initials: "SK",
                 },
                 {
-                  quote: "J'avais peur d'un outil trop complexe. En une heure j'étais opérationnel. Maintenant je ne pourrais plus m'en passer.",
+                  quote: "J'avais peur d'un outil trop complexe à intégrer dans mon quotidien. En moins d'une heure j'étais opérationnel. Trois mois plus tard, je ne pourrais plus m'en passer — et mon équipe non plus.",
                   name: "Thomas R.",
                   magasin: "Mon Opticien — Nantes",
                   initials: "TR",
@@ -874,23 +904,27 @@ export default function LandingPage() {
               {[
                 {
                   q: "Comment fonctionne l'essai gratuit ?",
-                  a: "L'essai gratuit dure 14 jours avec accès complet à toutes les fonctionnalités. Aucune carte bancaire requise à l'inscription. À l'issue de la période, vous choisissez librement de continuer ou non.",
+                  a: "L'essai gratuit dure 30 jours avec accès complet à toutes les fonctionnalités. Aucune carte bancaire requise à l'inscription. À l'issue de la période, vous choisissez librement de continuer ou non.",
                 },
                 {
-                  q: "OptiPilot remplace-t-il mon logiciel de gestion actuel ?",
-                  a: "Non. OptiPilot est un outil complémentaire axé sur la phase de consultation et de vente : scan ordonnance, recommandations IA, devis, relances. Il ne gère pas la comptabilité ni le stock.",
+                  q: "Est-ce que ça marche avec mon logiciel actuel ?",
+                  a: "Oui. OptiPilot fonctionne en parallèle de votre logiciel de caisse (BB Soft, iGest, Optosoftware, GEO Optique…). Il ne remplace pas votre gestion — il prend en charge la phase de consultation et de devis, là où vous perdez du temps.",
+                },
+                {
+                  q: "Que se passe-t-il si j'ai un problème en pleine consultation client ?",
+                  a: "Notre support est disponible 7j/7 par chat et email. En cas de problème urgent pendant une consultation, vous pouvez nous joindre directement par téléphone. Temps de réponse moyen : moins de 48h, souvent moins de 2h en journée.",
                 },
                 {
                   q: "Les données de mes clients sont-elles sécurisées ?",
-                  a: "Oui. OptiPilot est conforme RGPD. Toutes les données sont chiffrées en transit (HTTPS/TLS) et au repos. Hébergeées en Europe. Elles ne sont jamais partagées ni revendues.",
+                  a: "Oui. OptiPilot est conforme RGPD. Toutes les données sont chiffrées en transit (HTTPS/TLS) et au repos. Hébergées en France. Elles ne sont jamais partagées ni revendues.",
                 },
                 {
-                  q: "Combien de temps pour la prise en main ?",
-                  a: "La plupart des opticiens sont opérationnels en moins d'une heure. L'interface est conçue pour être intuitive. Une démo de 30 minutes avec notre équipe suffit pour maîtriser l'essentiel.",
+                  q: "Combien de temps pour être opérationnel ?",
+                  a: "Moins d'une heure. L'interface est conçue pour être intuitive dès la première utilisation. On vous accompagne lors de votre démo de 30 minutes — la plupart des opticiens font leur premier scan d'ordonnance pendant la démo.",
                 },
                 {
-                  q: "Puis-je utiliser OptiPilot sur tablette en magasin ?",
-                  a: "Oui, c'est l'usage principal recommandé. OptiPilot est optimisé pour tablette iPad et Android — idéal pour la présentation client en face à face.",
+                  q: "Y a-t-il un contrat à signer ?",
+                  a: "Non. L'abonnement est mensuel, sans engagement minimum. L'essai de 30 jours est sans aucune obligation. Si vous souhaitez s'engager sur 12 mois, un tarif préférentiel est disponible — mais c'est votre choix, pas une condition.",
                 },
               ].map((item, i) => (
                 <Reveal key={i} delay={i * 0.06}>
@@ -911,10 +945,10 @@ export default function LandingPage() {
           <div className="max-w-2xl mx-auto">
             <Reveal>
               <h2 className="text-3xl md:text-4xl font-black text-center mb-3 text-white">
-                Prêt à transformer votre <br />centre optique?
+                Voyez OptiPilot dans votre magasin — en 15 minutes chrono.
               </h2>
               <p className="text-center text-lg mb-10" style={{ color: "#9B96DA" }}>
-                Réservez une démo gratuite de 30 minutes. On vous montre comment OptiPilot s&apos;adapte concrètement à votre magasin.
+                On vous montre le scan d&apos;ordonnance, le calcul mutuelle en direct et les relances automatiques. Sur vos propres données si vous le souhaitez. Sans engagement, aucune carte bancaire requise.
               </p>
             </Reveal>
 
@@ -1016,7 +1050,7 @@ export default function LandingPage() {
                     <p className="text-center text-sm font-semibold mt-1" style={{ color: "#f87171" }}>{demoError}</p>
                   )}
                   <p className="text-center text-xs" style={{ color: "rgba(155,150,218,0.5)" }}>
-                    Aucun engagement · Réponse sous 24h · Données RGPD sécurisées
+                    Sans carte bancaire · Réponse sous 24h · Données hébergées en France · Annulation en 1 clic
                   </p>
                 </form>
               )}
@@ -1041,7 +1075,8 @@ export default function LandingPage() {
                   <span className="text-lg font-black text-white">OptiPilot</span>
                 </div>
                 <p className="text-sm leading-relaxed" style={{ color: "rgba(155,150,218,0.7)" }}>
-                  Le copilote IA des opticiens indépendants. Gagnez du temps, augmentez votre CA, fidélisez vos clients.
+                  Conçu par un opticien diplômé, pour les opticiens indépendants.<br />
+                  Gagnez du temps sur chaque dossier. Augmentez votre panier moyen. Fidélisez sans effort.
                 </p>
               </div>
               <div>
@@ -1055,7 +1090,7 @@ export default function LandingPage() {
               <div>
                 <p className="text-sm font-black mb-4" style={{ color: "#9B96DA" }}>Contact</p>
                 <ul className="flex flex-col gap-2">
-                  <li><a href="mailto:sgdigitalweb13@gmail.com" className="text-sm hover:text-white transition-colors" style={{ color: "rgba(155,150,218,0.6)" }}>sgdigitalweb13@gmail.com</a></li>
+                  <li><a href="mailto:contact@optipilot.fr" className="text-sm hover:text-white transition-colors" style={{ color: "rgba(155,150,218,0.6)" }}>contact@optipilot.fr</a></li>
                   <li><a href="tel:0644269896" className="text-sm hover:text-white transition-colors" style={{ color: "rgba(155,150,218,0.6)" }}>06 44 26 98 96</a></li>
                   <li><p className="text-sm" style={{ color: "rgba(155,150,218,0.6)" }}>Plan-de-Cuques (13380)</p></li>
                 </ul>
@@ -1065,7 +1100,7 @@ export default function LandingPage() {
             <Reveal delay={0.15}>
             <div className="flex flex-col sm:flex-row items-center justify-between pt-6" style={{ borderTop: "1px solid rgba(155,150,218,0.12)" }}>
               <p className="text-xs" style={{ color: "rgba(155,150,218,0.4)" }}>
-                © {new Date().getFullYear()} SG Digital Web — OptiPilot. Tous droits réservés.
+                © {new Date().getFullYear()} OptiPilot. Tous droits réservés.
               </p>
               <a href="/login" className="text-xs mt-2 sm:mt-0 hover:text-white transition-colors" style={{ color: "rgba(155,150,218,0.4)" }}>
                 Connexion opticien

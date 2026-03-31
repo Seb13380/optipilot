@@ -35,7 +35,7 @@ function MentionsLegalesModal({ onClose }: { onClose: () => void }) {
             <strong>SG Digital Web</strong><br />
             Sébastien GIORDANO<br />
             Plan-de-Cuques (13380)<br />
-            Email&nbsp;: <a href="mailto:sgdigitalweb13@gmail.com" className="underline" style={{ color: "#A78BFA" }}>sgdigitalweb13@gmail.com</a><br />
+            Email&nbsp;: <a href="mailto:contact@optipilot.fr" className="underline" style={{ color: "#A78BFA" }}>contact@optipilot.fr</a><br />
             Tél&nbsp;: <a href="tel:0644269896" style={{ color: "#A78BFA" }}>06.44.26.98.96</a>
           </p>
         </section>
@@ -111,7 +111,7 @@ function ContactModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <a
-            href="mailto:sgdigitalweb13@gmail.com"
+            href="mailto:contact@optipilot.fr"
             className="flex items-center gap-3 rounded-2xl p-4 w-full"
             style={{ background: "rgba(83,49,208,0.2)", border: "1px solid rgba(83,49,208,0.35)" }}
           >
@@ -121,7 +121,7 @@ function ContactModal({ onClose }: { onClose: () => void }) {
             </svg>
             <div>
               <p className="text-xs font-semibold" style={{ color: "#A78BFA" }}>Email</p>
-              <p className="font-semibold text-white text-sm">sgdigitalweb13@gmail.com</p>
+              <p className="font-semibold text-white text-sm">contact@optipilot.fr</p>
             </div>
           </a>
 
@@ -163,7 +163,7 @@ export default function OptiPilotFooter() {
         style={{ background: "transparent" }}
       >
         <p className="text-sm font-semibold" style={{ color: "#6b7280" }}>
-          © {new Date().getFullYear()} OptiPilot — SG Digital Web
+          © {new Date().getFullYear()} OptiPilot
         </p>
         <div className="flex items-center gap-4">
           <button

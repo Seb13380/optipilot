@@ -5,10 +5,10 @@ import { AppProvider } from "@/lib/AppContext";
 
 export const metadata: Metadata = {
   title: {
-    default: "OptiPilot — Copilote IA pour Opticiens Indépendants",
+    default: "OptiPilot — Le logiciel qui fait gagner 1 600€/mois aux opticiens indépendants",
     template: "%s | OptiPilot",
   },
-  description: "OptiPilot est le logiciel IA pour opticiens indépendants. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle, relances automatiques. Essai gratuit 14 jours.",
+  description: "OptiPilot est le logiciel IA pour opticiens indépendants. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle, relances automatiques. Essai gratuit 30 jours.",
   manifest: "/manifest.json",
   icons: {
     icon: [
