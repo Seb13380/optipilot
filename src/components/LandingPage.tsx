@@ -597,11 +597,11 @@ export default function LandingPage() {
               <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#a89cf7" }}>Compatibilité</p>
               <h2 className="text-2xl md:text-3xl font-black text-center mb-3 text-white">Compatible avec votre logiciel actuel</h2>
               <p className="text-center text-base mb-10" style={{ color: "#9B96DA" }}>
-                OptiPilot ne remplace pas votre logiciel de caisse \u2014 il le complète. Il fonctionne en parallèle de&nbsp;:
+                OptiPilot ne remplace pas votre logiciel de caisse — il le complète. Il fonctionne en parallèle de&nbsp;:
               </p>
             </Reveal>
             <div className="flex flex-wrap items-center justify-center gap-4">
-              {["BB Soft", "iGest", "Optosoftware", "GEO Optique"].map((name) => (
+              {["Optimum", "BB Soft", "iGest", "GEO Optique", "Optosoftware"].map((name) => (
                 <div key={name} className="px-6 py-3 rounded-2xl font-bold text-white text-sm" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(155,150,218,0.25)" }}>{name}</div>
               ))}
             </div>
