@@ -770,7 +770,7 @@ export default function LandingPage() {
 
                   <ul className="flex flex-col gap-3 mb-8 flex-1">
                     {[
-                      { text: "Tout le plan Standard", highlight: true },
+                      { text: "Tout le plan Standard +", highlight: true },
                       { text: "IA commerciale avancée (profil client, correction, activité)", highlight: false },
                       { text: "Tableau de bord business (panier moyen, options vendues…)", highlight: false },
                       { text: "Optimisation panier moyen — suggestions premium rentables", highlight: false },

@@ -314,7 +314,12 @@ app.get("/api/devis/:magasinId", async (req, res) => {
 
 app.post("/api/devis", async (req, res) => {
   try {
-    const devis = await prisma.devis.create({ data: req.body });
+    const authUser = (req as AuthRequest).user;
+    // Extraire createdByUserId du body s'il y était (évite override client)
+    const { createdByUserId: _ignored, ...bodyData } = req.body;
+    const devis = await prisma.devis.create({
+      data: { ...bodyData, createdByUserId: authUser?.userId ?? null },
+    });
     io.to(req.body.magasinId).emit("nouveau_devis", devis);
     res.json(devis);
   } catch (err) {
@@ -417,10 +422,101 @@ app.post("/api/devis/:id/email", async (req, res) => {
   }
 });
 
+// ─── Stats Équipe (responsable + premium) ────────────────
+app.get("/api/stats/team/:magasinId", async (req, res) => {
+  const authUser = (req as AuthRequest).user;
+  const { magasinId } = req.params;
+  if (authUser?.magasinId !== magasinId || !(authUser?.role === "admin" || authUser?.role === "responsable")) {
+    return res.status(403).json({ error: "Accès refusé" });
+  }
+  try {
+    const magasin = await prisma.magasin.findUnique({ where: { id: magasinId }, select: { plan: true } });
+    if (!magasin || !(magasin.plan === "premium" || magasin.plan === "pro")) {
+      return res.status(403).json({ error: "Fonctionnalité Premium uniquement" });
+    }
+    const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
+    const users = await prisma.utilisateur.findMany({
+      where: { magasinId },
+      select: { id: true, nom: true, role: true },
+      orderBy: { nom: "asc" },
+    });
+    const members = await Promise.all(users.map(async (u) => {
+      const [devisMois, ventesMois, panierData] = await Promise.all([
+        prisma.devis.count({ where: { magasinId, createdByUserId: u.id, createdAt: { gte: monthAgo } } }),
+        prisma.devis.count({ where: { magasinId, createdByUserId: u.id, statut: "accepté", createdAt: { gte: monthAgo } } }),
+        prisma.devis.findMany({
+          where: { magasinId, createdByUserId: u.id, statut: "accepté", createdAt: { gte: monthAgo } },
+          select: { totalConfort: true, totalEssentiel: true },
+        }),
+      ]);
+      const panierValues = panierData.map(d => Number(d.totalConfort ?? d.totalEssentiel ?? 0)).filter(v => v > 0);
+      const panierMoyen = panierValues.length > 0 ? Math.round(panierValues.reduce((a, b) => a + b, 0) / panierValues.length) : 0;
+      return {
+        userId: u.id, nom: u.nom, role: u.role,
+        devisMois, ventesMois,
+        tauxConversion: devisMois > 0 ? Math.round((ventesMois / devisMois) * 100) : 0,
+        panierMoyen,
+      };
+    }));
+    res.json({ members });
+  } catch (err) {
+    console.error("Team stats error:", err);
+    res.status(500).json({ error: "Erreur stats équipe" });
+  }
+});
+
+// ─── Gestion équipe ───────────────────────────────────────
+app.get("/api/utilisateurs/:magasinId", async (req, res) => {
+  const authUser = (req as AuthRequest).user;
+  if (authUser?.magasinId !== req.params.magasinId || !(authUser?.role === "admin" || authUser?.role === "responsable")) {
+    return res.status(403).json({ error: "Accès refusé" });
+  }
+  try {
+    const users = await prisma.utilisateur.findMany({
+      where: { magasinId: req.params.magasinId },
+      select: { id: true, nom: true, email: true, role: true, createdAt: true },
+      orderBy: { nom: "asc" },
+    });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur liste utilisateurs" });
+  }
+});
+
+app.post("/api/utilisateurs", async (req, res) => {
+  const authUser = (req as AuthRequest).user;
+  if (!authUser || !(authUser.role === "admin" || authUser.role === "responsable")) {
+    return res.status(403).json({ error: "Accès refusé" });
+  }
+  const { nom, email, motDePasse, role } = req.body as { nom?: string; email?: string; motDePasse?: string; role?: string };
+  if (!nom?.trim() || !email?.trim() || !motDePasse) {
+    return res.status(400).json({ error: "nom, email et motDePasse requis" });
+  }
+  if (motDePasse.length < 6) {
+    return res.status(400).json({ error: "Mot de passe trop court (6 caractères min)" });
+  }
+  const safeRole = ["vendeur", "admin"].includes(role ?? "") ? role! : "vendeur";
+  try {
+    const existing = await prisma.utilisateur.findUnique({ where: { email: email.trim() } });
+    if (existing) return res.status(409).json({ error: "Un compte existe déjà avec cet email" });
+    const hash = await hashPassword(motDePasse);
+    const user = await prisma.utilisateur.create({
+      data: { magasinId: authUser.magasinId, nom: nom.trim(), email: email.trim(), motDePasse: hash, role: safeRole },
+      select: { id: true, nom: true, email: true, role: true },
+    });
+    res.status(201).json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur création utilisateur" });
+  }
+});
+
 // ─── Stats Dashboard ──────────────────────────────────────
 app.get("/api/stats/:magasinId", async (req, res) => {
   try {
     const { magasinId } = req.params;
+    const userId = req.query.userId ? String(req.query.userId) : null;
+    const uf = userId ? { createdByUserId: userId } : {};
     const now = new Date();
     const today = new Date(now); today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
@@ -441,15 +537,15 @@ app.get("/api/stats/:magasinId", async (req, res) => {
       magasin,
     ] = await Promise.all([
       // Devis créés aujourd'hui
-      prisma.devis.count({ where: { magasinId, createdAt: { gte: today, lt: tomorrow } } }),
+      prisma.devis.count({ where: { magasinId, ...uf, createdAt: { gte: today, lt: tomorrow } } }),
       // Devis acceptés aujourd'hui
-      prisma.devis.count({ where: { magasinId, statut: "accepté", createdAt: { gte: today, lt: tomorrow } } }),
+      prisma.devis.count({ where: { magasinId, statut: "accepté", ...uf, createdAt: { gte: today, lt: tomorrow } } }),
       // Devis cette semaine
-      prisma.devis.count({ where: { magasinId, createdAt: { gte: weekAgo } } }),
+      prisma.devis.count({ where: { magasinId, ...uf, createdAt: { gte: weekAgo } } }),
       // Ventes cette semaine
-      prisma.devis.count({ where: { magasinId, statut: "accepté", createdAt: { gte: weekAgo } } }),
+      prisma.devis.count({ where: { magasinId, statut: "accepté", ...uf, createdAt: { gte: weekAgo } } }),
       // Devis ce mois
-      prisma.devis.count({ where: { magasinId, createdAt: { gte: monthAgo } } }),
+      prisma.devis.count({ where: { magasinId, ...uf, createdAt: { gte: monthAgo } } }),
       // Total clients
       prisma.client.count({ where: { magasinId } }),
       // Nouveaux clients cette semaine
@@ -458,12 +554,12 @@ app.get("/api/stats/:magasinId", async (req, res) => {
       prisma.client.count({ where: { magasinId, createdAt: { gte: monthAgo } } }),
       // Panier moyen (devis acceptés, total confort en priorité sinon essentiel)
       prisma.devis.findMany({
-        where: { magasinId, statut: "accepté", createdAt: { gte: monthAgo } },
+        where: { magasinId, statut: "accepté", ...uf, createdAt: { gte: monthAgo } },
         select: { totalConfort: true, totalEssentiel: true, racConfirme: true, racReel: true },
       }),
       // 5 derniers devis avec client
       prisma.devis.findMany({
-        where: { magasinId },
+        where: { magasinId, ...uf },
         orderBy: { createdAt: "desc" },
         take: 5,
         include: { client: { select: { nom: true, prenom: true } } },

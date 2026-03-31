@@ -46,6 +46,7 @@ model Utilisateur {
   createdAt  DateTime @default(now())
 
   magasin Magasin @relation(fields: [magasinId], references: [id])
+  devis   Devis[]
 
   @@map("utilisateurs")
 }
@@ -169,12 +170,14 @@ model Devis {
   montantRecuMutuelle     Decimal?
   datePaiementMutuelle    DateTime?
   motifRejetMutuelle      String?
+  createdByUserId String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  client     Client      @relation(fields: [clientId], references: [id])
-  magasin    Magasin     @relation(fields: [magasinId], references: [id])
-  ordonnance Ordonnance? @relation(fields: [ordonnanceId], references: [id])
+  client     Client        @relation(fields: [clientId], references: [id])
+  magasin    Magasin       @relation(fields: [magasinId], references: [id])
+  ordonnance Ordonnance?   @relation(fields: [ordonnanceId], references: [id])
+  createdBy  Utilisateur?  @relation(fields: [createdByUserId], references: [id])
 
   @@map("devis")
 }

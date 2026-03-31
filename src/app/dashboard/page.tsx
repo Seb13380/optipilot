@@ -24,9 +24,26 @@ interface Stats {
 }
 
 interface User {
+  id: string;
   nom: string;
+  role: string;
   magasinNom?: string;
   magasinId: string;
+  plan?: string;
+}
+
+interface TeamMember {
+  userId: string;
+  nom: string;
+  role: string;
+  devisMois: number;
+  ventesMois: number;
+  tauxConversion: number;
+  panierMoyen: number;
+}
+
+interface TeamStats {
+  members: TeamMember[];
 }
 
 const MENU_ITEMS = [
@@ -115,6 +132,12 @@ function DashboardPage() {
   const { lang, setLang, t, theme, toggleTheme } = useApp();
   const [usageCount, setUsageCount] = useState(0);
   const [roiDismissed, setRoiDismissed] = useState(false);
+  const [teamStats, setTeamStats] = useState<TeamStats | null>(null);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMember, setNewMember] = useState({ nom: "", email: "", motDePasse: "", role: "vendeur" });
+  const [addMemberLoading, setAddMemberLoading] = useState(false);
+  const [addMemberError, setAddMemberError] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get("upgraded") === "1") {
@@ -137,14 +160,62 @@ function DashboardPage() {
     setUsageCount(visits);
     setRoiDismissed(localStorage.getItem("optipilot_roi_dismissed") === "1");
 
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/${userData.magasinId}`, {
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/${userData.magasinId}${userData.role === "vendeur" ? `?userId=${userData.id}` : ""}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
     })
       .then((r) => r.json())
       .then((data) => { if (!data.error) setStats(data); })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    // Charge les stats équipe pour responsable premium
+    if (userData.role === "admin" && userData.plan === "premium") {
+      setTeamLoading(true);
+      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/team/${userData.magasinId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
+      })
+        .then((r) => r.json())
+        .then((data) => { if (!data.error) setTeamStats(data); })
+        .catch(() => {})
+        .finally(() => setTeamLoading(false));
+    }
   }, [router]);
+
+  async function handleAddMember() {
+    setAddMemberError(null);
+    if (!newMember.nom.trim() || !newMember.email.trim() || !newMember.motDePasse) {
+      setAddMemberError("Tous les champs sont requis");
+      return;
+    }
+    if (newMember.motDePasse.length < 6) {
+      setAddMemberError("Mot de passe trop court (6 caractères min)");
+      return;
+    }
+    setAddMemberLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/utilisateurs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
+        body: JSON.stringify(newMember),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAddMemberError(data.error || "Erreur"); return; }
+      setShowAddMember(false);
+      setNewMember({ nom: "", email: "", motDePasse: "", role: "vendeur" });
+      // Rafraîchir les stats équipe
+      if (user) {
+        const tr = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/team/${user.magasinId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
+        });
+        const td = await tr.json();
+        if (!td.error) setTeamStats(td);
+      }
+    } catch {
+      setAddMemberError("Erreur réseau");
+    } finally {
+      setAddMemberLoading(false);
+    }
+  }
 
   function handleLogout() {
     localStorage.removeItem("optipilot_token");
@@ -801,6 +872,149 @@ function DashboardPage() {
 
         {/* Opportunités détectées */}
         <OpportunitesSansStats stats={s} loading={loading} onNavigate={router.push.bind(router)} />
+
+        {/* ────────── Mon équipe — admin + premium */}
+        {!loading && user?.role === "admin" && s?.plan === "premium" && (
+          <div className="mb-6 mt-2">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-bold" style={{ color: "#374151" }}>Mon équipe</h2>
+              <button
+                onClick={() => setShowAddMember(true)}
+                className="text-sm font-bold px-4 py-2 rounded-xl"
+                style={{ background: "rgba(83,49,208,0.1)", color: "#5331D0", border: "1px solid rgba(83,49,208,0.2)" }}
+              >
+                + Ajouter
+              </button>
+            </div>
+            {teamLoading ? (
+              <p className="text-sm" style={{ color: "#9ca3af" }}>Chargement de l&apos;équipe...</p>
+            ) : !teamStats?.members.length ? (
+              <div className="rounded-2xl p-5 text-center" style={{ background: "#f9f8ff", border: "1px solid rgba(83,49,208,0.12)" }}>
+                <p className="font-semibold" style={{ color: "#5331D0" }}>Aucun collaborateur pour l&apos;instant</p>
+                <p className="text-sm mt-1" style={{ color: "#6b7280" }}>Ajoutez un opticien pour suivre ses performances individuelles.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {teamStats.members.map((m) => (
+                  <motion.div
+                    key={m.userId}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl p-4"
+                    style={{ background: "#ffffff", border: "1.5px solid rgba(83,49,208,0.1)", boxShadow: "0 2px 12px rgba(83,49,208,0.06)" }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0"
+                          style={{ background: "linear-gradient(135deg, #5331D0, #a855f7)" }}
+                        >
+                          {m.nom.slice(0, 1).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-black text-sm" style={{ color: "#111827" }}>{m.nom}</p>
+                          <p className="text-xs" style={{ color: "#9ca3af" }}>{m.role === "admin" ? "Responsable" : "Opticien"}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: "rgba(83,49,208,0.08)", color: "#5331D0" }}>
+                        {m.tauxConversion}% conv.
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { val: m.devisMois, label: "devis", color: "#5331D0" },
+                        { val: m.ventesMois, label: "ventes", color: "#ec4899" },
+                        { val: m.panierMoyen > 0 ? `${m.panierMoyen}€` : "—", label: "panier moy.", color: "#3b82f6" },
+                      ].map((item) => (
+                        <div key={item.label} className="rounded-xl p-2 text-center" style={{ background: "#f9f8ff" }}>
+                          <p className="text-lg font-black" style={{ color: item.color }}>{item.val}</p>
+                          <p className="text-xs" style={{ color: "#9ca3af" }}>{item.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Modal ajout collaborateur */}
+        <AnimatePresence>
+          {showAddMember && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center px-4"
+              style={{ background: "rgba(2,0,23,0.75)", backdropFilter: "blur(8px)" }}
+              onClick={() => setShowAddMember(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.94, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.94, y: 20 }}
+                className="rounded-3xl p-6 w-full max-w-sm"
+                style={{ background: "#fff", boxShadow: "0 24px 80px rgba(0,0,0,0.3)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-black mb-5" style={{ color: "#1C0B62" }}>Ajouter un collaborateur</h3>
+                <div className="flex flex-col gap-3">
+                  <input
+                    placeholder="Nom complet"
+                    value={newMember.nom}
+                    onChange={(e) => setNewMember((p) => ({ ...p, nom: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl text-sm"
+                    style={{ border: "1.5px solid rgba(83,49,208,0.2)", outline: "none" }}
+                  />
+                  <input
+                    placeholder="Adresse email"
+                    type="email"
+                    value={newMember.email}
+                    onChange={(e) => setNewMember((p) => ({ ...p, email: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl text-sm"
+                    style={{ border: "1.5px solid rgba(83,49,208,0.2)", outline: "none" }}
+                  />
+                  <input
+                    placeholder="Mot de passe provisoire (6 car. min)"
+                    type="password"
+                    value={newMember.motDePasse}
+                    onChange={(e) => setNewMember((p) => ({ ...p, motDePasse: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl text-sm"
+                    style={{ border: "1.5px solid rgba(83,49,208,0.2)", outline: "none" }}
+                  />
+                  <select
+                    value={newMember.role}
+                    onChange={(e) => setNewMember((p) => ({ ...p, role: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl text-sm"
+                    style={{ border: "1.5px solid rgba(83,49,208,0.2)", outline: "none" }}
+                  >
+                    <option value="vendeur">Opticien vendeur</option>
+                    <option value="admin">Responsable</option>
+                  </select>
+                  {addMemberError && <p className="text-sm" style={{ color: "#ef4444" }}>{addMemberError}</p>}
+                  <div className="flex gap-3 mt-2">
+                    <button
+                      onClick={() => { setShowAddMember(false); setAddMemberError(null); }}
+                      className="flex-1 py-3 rounded-xl text-sm font-bold"
+                      style={{ background: "#f3f4f6", color: "#6b7280" }}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={handleAddMember}
+                      disabled={addMemberLoading}
+                      className="flex-1 py-3 rounded-xl text-sm font-black text-white"
+                      style={{ background: addMemberLoading ? "#9B96DA" : "linear-gradient(135deg, #5331D0, #7B5CE5)" }}
+                    >
+                      {addMemberLoading ? "..." : "Créer le compte"}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </main>
     </div>
