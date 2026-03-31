@@ -327,7 +327,7 @@ export default function LandingPage() {
                   WebkitTextFillColor: "transparent",
                 }}
               >
-                On s&apos;occupe du reste.
+                OptiPilot s'occupe du reste.
               </span>
             </h1>
 
