@@ -349,7 +349,7 @@ export default function LandingPage() {
             >
               {[
                 { stat: "Jusqu'à 2h gagnées / jour", detail: "= 2 à 4 clients en plus" },
-                { stat: "1 600 € gagnés / mois", detail: "soit +19 000 € par an en moyenne" },
+                { stat: "1 600 € gagnés / mois, en moyenne", detail: "soit +19 000 € par an en moyenne" },
               ].map((item, i) => (
                 <div key={i} className="px-5 py-3 rounded-2xl" style={{ background: "rgba(83,49,208,0.08)", border: "1px solid rgba(83,49,208,0.18)" }}>
                   <p className="text-base font-black" style={{ color: "#5331D0" }}>{item.stat}</p>
