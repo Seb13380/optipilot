@@ -349,7 +349,7 @@ export default function LandingPage() {
             >
               {[
                 { stat: "Jusqu'à 2h gagnées / jour", detail: "= 2 à 4 clients en plus" },
-                { stat: "+10 à +25%", detail: "de panier moyen" },
+                { stat: "+10 à +20%", detail: "de panier moyen" },
               ].map((item, i) => (
                 <div key={i} className="px-5 py-3 rounded-2xl" style={{ background: "rgba(83,49,208,0.08)", border: "1px solid rgba(83,49,208,0.18)" }}>
                   <p className="text-base font-black" style={{ color: "#5331D0" }}>{item.stat}</p>
@@ -385,7 +385,7 @@ export default function LandingPage() {
 
             {/* Trust badges */}
             <div className="flex flex-wrap items-center justify-center gap-5">
-              {["✓ Essai gratuit 14 jours", "✓ Sans engagement", "✓ Données RGPD sécurisées", "📈 Jusqu'à +15% de panier moyen"].map((badge, i) => (
+              {["✓ Essai gratuit 14 jours", "✓ Sans engagement", "✓ Données RGPD sécurisées", "📈 Jusqu'à +20% de panier moyen"].map((badge, i) => (
                 <motion.span
                   key={badge}
                   initial={{ opacity: 0, y: 10 }}
@@ -911,7 +911,7 @@ export default function LandingPage() {
           <div className="max-w-2xl mx-auto">
             <Reveal>
               <h2 className="text-3xl md:text-4xl font-black text-center mb-3 text-white">
-                Prêt à transformer votre centre optique?
+                Prêt à transformer votre <br />centre optique?
               </h2>
               <p className="text-center text-lg mb-10" style={{ color: "#9B96DA" }}>
                 Réservez une démo gratuite de 30 minutes. On vous montre comment OptiPilot s&apos;adapte concrètement à votre magasin.
