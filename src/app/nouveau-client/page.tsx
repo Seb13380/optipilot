@@ -1,6 +1,6 @@
 "use client";
-import { useState, useRef, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useCallback, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OpticianGuard from "@/components/OpticianGuard";
 
@@ -111,8 +111,9 @@ function CameraCapture({ label, onCapture, onSkip }: {
 }
 
 // ─── Page principale ─────────────────────────────────────────────
-export default function NouveauClientPage() {
+function NouveauClientPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>("scan");
   const [mutuelleData, setMutuelleData] = useState<MutuelleData | null>(null);
   const [clientFound, setClientFound] = useState<ClientFound | null>(null);
@@ -123,6 +124,19 @@ export default function NouveauClientPage() {
     consentementRgpd: false, consentementRelance: false,
   });
   const [error, setError] = useState("");
+  const [fromOptimum, setFromOptimum] = useState(false);
+
+  // ── Import depuis Optimum via paramètres URL ──────────────────
+  useEffect(() => {
+    if (searchParams.get("source") !== "optimum") return;
+    const nom = searchParams.get("nom") || "";
+    const prenom = searchParams.get("prenom") || "";
+    const mutuelle = searchParams.get("mutuelle") || "";
+    if (!nom && !prenom) return;
+    setFromOptimum(true);
+    setForm((p) => ({ ...p, nom, prenom, mutuelle }));
+    setStep("new-client");
+  }, [searchParams]);
 
   const user = typeof window !== "undefined"
     ? JSON.parse(localStorage.getItem("optipilot_user") || "{}")
@@ -269,6 +283,11 @@ export default function NouveauClientPage() {
         <button onClick={() => router.back()} className="text-2xl" style={{ color: "#5331D0" }}>←</button>
         <div>
           <h1 className="text-2xl font-black" style={{ color: "#111827" }}>Nouveau client</h1>
+          {fromOptimum && (
+            <p className="text-xs font-semibold mt-1 px-2 py-0.5 rounded-full inline-block" style={{ background: "rgba(83,49,208,0.12)", color: "#5331D0" }}>
+              ✓ Données importées depuis Optimum
+            </p>
+          )}
           <p className="text-sm" style={{ color: "#6b7280" }}>
             {step === "scan" && "Scannez la carte mutuelle"}
             {(step === "analyse" || step === "lookup") && "Analyse en cours..."}
@@ -494,5 +513,13 @@ export default function NouveauClientPage() {
       </AnimatePresence>
     </div>
     </OpticianGuard>
+  );
+}
+
+export default function NouveauClientPage() {
+  return (
+    <Suspense>
+      <NouveauClientPageInner />
+    </Suspense>
   );
 }

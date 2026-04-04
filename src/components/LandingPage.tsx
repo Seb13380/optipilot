@@ -4,6 +4,10 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
+// ─── Offre Fondateur — modifier ces deux valeurs ──────────
+const FOUNDER_DEADLINE = new Date("2026-04-30T23:59:59");
+const FOUNDER_PLACES_LEFT = 7; // places restantes sur 10
+
 // ─── Animated counter ─────────────────────────────────────
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
   const [display, setDisplay] = useState(0);
@@ -23,6 +27,27 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
     return () => clearInterval(timer);
   }, [inView, value]);
   return <span ref={ref}>{display.toLocaleString("fr-FR")}{suffix}</span>;
+}
+
+// ─── Countdown ────────────────────────────────────────────
+function useCountdown(target: Date) {
+  const calc = () => {
+    const diff = target.getTime() - Date.now();
+    if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return {
+      days: Math.floor(diff / 86400000),
+      hours: Math.floor((diff % 86400000) / 3600000),
+      minutes: Math.floor((diff % 3600000) / 60000),
+      seconds: Math.floor((diff % 60000) / 1000),
+    };
+  };
+  const [time, setTime] = useState(calc);
+  useEffect(() => {
+    const id = setInterval(() => setTime(calc()), 1000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return time;
 }
 
 // ─── Fade-in-up wrapper ───────────────────────────────────
@@ -126,6 +151,46 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ─── Founder Banner ──────────────────────────────────────
+function FounderBanner() {
+  const { days, hours, minutes, seconds } = useCountdown(FOUNDER_DEADLINE);
+  const expired = days === 0 && hours === 0 && minutes === 0 && seconds === 0;
+  if (expired) return null;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <section className="py-3 px-6" style={{ background: "linear-gradient(90deg, #5331D0 0%, #a855f7 100%)" }}>
+      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
+        <div className="flex items-center gap-2">
+          <span className="text-white font-black text-base">Offre Fondateur — 199€/mois à vie</span>
+          <span className="text-white/70 text-sm hidden sm:inline">·</span>
+          <span className="text-white/70 text-sm">{FOUNDER_PLACES_LEFT} places restantes sur 10</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {[
+            { val: pad(days), label: "j" },
+            { val: pad(hours), label: "h" },
+            { val: pad(minutes), label: "min" },
+            { val: pad(seconds), label: "s" },
+          ].map(({ val, label }, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <span
+                className="font-black text-white text-sm tabular-nums px-2 py-0.5 rounded-lg"
+                style={{ background: "rgba(255,255,255,0.18)", minWidth: "2rem", display: "inline-block", textAlign: "center" }}
+              >
+                {val}
+              </span>
+              <span className="text-white/60 text-xs">{label}</span>
+              {i < 3 && <span className="text-white/50 font-bold text-sm">:</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -403,13 +468,7 @@ export default function LandingPage() {
         </section>
 
         {/* ══════════════════════════ BANNIÈRE OFFRE FONDATEUR ══════════════════════════ */}
-        <section className="py-4 px-6" style={{ background: "linear-gradient(90deg, #5331D0 0%, #a855f7 100%)" }}>
-          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
-            <span className="text-white font-black text-base">⚡ Offre Fondateur — 199€/mois à vie</span>
-            <span className="text-white/80 text-sm">pour les 10 premiers opticiens.</span>
-            <span className="text-white text-xs font-black px-3 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.2)" }}>🔥 Places limitées — Contactez-nous</span>
-          </div>
-        </section>
+        <FounderBanner />
 
         {/* ══════════════════════════ VIDÉO EXPLAINER ══════════════════════════ */}
         <section className="py-16 px-6" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(83,49,208,0.04) 50%, transparent 100%)" }}>
@@ -924,7 +983,7 @@ export default function LandingPage() {
                 },
                 {
                   q: "Y a-t-il un contrat à signer ?",
-                  a: "Non. L'abonnement est mensuel, sans engagement minimum. L'essai de 30 jours est sans aucune obligation. Si vous souhaitez s'engager sur 12 mois, un tarif préférentiel est disponible — mais c'est votre choix, pas une condition.",
+                  a: "L'essai de 30 jours est sans engagement et sans carte bancaire. À l'issue, si vous souhaitez continuer, un abonnement de 12 mois minimum vous est proposé — avec acceptation des CGV en ligne et facturation mensuelle. Aucune signature papier requise.",
                 },
               ].map((item, i) => (
                 <Reveal key={i} delay={i * 0.06}>
