@@ -1394,6 +1394,61 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
             </motion.div>
           )}
 
+          {/* ─── SYNCHRONISATION OPTIMUM LIVE (mode cloud) ─── */}
+          {!bridgeUrl && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl overflow-hidden"
+              style={{ border: "1.5px solid rgba(83,49,208,0.4)", background: "rgba(10,3,56,0.7)" }}
+            >
+              <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(83,49,208,0.2)" }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: "rgba(155,150,218,0.5)" }} />
+                  <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Envoyer vers Optimum Live</p>
+                </div>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(83,49,208,0.25)", color: "#9B96DA" }}>
+                  Cloud
+                </span>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-sm mb-3" style={{ color: "#9B96DA" }}>
+                  Ouvre le formulaire de devis dans Optimum Live et pré-remplit les champs automatiquement via l&apos;extension Chrome.
+                </p>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    const payload = {
+                      nom: client.nom || "",
+                      prenom: client.prenom || "",
+                      mutuelle: client.mutuelle || "",
+                      verrier: offre?.verrier || "",
+                      gamme: offre?.gamme || "",
+                      offre: offre?.nom || "",
+                      prixVerres: totalVerres,
+                      prixMonture,
+                      prixTotal: totalDevis,
+                      remboursementSecu: offre?.remboursementSecu || 0,
+                      remboursementMutuelle: offre?.remboursementMutuelle || 0,
+                    };
+                    const hash = encodeURIComponent(JSON.stringify(payload));
+                    window.open(`https://livebyoptimum.com#optipilot-devis=${hash}`, "_blank");
+                  }}
+                  className="w-full py-3.5 rounded-xl font-bold text-white text-base flex items-center justify-center gap-2"
+                  style={{
+                    background: "linear-gradient(135deg, #5331D0, #7c3aed)",
+                    boxShadow: "0 4px 20px rgba(83,49,208,0.45)",
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Ouvrir dans Optimum Live
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
           {/* Offre complémentaire */}
           <motion.button
             whileTap={{ scale: 0.97 }}
