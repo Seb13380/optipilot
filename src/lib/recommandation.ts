@@ -260,10 +260,28 @@ export function calculerRecommandations(
   remboursementMutuelle: { unifocal: number; progressif: number }
 ): RecommandationResult {
   const addition = getAdditionMax(ordo);
-  const progressive = needsProgressive(ordo);
+  const progressive = needsProgressive(ordo); // addition > 0 — utilisé pour LPPR/SS
   const tempsEcran = questionnaire.tempsEcran || 0;
   const categorie = getCategorieCorrection(ordo);
   const preferenceM = questionnaire.preferenceMonture || "";
+
+  // ── Type de verre étendu — unifocal, anti-fatigue, progressif, profondeur de champ ──
+  let typeVerre: string;
+  if (addition >= 1.5) {
+    // Presbytie confirmée ou avancée → progressif obligatoire
+    typeVerre = "Progressif";
+  } else if (addition >= 0.75 && tempsEcran >= 4) {
+    // Presbytie débutante + usage écran dominant → profondeur de champ (bureau)
+    typeVerre = "Profondeur de champ";
+  } else if (addition >= 0.75) {
+    // Presbytie débutante sans usage écran prédominant → progressif classique
+    typeVerre = "Progressif";
+  } else if (tempsEcran >= 4) {
+    // Pas de presbytie + fort temps écran → verres anti-fatigue
+    typeVerre = "Anti-fatigue";
+  } else {
+    typeVerre = "Unifocal";
+  }
 
   // Puissance méridienne max (tient compte des 2 axes)
   const puissanceMax = getPuissanceMax(ordo);
@@ -292,9 +310,13 @@ export function calculerRecommandations(
     ? `${indiceMin} (verres fins et légers)`
     : `${indiceMin}`;
   argumentaireGlobal.push(
-    progressive
+    typeVerre === "Progressif"
       ? `Des verres progressifs d'indice ${indiceLabel} — une seule paire pour voir de loin, à l'écran et de près`
-      : `Des verres unifocaux d'indice ${indiceLabel} — adaptés à votre correction`
+    : typeVerre === "Anti-fatigue"
+      ? `Des verres anti-fatigue d'indice ${indiceLabel} — microaddition de repos qui soulage l'effort accommodatif lors des longues sessions écran`
+    : typeVerre === "Profondeur de champ"
+      ? `Des verres profondeur de champ d'indice ${indiceLabel} — plage de vision de travail élargie (30‬cm à 1,5‬m) pour le bureau et les écrans`
+    : `Des verres unifocaux d'indice ${indiceLabel} — qualité optique précise, adaptés à votre correction`
   );
 
   // Antireflet
@@ -318,22 +340,40 @@ export function calculerRecommandations(
     argumentaireGlobal.push("Un traitement anti-lumière bleue — protège vos yeux de la lumière bleue nocive des écrans et réduit la fatigue visuelle en fin de journée");
   }
 
-  if (progressive && tempsEcran >= 4) {
+  if (typeVerre === "Progressif" && tempsEcran >= 4) {
     argumentaireGlobal.push("Un progressif digital optimisé — des couloirs de vision plus larges pour passer confortablement de l'écran à la lecture et à la distance");
   }
+  if (typeVerre === "Profondeur de champ" && tempsEcran >= 6) {
+    argumentaireGlobal.push("Des verres profondeur de champ numériques — zones proche et intermédiaire optimisées pour les postes multiécrans, avec une transition plus douce que le progressif");
+  }
+  if (typeVerre === "Anti-fatigue" && tempsEcran >= 6) {
+    argumentaireGlobal.push("La microaddition anti-fatigue est particulièrement bénéfique au-delà de 6‬h d'écran par jour — elle réduit la fatigue accommodative en fin de journée et prévient les maux de tête");
+  }
 
-  const typeVerre = progressive ? "Progressif" : "Unifocal";
+  const isProgressif = typeVerre === "Progressif";
+  const isPDC = typeVerre === "Profondeur de champ";
+  const isAntiFatigue = typeVerre === "Anti-fatigue";
+
   const remboursement = progressive
     ? remboursementMutuelle.progressif
     : remboursementMutuelle.unifocal;
 
-  // Prix de base selon type
-  const baseEssentiel = progressive ? 280 : 120;
-  const baseConfort = progressive ? 420 : 180;
-  const basePremium = progressive ? 680 : 280;
+  // Prix de base selon type de verre
+  let baseEssentiel: number, baseConfort: number, basePremium: number;
+  if (isProgressif) {
+    baseEssentiel = 280; baseConfort = 420; basePremium = 680;
+  } else if (isPDC) {
+    baseEssentiel = 200; baseConfort = 350; basePremium = 550;
+  } else if (isAntiFatigue) {
+    baseEssentiel = 120; baseConfort = 210; basePremium = 320;
+  } else {
+    // Unifocal
+    baseEssentiel = 120; baseConfort = 180; basePremium = 280;
+  }
 
   // ── Remboursement SS Classe A — calcul exact par code LPPR ────────────────────
   // Classe B (Confort/Premium) : base LPPR 0,05 € → SS ≈ 0 €
+  // Anti-fatigue et PDC : facturés comme unifocaux/progressifs selon la situation LPPR
   const secuClasseA = computeSecuClasseA(ordo, progressive);
   const secuClasseB = 0;
 
@@ -360,27 +400,43 @@ export function calculerRecommandations(
     {
       nom: "Essentiel",
       verrier: "Essilor",
-      gamme: "Crizal Easy",
+      gamme: isProgressif
+        ? "Crizal Easy"
+        : isPDC
+        ? "Eyezen (proximité-intermédiaire)"
+        : "Crizal Easy",
       type: typeVerre,
       indice: indiceEssentiel,
-      traitement: progressive ? "antireflet_standard" : "antireflet_standard",
+      traitement: "antireflet_standard",
       classe100ps: "A",
       prixVerres: baseEssentiel,
       remboursementSecu: secuClasseA,
       remboursementMutuelle: remboursement,
       resteACharge: Math.max(0, baseEssentiel - secuClasseA - remboursement),
       argumentaire: [
-        "✓ Prise en charge maximale 100% Santé",
+        "✓ Prise en charge maximale 100 % Santé",
         "✓ Protection UV intégrée",
         "✓ Antireflet standard",
-        progressive ? "✓ Progressif confort" : "✓ Haute qualité optique",
+        isProgressif
+          ? "✓ Progressif confort"
+          : isPDC
+          ? "✓ Plage travail 30 cm – 1,5 m — proche et intermédiaire"
+          : isAntiFatigue
+          ? "✓ Microaddition de repos — moins de fatigue en fin de journée"
+          : "✓ Haute qualité optique",
       ],
       badge: offreRecommandee === "Essentiel" ? "Recommandé" : undefined,
     },
     {
       nom: "Confort",
       verrier: "Hoya",
-      gamme: "Hilux 1.6",
+      gamme: isProgressif
+        ? "Hilux 1.6"
+        : isPDC
+        ? "BizView 1.6"
+        : isAntiFatigue
+        ? "Sync III 1.6"
+        : "Hilux 1.6",
       type: typeVerre,
       indice: indiceConfort,
       traitement: "antireflet_premium",
@@ -393,7 +449,13 @@ export function calculerRecommandations(
         "✓ Indice 1.6 — plus mince et léger",
         "✓ Antireflet haute performance antisalissure, hydrophobe et oléophobe",
         tempsEcran >= 4 ? "✓ Filtre lumière bleue inclus" : "✓ Résistance aux rayures renforcée",
-        progressive ? "✓ Progressif digital optimisé" : "✓ Vision HD ultra-précise",
+        isProgressif
+          ? "✓ Progressif digital optimisé"
+          : isPDC
+          ? "✓ Zone intermédiaire élargie — confort exceptionnel écrans bureautiques"
+          : isAntiFatigue
+          ? "✓ Anti-fatigue numérique Sync III — confort max·{6}h d’écran"
+          : "✓ Vision HD ultra-précise",
         questionnaire.conduiteNuit ? "✓ Vision nocturne améliorée" : "✓ Protection UV 400",
       ],
       badge: offreRecommandee === "Confort" ? "Recommandé" : undefined,
@@ -401,7 +463,13 @@ export function calculerRecommandations(
     {
       nom: "Premium",
       verrier: "Zeiss",
-      gamme: progressive ? "Individual 2" : "Single Vision ClearView",
+      gamme: isProgressif
+        ? "Individual 2"
+        : isPDC
+        ? "Office Lens 1.6"
+        : isAntiFatigue
+        ? "Digital Lens"
+        : "Single Vision ClearView",
       type: typeVerre,
       indice: indicePremium,
       traitement: "duravision_platinum",
@@ -411,8 +479,20 @@ export function calculerRecommandations(
       remboursementMutuelle: remboursement,
       resteACharge: Math.max(0, basePremium - secuClasseB - remboursement),
       argumentaire: [
-        "✓ Technologie IA personnalisée Zeiss",
-        progressive ? "✓ Progressif calculé sur mesure" : "✓ Vision maximale sur toute la surface",
+        isProgressif
+          ? "✓ Technologie IA personnalisée Zeiss Individual 2"
+          : isPDC
+          ? "✓ Zeiss Office Lens — calcul sur mesure par distance de travail"
+          : isAntiFatigue
+          ? "✓ Zeiss Digital Lens — solution ant-fatigue sur-mesure"
+          : "✓ Technologie Zeiss personalizée",
+        isProgressif
+          ? "✓ Progressif calculé sur mesure"
+          : isPDC
+          ? "✓ Plage de vision élargie : 30 cm à 2 m — 100 % confort bureau"
+          : isAntiFatigue
+          ? "✓ Vision maximale sur toute la surface + microaddition dégradée"
+          : "✓ Vision maximale sur toute la surface",
         "✓ Antireflet Duravision Platinum antisalissure, hydrophobe, oléophobe",
         questionnaire.photophobie ? "✓ Photochromique PhotoFusion inclus" : "✓ Protection lumière bleue intégrée",
         "✓ Garantie 2 ans casse et rayure",
@@ -455,7 +535,17 @@ export function calculerRecommandations(
     },
   };
 
-  const secondePaire = questionnaire.typeSport ? SECONDE_PAIRE[questionnaire.typeSport] : undefined;
+  const secondePaire = questionnaire.typeSport
+    ? SECONDE_PAIRE[questionnaire.typeSport]
+    : isPDC
+    ? {
+        titre: "Deuxième paire — vision de loin / conduite",
+        description:
+          "Vos verres profondeur de champ couvrent l'espace bureau (30 cm à 1,5 m). Pour la conduite, les loisirs en extérieur ou le cinéma, une deuxième paire de progressifs ou d'unifocaux de loin est fortement conseillée.",
+        conseil:
+          "Verres unifocaux de loin (ou progressif économique Classe A) à l'indice adapté à votre correction. Muta couverture souvent étendue à la deuxième paire.",
+      }
+    : undefined;
 
   // ── Alerte verres amincis ─────────────────────────────────────────────────
   let alerteAmincis: RecommandationResult["alerteAmincis"];

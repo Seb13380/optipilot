@@ -44,6 +44,8 @@ export default function ScannerPage() {
   const [scanning, setScanning] = useState(false);
   const [ordonnance, setOrdonnance] = useState<OrdonnanceData>({});
   const [cameraStarted, setCameraStarted] = useState(false);
+  const [videoRotation, setVideoRotation] = useState(0); // 0 ou 90 — correction rotation iOS
+  const videoRotationRef = useRef(0);
   const [scanError, setScanError] = useState("");
   const [stableProgress, setStableProgress] = useState(0); // 0-100
   const [autoCapturing, setAutoCapturing] = useState(false);
@@ -54,6 +56,24 @@ export default function ScannerPage() {
     const user = JSON.parse(localStorage.getItem("optipilot_user") || "{}");
     if (user.magasinNom) setMagasinNom(user.magasinNom);
   }, []);
+
+  // Synchronise la ref (accessible dans les callbacks)
+  useEffect(() => { videoRotationRef.current = videoRotation; }, [videoRotation]);
+
+  // Détection rotation iOS : flux paysage sur écran portrait
+  useEffect(() => {
+    if (!cameraStarted) return;
+    const timer = setTimeout(() => {
+      const video = videoRef.current;
+      if (!video || video.videoWidth === 0) return;
+      const isLandscapeStream = video.videoWidth > video.videoHeight * 1.3;
+      const isPortraitDevice = window.innerWidth < window.innerHeight;
+      const rot = isLandscapeStream && isPortraitDevice ? 90 : 0;
+      setVideoRotation(rot);
+      videoRotationRef.current = rot;
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [cameraStarted]);
 
   // Calcul de la différence entre deux frames
   function frameDiff(a: ImageData, b: ImageData): number {
@@ -74,19 +94,32 @@ export default function ScannerPage() {
 
     const w = video.videoWidth;
     const h = video.videoHeight || 720;
-    canvas.width = w;
-    canvas.height = h;
+    const needsRotation = videoRotationRef.current !== 0;
 
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(video, 0, 0, w, h);
+    let outW: number, outH: number;
+    if (needsRotation) {
+      outW = h; outH = w;
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext("2d")!;
+      ctx.save();
+      ctx.translate(outW / 2, outH / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(video, -w / 2, -h / 2, w, h);
+      ctx.restore();
+    } else {
+      outW = w; outH = h;
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(video, 0, 0, w, h);
+    }
 
-    // Vérifier que le contenu capturé n'est pas noir (webcam encore en initialisation)
+    // Vérifier que le contenu capturé n'est pas noir
     if (!force) {
-      const sample = ctx.getImageData(0, 0, Math.min(w, 80), Math.min(h, 60));
+      const sampleCtx = canvas.getContext("2d")!;
+      const sample = sampleCtx.getImageData(0, 0, Math.min(outW, 80), Math.min(outH, 60));
       let bright = 0;
       for (let i = 0; i < sample.data.length; i += 4) bright += sample.data[i];
       if ((bright / (sample.data.length / 4)) < 12) {
-        // Image noire : reset et relancer la boucle dans 1s
         stableCountRef.current = 0;
         setStableProgress(0);
         prevFrameRef.current = null;
@@ -96,24 +129,21 @@ export default function ScannerPage() {
       }
     }
 
-    // Prétraitement : contraste fort + netteté pour manuscrit et imprimé
-    // On upscale ×2 si résolution native < 1600px pour améliorer la lisibilité GPT
-    const scale = w < 1600 ? 2 : 1;
+    const scale = outW < 1600 ? 2 : 1;
     const tmpCanvas = document.createElement("canvas");
-    tmpCanvas.width = w * scale;
-    tmpCanvas.height = h * scale;
+    tmpCanvas.width = outW * scale;
+    tmpCanvas.height = outH * scale;
     const tmpCtx = tmpCanvas.getContext("2d")!;
-    // Contraste élevé : encre foncée sur fond clair (imprimé ET manuscrit)
     tmpCtx.filter = "contrast(160%) brightness(102%) saturate(70%)";
-    tmpCtx.drawImage(canvas, 0, 0, w * scale, h * scale);
+    tmpCtx.drawImage(canvas, 0, 0, outW * scale, outH * scale);
     tmpCtx.filter = "none";
 
-    // JPEG haute qualité (0.98 pour perdre le moins possible de netteté)
     const dataUrl = tmpCanvas.toDataURL("image/jpeg", 0.98);
     setImageDataUrl(dataUrl);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (autoScanTimerRef.current) clearInterval(autoScanTimerRef.current);
     setStep("preview");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Boucle de détection de stabilité
@@ -292,8 +322,34 @@ export default function ScannerPage() {
               </div>
 
               {/* Viewfinder */}
-              <div className="rounded-2xl overflow-hidden relative shadow-lg" style={{ background: "#000", minHeight: 300 }}>
-                <video ref={videoRef} className="w-full object-cover" style={{ minHeight: 300, display: cameraStarted ? "block" : "none" }} playsInline muted />
+              <div
+                className="rounded-2xl overflow-hidden relative shadow-lg"
+                style={{
+                  background: "#000",
+                  minHeight: videoRotation !== 0 ? "75vw" : 300,
+                  height: videoRotation !== 0 ? "75vw" : undefined,
+                }}
+              >
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  style={videoRotation !== 0 ? {
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    width: "75vw",
+                    height: "100vw",
+                    transform: "translate(-50%, -50%) rotate(90deg)",
+                    objectFit: "cover",
+                    display: cameraStarted ? "block" : "none",
+                  } : {
+                    width: "100%",
+                    objectFit: "cover",
+                    minHeight: 300,
+                    display: cameraStarted ? "block" : "none",
+                  }}
+                />
                 <canvas ref={canvasRef} className="hidden" />
 
                 {/* Cadre de guidage bien visible */}

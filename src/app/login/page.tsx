@@ -31,6 +31,8 @@ export default function LoginPage() {
 
       localStorage.setItem("optipilot_token", data.token);
       localStorage.setItem("optipilot_user", JSON.stringify(data.user));
+      // Initialise le timestamp de dernière activité dès la connexion
+      localStorage.setItem("optipilot_last_activity", String(Date.now()));
       router.push(data.user.onboardingDone ? "/dashboard" : "/onboarding");
     } catch (err: unknown) {
       const message = (err as Error).message;

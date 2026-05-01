@@ -51,6 +51,8 @@ export default function ClientMutuellePage() {
   const [stableProgress, setStableProgress] = useState(0);
   const [autoCapturing, setAutoCapturing] = useState(false);
   const [cameraStarted, setCameraStarted] = useState(false);
+  const [videoRotation, setVideoRotation] = useState(0); // 0 ou 90 — correction rotation iOS
+  const videoRotationRef = useRef(0);
   const [confirmed, setConfirmed] = useState(false);
   const [editing, setEditing] = useState(false);
   const [cameraError, setCameraError] = useState("");
@@ -59,6 +61,24 @@ export default function ClientMutuellePage() {
   const [lookupError, setLookupError] = useState("");
   const [clientForm, setClientForm] = useState({ telephone: "", email: "", adresse: "", codePostal: "", ville: "" });
   const [createLoading, setCreateLoading] = useState(false);
+
+  // Synchronise la ref (accessible dans les callbacks useCallback)
+  useEffect(() => { videoRotationRef.current = videoRotation; }, [videoRotation]);
+
+  // Détection rotation iOS : flux paysage alors que l'écran est en portrait
+  useEffect(() => {
+    if (!cameraStarted) return;
+    const timer = setTimeout(() => {
+      const video = videoRef.current;
+      if (!video || video.videoWidth === 0) return;
+      const isLandscapeStream = video.videoWidth > video.videoHeight * 1.3;
+      const isPortraitDevice = window.innerWidth < window.innerHeight;
+      const rot = isLandscapeStream && isPortraitDevice ? 90 : 0;
+      setVideoRotation(rot);
+      videoRotationRef.current = rot;
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [cameraStarted]);
 
   function frameDiff(a: ImageData, b: ImageData): number {
     let total = 0;
@@ -80,16 +100,32 @@ export default function ClientMutuellePage() {
     if (!video.videoWidth || video.readyState < 4) return;
     const w = video.videoWidth || 1280;
     const h = video.videoHeight || 720;
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(video, 0, 0, w, h);
-    const scale = w < 1600 ? 2 : 1;
+    const needsRotation = videoRotationRef.current !== 0;
+
+    let outW: number, outH: number;
+    if (needsRotation) {
+      // Le flux est en paysage — on pivote -90° pour obtenir une image portrait correcte
+      outW = h; outH = w;
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext("2d")!;
+      ctx.save();
+      ctx.translate(outW / 2, outH / 2);
+      ctx.rotate(Math.PI / 2); // +90° compense la rotation iOS -90° du capteur
+      ctx.drawImage(video, -w / 2, -h / 2, w, h);
+      ctx.restore();
+    } else {
+      outW = w; outH = h;
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(video, 0, 0, w, h);
+    }
+
+    const scale = outW < 1600 ? 2 : 1;
     const tmp = document.createElement("canvas");
-    tmp.width = w * scale; tmp.height = h * scale;
+    tmp.width = outW * scale; tmp.height = outH * scale;
     const tCtx = tmp.getContext("2d")!;
     tCtx.filter = "contrast(140%) brightness(104%)";
-    tCtx.drawImage(canvas, 0, 0, w * scale, h * scale);
+    tCtx.drawImage(canvas, 0, 0, outW * scale, outH * scale);
     tCtx.filter = "none";
     const dataUrl = tmp.toDataURL("image/jpeg", 0.96);
     setImageDataUrl(dataUrl);
@@ -330,14 +366,35 @@ export default function ClientMutuellePage() {
               </div>
             )}
             {/* Vidéo toujours dans le DOM — videoRef jamais null au démarrage */}
-            <div className="relative flex-1" style={{ display: cameraStarted ? "flex" : "none", flexDirection: "column" }}>
+            <div
+              className="relative overflow-hidden"
+              style={{
+                display: cameraStarted ? "block" : "none",
+                flex: videoRotation === 0 ? 1 : "none",
+                height: videoRotation !== 0 ? "75vw" : undefined,
+                minHeight: videoRotation !== 0 ? 180 : undefined,
+              }}
+            >
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover"
-                style={{ maxHeight: "65vh" }}
+                style={videoRotation !== 0 ? {
+                  /* iOS paysage → on pivote +90° pour affichage portrait */
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  width: "75vw",   // deviendra la hauteur visuelle après rotation
+                  height: "100vw", // deviendra la largeur visuelle après rotation
+                  transform: "translate(-50%, -50%) rotate(90deg)",
+                  objectFit: "cover",
+                } : {
+                  width: "100%",
+                  height: "100%",
+                  maxHeight: "65vh",
+                  objectFit: "cover",
+                }}
               />
               {/* Cadre carte horizontale */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

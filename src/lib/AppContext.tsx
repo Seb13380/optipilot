@@ -342,21 +342,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   }
 
-  // ── Déconnexion automatique après 30 min d'inactivité ────────────────────
+  // ── Déconnexion automatique après 2h d'inactivité ────────────────────────
+  // La dernière activité est persistée dans localStorage pour survivre à la
+  // fermeture du navigateur : si on revient après plus de 2h, on déconnecte
+  // immédiatement au chargement de la page.
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+  const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 heures
+  const LAST_ACTIVITY_KEY = "optipilot_last_activity";
+
+  function forceLogout() {
+    localStorage.removeItem("optipilot_token");
+    localStorage.removeItem("optipilot_user");
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
+    window.location.href = "/login";
+  }
 
   useEffect(() => {
+    // ── Vérification au démarrage : session expirée hors navigateur ? ────────
+    const token = localStorage.getItem("optipilot_token");
+    if (token) {
+      const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || "0");
+      if (lastActivity > 0 && Date.now() - lastActivity > INACTIVITY_MS) {
+        forceLogout();
+        return;
+      }
+    }
+
     function resetTimer() {
-      // Ne rien faire si l'utilisateur n'est pas connecté
       if (!localStorage.getItem("optipilot_token")) return;
+      // Persiste le timestamp pour la prochaine ouverture de navigateur
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
 
       if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-      inactivityTimer.current = setTimeout(() => {
-        localStorage.removeItem("optipilot_token");
-        localStorage.removeItem("optipilot_user");
-        window.location.href = "/login";
-      }, INACTIVITY_MS);
+      inactivityTimer.current = setTimeout(forceLogout, INACTIVITY_MS);
     }
 
     const events = ["mousemove", "keydown", "touchstart", "click", "scroll"];
