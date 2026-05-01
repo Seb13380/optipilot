@@ -107,13 +107,28 @@ export default function ConfigPage() {
 
   // ── État onglet Équipe ──
   interface TeamMember { id: string; nom: string; email: string; role: string; createdAt: string; }
+  interface TeamStat { userId: string; nom: string; role: string; devisMois: number; ventesMois: number; tauxConversion: number; panierMoyen: number; }
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamStats, setTeamStats] = useState<TeamStat[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
   const [newOpticienNom, setNewOpticienNom] = useState("");
   const [newOpticienEmail, setNewOpticienEmail] = useState("");
   const [newOpticienPassword, setNewOpticienPassword] = useState("");
-  const [newOpticienRole, setNewOpticienRole] = useState("vendeur");
+  const [newOpticienRole, setNewOpticienRole] = useState("opticien");
   const [addingOpticien, setAddingOpticien] = useState(false);
+
+  const ROLE_LABELS: Record<string, string> = {
+    admin: "Administrateur",
+    responsable: "Responsable",
+    opticien: "Opticien",
+    vendeur: "Opticien",
+  };
+  const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+    admin:       { bg: "rgba(250,204,21,0.12)",  text: "#fbbf24", border: "rgba(250,204,21,0.3)" },
+    responsable: { bg: "rgba(99,102,241,0.18)",  text: "#a5b4fc", border: "rgba(99,102,241,0.4)" },
+    opticien:    { bg: "rgba(83,49,208,0.18)",   text: "#9B96DA", border: "rgba(83,49,208,0.3)" },
+    vendeur:     { bg: "rgba(83,49,208,0.18)",   text: "#9B96DA", border: "rgba(83,49,208,0.3)" },
+  };
 
   async function loadTeam() {
     try {
@@ -123,10 +138,19 @@ export default function ConfigPage() {
       if (!userRaw) return;
       const u = JSON.parse(userRaw);
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
-      const res = await fetch(`${backendUrl}/api/utilisateurs/${u.magasinId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) setTeamMembers(await res.json());
+      const [resMembers, resStats] = await Promise.all([
+        fetch(`${backendUrl}/api/utilisateurs/${u.magasinId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${backendUrl}/api/stats/team/${u.magasinId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      if (resMembers.ok) setTeamMembers(await resMembers.json());
+      if (resStats.ok) {
+        const data = await resStats.json();
+        if (data.members) setTeamStats(data.members);
+      }
     } catch { /* ignore */ } finally {
       setTeamLoading(false);
     }
@@ -632,59 +656,80 @@ export default function ConfigPage() {
               <Card>
                 <CardTitle>Équipe du magasin</CardTitle>
                 <p className="text-sm mt-1 mb-5" style={{ color: "rgba(155,150,218,0.8)" }}>
-                  Chaque opticien se connecte avec son propre email et mot de passe.
+                  Chaque opticien se connecte avec son propre email et mot de passe. Le responsable voit les stats de toute l’équipe.
                 </p>
 
-                {/* Liste des opticiens */}
+                {/* Liste des membres */}
                 {teamLoading ? (
                   <p className="text-base" style={{ color: "#9B96DA" }}>Chargement…</p>
                 ) : teamMembers.length === 0 ? (
-                  <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>Aucun opticien trouvé.</p>
+                  <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>Aucun membre trouvé.</p>
                 ) : (
                   <div className="flex flex-col gap-3 mb-6">
-                    {teamMembers.map((m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center justify-between px-4 py-3 rounded-xl"
-                        style={{ background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.25)" }}
-                      >
-                        <div>
-                          <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>{m.nom}</p>
-                          <p className="text-sm" style={{ color: "#9B96DA" }}>{m.email}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="text-xs px-2 py-1 rounded-full font-semibold capitalize"
-                            style={{
-                              background: m.role === "admin" ? "rgba(250,204,21,0.15)" : "rgba(83,49,208,0.2)",
-                              color: m.role === "admin" ? "#fbbf24" : "#9B96DA",
-                              border: `1px solid ${m.role === "admin" ? "rgba(250,204,21,0.3)" : "rgba(83,49,208,0.3)"}`,
-                            }}
-                          >
-                            {m.role}
-                          </span>
-                          {accountUser?.role === "admin" && m.id !== accountUser?.id && (
-                            <button
-                              onClick={() => deleteOpticien(m.id, m.nom)}
-                              className="text-xs px-3 py-1 rounded-lg font-semibold"
-                              style={{ background: "rgba(239,68,68,0.12)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.25)" }}
-                            >
-                              Retirer
-                            </button>
+                    {teamMembers.map((m) => {
+                      const stats = teamStats.find((s) => s.userId === m.id);
+                      const roleStyle = ROLE_COLORS[m.role] ?? ROLE_COLORS["opticien"];
+                      const isAdmin = accountUser?.role === "admin" || accountUser?.role === "responsable";
+                      return (
+                        <div
+                          key={m.id}
+                          className="flex flex-col px-4 py-4 rounded-xl gap-2"
+                          style={{ background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.25)" }}
+                        >
+                          {/* En-tête membre */}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>{m.nom}</p>
+                              <p className="text-sm" style={{ color: "#9B96DA" }}>{m.email}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="text-xs px-2 py-1 rounded-full font-semibold"
+                                style={{ background: roleStyle.bg, color: roleStyle.text, border: `1px solid ${roleStyle.border}` }}
+                              >
+                                {ROLE_LABELS[m.role] ?? m.role}
+                              </span>
+                              {isAdmin && m.id !== accountUser?.id && (
+                                <button
+                                  onClick={() => deleteOpticien(m.id, m.nom)}
+                                  className="text-xs px-3 py-1 rounded-lg font-semibold"
+                                  style={{ background: "rgba(239,68,68,0.12)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.25)" }}
+                                >
+                                  Retirer
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Stats 30 derniers jours — affichées si disponibles */}
+                          {stats && (
+                            <div className="grid grid-cols-4 gap-2 mt-1">
+                              {[
+                                { label: "Devis", value: stats.devisMois },
+                                { label: "Ventes", value: stats.ventesMois },
+                                { label: "Convers.", value: `${stats.tauxConversion} %` },
+                                { label: "Panier moy.", value: `${stats.panierMoyen} €` },
+                              ].map(({ label, value }) => (
+                                <div key={label} className="flex flex-col items-center py-2 rounded-lg" style={{ background: "rgba(83,49,208,0.18)" }}>
+                                  <p className="text-sm font-bold" style={{ color: "#FDFDFE" }}>{value}</p>
+                                  <p className="text-xs" style={{ color: "rgba(155,150,218,0.7)" }}>{label}</p>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
-                {/* Formulaire ajouter un opticien — admin uniquement */}
-                {accountUser?.role === "admin" && (
+                {/* Formulaire ajouter un membre — admin/responsable uniquement */}
+                {(accountUser?.role === "admin" || accountUser?.role === "responsable") && (
                   <div
                     className="mt-2 p-5 rounded-xl flex flex-col gap-4"
                     style={{ background: "rgba(2,0,23,0.5)", border: "1px solid rgba(83,49,208,0.3)" }}
                   >
-                    <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Ajouter un opticien</p>
+                    <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Ajouter un membre</p>
                     {[
                       { label: "Nom complet", value: newOpticienNom, setter: setNewOpticienNom, type: "text", placeholder: "Prénom Nom" },
                       { label: "Email", value: newOpticienEmail, setter: setNewOpticienEmail, type: "email", placeholder: "opticien@magasin.fr" },
@@ -706,26 +751,33 @@ export default function ConfigPage() {
                     ))}
                     <div>
                       <label className="text-sm font-semibold mb-1 block" style={{ color: "#9B96DA" }}>Rôle</label>
-                      <div className="flex gap-3">
-                        {["vendeur", "admin"].map((r) => (
+                      <div className="flex gap-2 flex-wrap">
+                        {[
+                          { value: "opticien",    label: "Opticien" },
+                          { value: "responsable", label: "Responsable" },
+                          ...(accountUser?.role === "admin" ? [{ value: "admin", label: "Administrateur" }] : []),
+                        ].map((r) => (
                           <button
-                            key={r}
-                            onClick={() => setNewOpticienRole(r)}
-                            className="flex-1 py-3 rounded-xl text-base font-semibold capitalize border-2 transition-all"
+                            key={r.value}
+                            onClick={() => setNewOpticienRole(r.value)}
+                            className="flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition-all"
                             style={{
-                              background: newOpticienRole === r ? "#5331D0" : "rgba(10,3,56,0.6)",
-                              borderColor: newOpticienRole === r ? "#7C5CE5" : "rgba(155,150,218,0.2)",
+                              background: newOpticienRole === r.value ? "#5331D0" : "rgba(10,3,56,0.6)",
+                              borderColor: newOpticienRole === r.value ? "#7C5CE5" : "rgba(155,150,218,0.2)",
                               color: "#FDFDFE",
                             }}
                           >
-                            {r}
+                            {r.label}
                           </button>
                         ))}
                       </div>
+                      <p className="text-xs mt-2" style={{ color: "rgba(155,150,218,0.55)" }}>
+                        Opticien : fait les ventes. Responsable : gère l’équipe et voit toutes les stats.
+                      </p>
                     </div>
                     <SaveButton
                       onClick={addOpticien}
-                      label={addingOpticien ? "Création…" : "Créer le compte opticien"}
+                      label={addingOpticien ? "Création…" : "Créer le compte"}
                     />
                   </div>
                 )}

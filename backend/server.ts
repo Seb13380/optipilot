@@ -495,7 +495,7 @@ app.post("/api/utilisateurs", async (req, res) => {
   if (motDePasse.length < 6) {
     return res.status(400).json({ error: "Mot de passe trop court (6 caractères min)" });
   }
-  const safeRole = ["vendeur", "admin"].includes(role ?? "") ? role! : "vendeur";
+  const safeRole = ["opticien", "vendeur", "responsable", "admin"].includes(role ?? "") ? role! : "opticien";
   try {
     const existing = await prisma.utilisateur.findUnique({ where: { email: email.trim() } });
     if (existing) return res.status(409).json({ error: "Un compte existe déjà avec cet email" });
@@ -1353,34 +1353,16 @@ app.get("/api/rapprochements/devis-acceptes/:magasinId", async (req, res) => {
   }
 });
 
-// ─── Équipe opticiens ─────────────────────────────────────
+// ─── Équipe opticiens (routes consolidées — pas de doublon) ──────────────────
 
-// Lister tous les opticiens du magasin
-app.get("/api/utilisateurs/:magasinId", async (req, res) => {
-  try {
-    const requester = (req as AuthRequest).user;
-    if (!requester || requester.magasinId !== req.params.magasinId) {
-      return res.status(403).json({ error: "Accès refusé" });
-    }
-    const users = await prisma.utilisateur.findMany({
-      where: { magasinId: req.params.magasinId },
-      select: { id: true, nom: true, email: true, role: true, createdAt: true },
-      orderBy: { createdAt: "asc" },
-    });
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-});
-
-// Créer un opticien dans le même magasin (admin uniquement)
+// Créer un opticien dans le même magasin (admin/responsable uniquement)
 app.post("/api/utilisateur", async (req, res) => {
   try {
     const requester = (req as AuthRequest).user;
-    if (!requester || requester.role !== "admin") {
-      return res.status(403).json({ error: "Réservé aux administrateurs" });
+    if (!requester || !(["admin", "responsable"].includes(requester.role))) {
+      return res.status(403).json({ error: "Réservé aux administrateurs et responsables" });
     }
-    const { nom, email, motDePasse, role = "vendeur" } = req.body as {
+    const { nom, email, motDePasse, role = "opticien" } = req.body as {
       nom: string; email: string; motDePasse: string; role?: string;
     };
     if (!nom?.trim() || !email?.trim() || !motDePasse) {
@@ -1389,6 +1371,9 @@ app.post("/api/utilisateur", async (req, res) => {
     if (motDePasse.length < 8) {
       return res.status(400).json({ error: "Le mot de passe doit faire au moins 8 caractères" });
     }
+    // Un responsable ne peut pas créer un admin
+    const safeRole = ["opticien", "vendeur", "responsable", "admin"].includes(role) ? role : "opticien";
+    const finalRole = (requester.role === "responsable" && safeRole === "admin") ? "responsable" : safeRole;
     const existing = await prisma.utilisateur.findUnique({ where: { email: email.trim() } });
     if (existing) {
       return res.status(409).json({ error: "Un compte existe déjà avec cet email" });
@@ -1400,7 +1385,7 @@ app.post("/api/utilisateur", async (req, res) => {
         nom: nom.trim(),
         email: email.trim(),
         motDePasse: hash,
-        role: ["admin", "vendeur"].includes(role) ? role : "vendeur",
+        role: finalRole,
       },
       select: { id: true, nom: true, email: true, role: true, createdAt: true },
     });
@@ -1411,12 +1396,12 @@ app.post("/api/utilisateur", async (req, res) => {
   }
 });
 
-// Supprimer un opticien (admin uniquement, impossible de se supprimer soi-même)
+// Supprimer un opticien (admin/responsable, impossible de se supprimer soi-même)
 app.delete("/api/utilisateur/:id", async (req, res) => {
   try {
     const requester = (req as AuthRequest).user;
-    if (!requester || requester.role !== "admin") {
-      return res.status(403).json({ error: "Réservé aux administrateurs" });
+    if (!requester || !(["admin", "responsable"].includes(requester.role))) {
+      return res.status(403).json({ error: "Réservé aux administrateurs et responsables" });
     }
     if (requester.userId === req.params.id) {
       return res.status(400).json({ error: "Impossible de supprimer son propre compte" });
@@ -1425,6 +1410,10 @@ app.delete("/api/utilisateur/:id", async (req, res) => {
     if (!target) return res.status(404).json({ error: "Utilisateur introuvable" });
     if (target.magasinId !== requester.magasinId) {
       return res.status(403).json({ error: "Accès refusé" });
+    }
+    // Un responsable ne peut pas supprimer un admin
+    if (requester.role === "responsable" && target.role === "admin") {
+      return res.status(403).json({ error: "Un responsable ne peut pas supprimer un administrateur" });
     }
     await prisma.utilisateur.delete({ where: { id: req.params.id } });
     res.json({ ok: true });

@@ -1007,7 +1007,7 @@ export default function LandingPage() {
                 Voyez OptiPilot dans votre magasin — en 15 minutes chrono.
               </h2>
               <p className="text-center text-lg mb-10" style={{ color: "#9B96DA" }}>
-                On vous montre le scan d&apos;ordonnance, le calcul mutuelle en direct et les relances automatiques. Sur vos propres données si vous le souhaitez. Sans engagement, aucune carte bancaire requise.
+                On vous montre le scan d'ordonnance, le calcul mutuelle en direct et les relances automatiques. Sur vos propres données si vous le souhaitez. Sans engagement, aucune carte bancaire requise.
               </p>
             </Reveal>
 
