@@ -164,10 +164,31 @@ export async function POST(request: NextRequest) {
       if (!ordonnance.nomPatient) ordonnance.nomPatient = null;
     }
 
+    // Identifier les champs que GPT n'a pas pu lire (retournés null avant normalisation)
+    const CHAMPS_LABELS: Record<string, string> = {
+      odSphere:        "Sphère OD",
+      odCylindre:      "Cylindre OD",
+      ogSphere:        "Sphère OG",
+      ogCylindre:      "Cylindre OG",
+      odAddition:      "Addition OD",
+      ogAddition:      "Addition OG",
+      ecartPupillaire: "Écart pupillaire",
+      dateOrdonnance:  "Date d'ordonnance",
+      nomPatient:      "Nom du patient",
+    };
+    const champsIncertains: string[] = [];
+    for (const [key, label] of Object.entries(CHAMPS_LABELS)) {
+      const v = raw[key];
+      if (v === null || v === undefined || v === "null" || v === "undefined" || v === "") {
+        champsIncertains.push(label);
+      }
+    }
+
     console.log("[scan-ordonnance] GPT raw:", raw);
     console.log("[scan-ordonnance] cleaned+normalized:", ordonnance);
+    console.log("[scan-ordonnance] champs incertains:", champsIncertains);
 
-    return NextResponse.json({ ordonnance, source: "gpt-4o" });
+    return NextResponse.json({ ordonnance, champsIncertains, source: "gpt-4o" });
 
   } catch (error) {
     console.error("Scan ordonnance error:", error);

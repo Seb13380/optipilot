@@ -31,7 +31,7 @@ export default function OptiPilotHeader({
   rightAction,
 }: OptiPilotHeaderProps) {
   const router = useRouter();
-  const { lang, setLang, t, theme, toggleTheme } = useApp();
+  const { lang, setLang, t, theme, toggleTheme, magasinLogo } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const titleColor = theme === "dark" ? "#FDFDFE" : "#111827";
@@ -71,12 +71,21 @@ export default function OptiPilotHeader({
                   filter: "blur(14px)",
                 }}
               />
-              <img
-                src="/assets/images/Logo-OptiPilot.png"
-                alt="OptiPilot"
-                className="relative w-44 h-auto object-contain"
-                style={{ filter: "drop-shadow(0 0 24px rgba(124,58,237,0.6)) drop-shadow(0 0 48px rgba(124,58,237,0.35))" }}
-              />
+              {magasinLogo ? (
+                <img
+                  src={magasinLogo}
+                  alt="Logo magasin"
+                  className="relative h-14 w-auto object-contain"
+                  style={{ maxWidth: 180 }}
+                />
+              ) : (
+                <img
+                  src="/assets/images/Logo-OptiPilot.png"
+                  alt="OptiPilot"
+                  className="relative w-44 h-auto object-contain"
+                  style={{ filter: "drop-shadow(0 0 24px rgba(124,58,237,0.6)) drop-shadow(0 0 48px rgba(124,58,237,0.35))" }}
+                />
+              )}
             </div>
           ) : (
             <span className="text-2xl font-bold" style={{ color: titleColor }}>{title}</span>

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -71,6 +71,21 @@ export default function QuestionnairePage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [data, setData] = useState<QuestionnaireData>({});
+
+  // Pré-remplir mutuelle + niveau depuis le scan de carte
+  useEffect(() => {
+    try {
+      const clientRaw = localStorage.getItem("optipilot_client");
+      if (clientRaw) {
+        const c = JSON.parse(clientRaw);
+        setData((prev) => ({
+          ...prev,
+          ...(c.mutuelle        ? { mutuelle: c.mutuelle }              : {}),
+          ...(c.niveauGarantie  ? { niveauGarantie: c.niveauGarantie } : {}),
+        }));
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   function next() {
     if (step < TOTAL_STEPS) setStep((s) => s + 1);

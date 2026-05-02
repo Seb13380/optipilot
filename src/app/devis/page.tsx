@@ -104,12 +104,27 @@ export default function DevisPage() {
       const c = JSON.parse(clientRaw);
       setClient(c);
       setClientEmail(c.email || "");
+      // Synchronise optipilot_client_id si le scan mutuelle a renvoyé un id
+      if (c.id && !localStorage.getItem("optipilot_client_id")) {
+        localStorage.setItem("optipilot_client_id", c.id);
+      }
     }
     if (ordoRaw) setOrdonnance(JSON.parse(ordoRaw));
     if (questRaw) {
       const q = JSON.parse(questRaw);
       setQuestionnaire(q);
       if (!clientRaw) setClient({ mutuelle: q.mutuelle, niveauGarantie: q.niveauGarantie });
+    }
+
+    // Monture sélectionnée depuis le catalogue (stock Optimum)
+    const montureStockRaw = localStorage.getItem("optipilot_monture_stock");
+    if (montureStockRaw) {
+      try {
+        const m = JSON.parse(montureStockRaw);
+        setMontureSelectionnee(m);
+        if (m.prix) setPrixMonture(m.prix);
+        localStorage.removeItem("optipilot_monture_stock"); // consommé une seule fois
+      } catch { /* ignore */ }
     }
 
     const savedBridgeUrl = localStorage.getItem("optipilot_bridge_url");
@@ -552,6 +567,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
 
             {/* Détail financier */}
             <div className="flex flex-col gap-2">
+              <div className={!montureSelectionnee && prixMonture === 120 ? "pulse-border" : ""}>
               <DevisLigne
                 label={montureSelectionnee ? `${montureSelectionnee.marque} — ${montureSelectionnee.reference}` : "Monture"}
                 value={`${prixMonture}€`}
@@ -559,6 +575,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                 editable
                 onEdit={(v) => setPrixMonture(parseInt(v) || 0)}
               />
+              </div>
               <DevisLigne
                 label={`Verres — ${offre?.verrier || ""} ${offre?.gamme || ""}`}
                 value={`${totalVerres}€`}

@@ -300,6 +300,10 @@ interface AppCtx {
   t: Record<string, string>;
   theme: ThemeMode;
   toggleTheme: () => void;
+  // Personnalisation magasin
+  magasinLogo: string | null;
+  magasinCouleur: string | null;
+  appliquerBranding: (logoUrl: string | null, couleur: string | null) => void;
 }
 
 const AppContext = createContext<AppCtx>({
@@ -308,11 +312,33 @@ const AppContext = createContext<AppCtx>({
   t: T.FR,
   theme: "light",
   toggleTheme: () => {},
+  magasinLogo: null,
+  magasinCouleur: null,
+  appliquerBranding: () => {},
 });
+
+// ── Helpers couleur hex ───────────────────────────────────────────────────────
+function hexToRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function rgbToHex(r: number, g: number, b: number): string {
+  return "#" + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+}
+function hexLighten(hex: string, amount: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex(r + (255 - r) * amount, g + (255 - g) * amount, b + (255 - b) * amount);
+}
+function hexDarken(hex: string, amount: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex(r * (1 - amount), g * (1 - amount), b * (1 - amount));
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("FR");
   const [theme, setTheme] = useState<ThemeMode>("light");
+  const [magasinLogo, setMagasinLogo] = useState<string | null>(null);
+  const [magasinCouleur, setMagasinCouleur] = useState<string | null>(null);
 
   // Persist preferences
   useEffect(() => {
@@ -320,7 +346,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const savedTheme = localStorage.getItem("optipilot_theme") as ThemeMode | null;
     if (savedLang === "FR" || savedLang === "EN") setLangState(savedLang);
     if (savedTheme === "dark" || savedTheme === "light") setTheme(savedTheme);
-  }, []);
+
+    // Charger le branding du magasin depuis le localStorage (mis en cache à la connexion)
+    const savedLogo    = localStorage.getItem("optipilot_magasin_logo");
+    const savedCouleur = localStorage.getItem("optipilot_magasin_couleur");
+    if (savedLogo || savedCouleur) {
+      appliquerBranding(savedLogo, savedCouleur);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Apply dark class on <html>
   useEffect(() => {
@@ -340,6 +373,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function toggleTheme() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  }
+
+  /**
+   * Applique le branding du magasin :
+   * - injecte la couleur primaire dans les CSS variables
+   * - dérive automatiquement les variantes (dark, light, rose, gris)
+   * - met en cache dans localStorage pour le rechargement
+   */
+  function appliquerBranding(logoUrl: string | null, couleur: string | null) {
+    setMagasinLogo(logoUrl);
+    setMagasinCouleur(couleur);
+
+    if (logoUrl) {
+      localStorage.setItem("optipilot_magasin_logo", logoUrl);
+    } else {
+      localStorage.removeItem("optipilot_magasin_logo");
+    }
+
+    if (couleur && /^#[0-9A-Fa-f]{6}$/.test(couleur)) {
+      localStorage.setItem("optipilot_magasin_couleur", couleur);
+      const root = document.documentElement;
+      root.style.setProperty("--primary",       couleur);
+      root.style.setProperty("--violet",        couleur);
+      root.style.setProperty("--primary-light", hexLighten(couleur, 0.35));
+      root.style.setProperty("--gris",          hexLighten(couleur, 0.35));
+      root.style.setProperty("--primary-dark",  hexDarken(couleur, 0.45));
+      root.style.setProperty("--bleu",          hexDarken(couleur, 0.45));
+      root.style.setProperty("--border",        couleur + "40");
+    } else {
+      // Rétablir la palette OptiPilot par défaut
+      localStorage.removeItem("optipilot_magasin_couleur");
+      const root = document.documentElement;
+      root.style.removeProperty("--primary");
+      root.style.removeProperty("--violet");
+      root.style.removeProperty("--primary-light");
+      root.style.removeProperty("--gris");
+      root.style.removeProperty("--primary-dark");
+      root.style.removeProperty("--bleu");
+      root.style.removeProperty("--border");
+    }
   }
 
   // ── Déconnexion automatique après 2h d'inactivité ────────────────────────
@@ -390,7 +463,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <AppContext.Provider value={{ lang, setLang, t: T[lang] as Record<string, string>, theme, toggleTheme }}>
+    <AppContext.Provider value={{
+      lang, setLang,
+      t: T[lang] as Record<string, string>,
+      theme, toggleTheme,
+      magasinLogo, magasinCouleur, appliquerBranding,
+    }}>
       {children}
     </AppContext.Provider>
   );

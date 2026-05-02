@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
 import OpticianGuard from "@/components/OpticianGuard";
 import { getStoredPin, savePin } from "@/lib/opticianAuth";
+import { useApp } from "@/lib/AppContext";
 
 interface ConfigMagasin {
   nom: string;
@@ -12,6 +13,8 @@ interface ConfigMagasin {
   telephone: string;
   email: string;
   siret: string;
+  logoUrl?: string;
+  couleurPrimaire?: string;
 }
 
 interface TarifVerrier {
@@ -77,6 +80,8 @@ const TABS = [
 
 export default function ConfigPage() {
   const router = useRouter();
+  const { appliquerBranding } = useApp();
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState("magasin");
   const [toast, setToast] = useState<string | null>(null);
   // ── État onglet Sécurité ──
@@ -124,10 +129,10 @@ export default function ConfigPage() {
     vendeur: "Opticien",
   };
   const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-    admin:       { bg: "rgba(250,204,21,0.12)",  text: "#fbbf24", border: "rgba(250,204,21,0.3)" },
-    responsable: { bg: "rgba(99,102,241,0.18)",  text: "#a5b4fc", border: "rgba(99,102,241,0.4)" },
-    opticien:    { bg: "rgba(83,49,208,0.18)",   text: "#9B96DA", border: "rgba(83,49,208,0.3)" },
-    vendeur:     { bg: "rgba(83,49,208,0.18)",   text: "#9B96DA", border: "rgba(83,49,208,0.3)" },
+    admin:       { bg: "rgba(236,72,153,0.14)",  text: "#f472b6", border: "rgba(236,72,153,0.35)" },  // rose
+    responsable: { bg: "rgba(83,49,208,0.22)",   text: "#9B96DA", border: "rgba(83,49,208,0.45)" },  // violet
+    opticien:    { bg: "rgba(155,150,218,0.12)", text: "rgba(155,150,218,0.85)", border: "rgba(155,150,218,0.25)" }, // gris
+    vendeur:     { bg: "rgba(155,150,218,0.12)", text: "rgba(155,150,218,0.85)", border: "rgba(155,150,218,0.25)" }, // gris
   };
 
   async function loadTeam() {
@@ -232,7 +237,36 @@ export default function ConfigPage() {
     telephone: "01 23 45 67 89",
     email: "contact@optiquelumiere.fr",
     siret: "123 456 789 00012",
+    logoUrl: undefined,
+    couleurPrimaire: undefined,
   });
+  const [savingMagasin, setSavingMagasin] = useState(false);
+
+  // Charger infos magasin depuis le backend au démarrage
+  useEffect(() => {
+    const userRaw = localStorage.getItem("optipilot_user");
+    const token   = localStorage.getItem("optipilot_token") || "";
+    if (!userRaw) return;
+    const u = JSON.parse(userRaw);
+    if (!u.magasinId) return;
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+    fetch(`${backendUrl}/api/magasin/${u.magasinId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setMagasin({
+          nom:             data.nom           ?? "Optique Lumière",
+          adresse:         data.adresse        ?? "",
+          telephone:       data.telephone      ?? "",
+          email:           data.email          ?? "",
+          siret:           data.siret          ?? "",
+          logoUrl:         data.logoUrl        ?? undefined,
+          couleurPrimaire: data.couleurPrimaire ?? undefined,
+        });
+      })
+      .catch(() => { /* backend non dispo, garde les valeurs par défaut */ });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [verriers, setVerriers] = useState<TarifVerrier[]>(VERRIERS_DEFAUT);
   const [reseauxPartenaires, setReseauxPartenaires] = useState<string[]>(() => {
@@ -261,8 +295,39 @@ export default function ConfigPage() {
     });
   }
 
-  function sauvegarder() {
+  async function sauvegarder() {
     localStorage.setItem("optipilot_reseaux_partenaires", JSON.stringify(reseauxPartenaires));
+
+    // Sauvegarder les infos magasin (dont logo + couleur) dans le backend
+    const userRaw = localStorage.getItem("optipilot_user");
+    const token   = localStorage.getItem("optipilot_token") || "";
+    if (userRaw) {
+      const u = JSON.parse(userRaw);
+      if (u.magasinId) {
+        setSavingMagasin(true);
+        try {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+          const res = await fetch(`${backendUrl}/api/magasin/${u.magasinId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              nom:             magasin.nom,
+              adresse:         magasin.adresse,
+              telephone:       magasin.telephone,
+              email:           magasin.email,
+              siret:           magasin.siret,
+              logoUrl:         magasin.logoUrl   ?? null,
+              couleurPrimaire: magasin.couleurPrimaire ?? null,
+            }),
+          });
+          if (res.ok) {
+            // Appliquer le branding immédiatement et le mettre en cache
+            appliquerBranding(magasin.logoUrl ?? null, magasin.couleurPrimaire ?? null);
+          }
+        } catch { /* ignore si backend hors ligne */ }
+        finally { setSavingMagasin(false); }
+      }
+    }
     showToast("Configuration sauvegardée ✓");
   }
 
@@ -347,8 +412,108 @@ export default function ConfigPage() {
                       />
                     </div>
                   ))}
+
+                  {/* ── Logo du magasin ── */}
+                  <div>
+                    <label className="block text-base font-semibold mb-2" style={{ color: "#9B96DA" }}>
+                      Logo du magasin
+                    </label>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const base64 = ev.target?.result as string;
+                          setMagasin((prev) => ({ ...prev, logoUrl: base64 }));
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    <div className="flex items-center gap-4">
+                      {magasin.logoUrl ? (
+                        <img
+                          src={magasin.logoUrl}
+                          alt="Logo magasin"
+                          className="h-16 w-auto object-contain rounded-lg"
+                          style={{ border: "1px solid rgba(83,49,208,0.35)", background: "rgba(2,0,23,0.7)", padding: 8 }}
+                        />
+                      ) : (
+                        <div
+                          className="h-16 w-32 rounded-lg flex items-center justify-center text-sm"
+                          style={{ border: "1px dashed rgba(155,150,218,0.4)", color: "rgba(155,150,218,0.5)" }}
+                        >
+                          Aucun logo
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => logoInputRef.current?.click()}
+                          className="px-4 py-2 rounded-xl text-sm font-semibold"
+                          style={{ background: "rgba(83,49,208,0.2)", border: "1px solid rgba(83,49,208,0.4)", color: "#9B96DA" }}
+                        >
+                          {magasin.logoUrl ? "Changer le logo" : "Choisir un logo"}
+                        </motion.button>
+                        {magasin.logoUrl && (
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={() => setMagasin((prev) => ({ ...prev, logoUrl: undefined }))}
+                            className="px-4 py-2 rounded-xl text-sm font-semibold"
+                            style={{ background: "rgba(236,72,153,0.1)", border: "1px solid rgba(236,72,153,0.3)", color: "#f472b6" }}
+                          >
+                            Supprimer
+                          </motion.button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs mt-2" style={{ color: "rgba(155,150,218,0.5)" }}>
+                      PNG, JPG ou SVG — apparaîtra dans l'en-tête de l'application
+                    </p>
+                  </div>
+
+                  {/* ── Couleur principale ── */}
+                  <div>
+                    <label className="block text-base font-semibold mb-2" style={{ color: "#9B96DA" }}>
+                      Couleur principale du magasin
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="color"
+                        value={magasin.couleurPrimaire || "#5331D0"}
+                        onChange={(e) => setMagasin((prev) => ({ ...prev, couleurPrimaire: e.target.value }))}
+                        className="h-12 w-20 rounded-lg cursor-pointer border-2"
+                        style={{ borderColor: "rgba(83,49,208,0.35)", background: "transparent" }}
+                      />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-lg font-bold" style={{ color: magasin.couleurPrimaire || "#5331D0" }}>
+                          {magasin.couleurPrimaire || "#5331D0"}
+                        </span>
+                        <span className="text-xs" style={{ color: "rgba(155,150,218,0.5)" }}>
+                          Sera appliquée aux boutons, titres et accents
+                        </span>
+                      </div>
+                      {magasin.couleurPrimaire && magasin.couleurPrimaire !== "#5331D0" && (
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => setMagasin((prev) => ({ ...prev, couleurPrimaire: "#5331D0" }))}
+                          className="px-3 py-1.5 rounded-xl text-xs font-semibold"
+                          style={{ background: "rgba(155,150,218,0.1)", border: "1px solid rgba(155,150,218,0.25)", color: "rgba(155,150,218,0.7)" }}
+                        >
+                          Réinitialiser
+                        </motion.button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <SaveButton onClick={sauvegarder} />
+                <SaveButton onClick={sauvegarder} label={savingMagasin ? "Sauvegarde…" : undefined} />
               </Card>
             </motion.div>
           )}

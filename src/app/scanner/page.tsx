@@ -51,6 +51,7 @@ export default function ScannerPage() {
   const [autoCapturing, setAutoCapturing] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [magasinNom, setMagasinNom] = useState("");
+  const [champsIncertains, setChampsIncertains] = useState<string[]>([]);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("optipilot_user") || "{}");
@@ -235,6 +236,7 @@ export default function ScannerPage() {
         setOrdonnance({});
       } else if (data.ordonnance) {
         setOrdonnance(data.ordonnance);
+        setChampsIncertains(data.champsIncertains || []);
       }
     } catch {
       setScanError("Erreur réseau. Vérifiez votre connexion.");
@@ -641,6 +643,46 @@ export default function ScannerPage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Champs non lus par l'OCR — invite à vérifier */}
+                  {!scanning && champsIncertains.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="rounded-xl px-4 py-3"
+                      style={{ background: "rgba(155,150,218,0.1)", border: "1px solid rgba(155,150,218,0.35)" }}
+                    >
+                      <p className="text-sm font-semibold mb-1" style={{ color: "#9B96DA" }}>
+                        Vérifiez les champs suivants — non lus sur l'ordonnance :
+                      </p>
+                      <p className="text-sm" style={{ color: "rgba(155,150,218,0.75)" }}>
+                        {champsIncertains.join(" · ")}
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {/* Alerte ordonnance > 3 ans */}
+                  {!scanning && ordonnance.dateOrdonnance && (() => {
+                    const raw = ordonnance.dateOrdonnance!;
+                    const d = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+                      ? new Date(raw + "T00:00:00")
+                      : new Date(raw);
+                    const limit = new Date();
+                    limit.setFullYear(limit.getFullYear() - 3);
+                    if (isNaN(d.getTime()) || d >= limit) return null;
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-xl px-4 py-3"
+                        style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.4)" }}
+                      >
+                        <p className="text-sm font-semibold" style={{ color: "#f59e0b" }}>
+                          Ordonnance datée de plus de 3 ans — vérifier la validité avant de continuer
+                        </p>
+                      </motion.div>
+                    );
+                  })()}
 
                   <div className="flex flex-col gap-3">
                     <div className="flex gap-3">

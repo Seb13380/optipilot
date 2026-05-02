@@ -24,6 +24,9 @@ model Magasin {
   trialEndsAt      DateTime?
   stripeCustomerId String?
   stripeSubId      String?
+  // Personnalisation visuelle
+  logoUrl          String?  // base64 ou URL
+  couleurPrimaire  String?  // ex: "#5331D0"
   // Setup
   onboardingDone   Boolean  @default(false)
   createdAt        DateTime @default(now())

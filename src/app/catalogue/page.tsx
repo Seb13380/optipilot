@@ -20,6 +20,17 @@ interface Filtres {
   recommandeSeulement: boolean;
 }
 
+interface StockItem {
+  id: string | number;
+  marque: string;
+  reference: string;
+  couleur?: string;
+  matiere?: string;
+  genre?: string;
+  prix: number;
+  stock?: number;
+}
+
 // ─── Couleurs par style ───────────────────────────────────────────────────────
 const STYLE_COLOR: Record<string, string> = {
   sport:     "#34D399",
@@ -116,6 +127,55 @@ function scoreMonture(
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
+// ─── Carte monture stock Optimum ─────────────────────────────────────────────
+function StockCard({ item, onSelect }: { item: StockItem; onSelect: (item: StockItem) => void }) {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="rounded-2xl overflow-hidden flex flex-col"
+      style={{ background: "rgba(10,3,56,0.85)", border: "1px solid rgba(83,49,208,0.45)" }}
+    >
+      <div className="flex flex-col flex-1 px-4 py-4 gap-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+            style={{ background: "rgba(83,49,208,0.25)", color: "#9B96DA" }}>
+            En stock
+          </span>
+          {typeof item.stock === "number" && (
+            <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+              {item.stock} dispo
+            </span>
+          )}
+        </div>
+        <p className="text-base font-bold text-white leading-tight mt-1">{item.marque}</p>
+        <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>{item.reference}</p>
+        {item.couleur && (
+          <p className="text-xs" style={{ color: "rgba(155,150,218,0.65)" }}>{item.couleur}</p>
+        )}
+        {item.matiere && (
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium self-start"
+            style={{ background: "rgba(155,150,218,0.1)", color: "#9B96DA" }}>
+            {item.matiere}
+          </span>
+        )}
+        <p className="text-sm font-bold mt-auto pt-2" style={{ color: "#5331D0" }}>
+          {item.prix} € <span className="text-xs font-normal" style={{ color: "rgba(255,255,255,0.3)" }}>prix réel</span>
+        </p>
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => onSelect(item)}
+          className="w-full py-2.5 rounded-xl text-sm font-bold mt-1"
+          style={{ background: "rgba(83,49,208,0.6)", color: "#DDDAF5", border: "1px solid rgba(167,139,250,0.3)" }}
+        >
+          Choisir cette monture
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
 function Toast({ message, onDone }: { message: string; onDone: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDone, 2200);
@@ -251,6 +311,10 @@ export default function CataloguePage() {
   const [quest, setQuest] = useState<Record<string, unknown> | null>(null);
   const [presbytie, setPresbyti] = useState<string | null>(null);
 
+  // Stock live depuis le bridge Optimum
+  const [stockVif, setStockVif] = useState<StockItem[]>([]);
+  const [stockConnecte, setStockConnecte] = useState(false);
+
   useEffect(() => {
     const ordoRaw = localStorage.getItem("optipilot_ordonnance");
     const questRaw = localStorage.getItem("optipilot_questionnaire");
@@ -264,6 +328,17 @@ export default function CataloguePage() {
       const analyse = analyserOrdonnance(ordo);
       setPresbyti(analyse.presbytie);
     }
+
+    // Tentative de chargement du stock Optimum via bridge
+    fetch("/api/montures?prixMax=9999")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok && Array.isArray(data.montures) && data.montures.length > 0) {
+          setStockVif(data.montures);
+          setStockConnecte(true);
+        }
+      })
+      .catch(() => { /* bridge indisponible — catalogue statique uniquement */ });
   }, []);
 
   // Scores pré-calculés
@@ -304,6 +379,12 @@ export default function CataloguePage() {
       localStorage.setItem("optipilot_selection_montures", JSON.stringify([...next]));
       return next;
     });
+  }
+
+  function handleSelectStock(item: StockItem) {
+    // Enregistre la monture sélectionnée depuis le stock pour la page devis
+    localStorage.setItem("optipilot_monture_stock", JSON.stringify(item));
+    setToast(`${item.marque} — ${item.reference} sélectionnée`);
   }
 
   const nbRecommandeesTotal = useMemo(() => MONTURES.filter((m) => scores[m.id] >= 4).length, [scores]);
@@ -416,6 +497,30 @@ export default function CataloguePage() {
         <p className="text-sm px-1" style={{ color: "rgba(255,255,255,0.35)" }}>
           {montruresFiltrees.length} monture{montruresFiltrees.length !== 1 ? "s" : ""} trouvée{montruresFiltrees.length !== 1 ? "s" : ""}
         </p>
+
+        {/* ─── Stock en direct Optimum ─── */}
+        {stockConnecte && stockVif.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+                style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" }}>
+                Stock Optimum — en direct
+              </span>
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+                {stockVif.length} r\u00e9f\u00e9rence{stockVif.length > 1 ? "s" : ""}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {stockVif.map((item) => (
+                <StockCard key={item.id} item={item} onSelect={handleSelectStock} />
+              ))}
+            </div>
+            <div className="mt-4 mb-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
+            <p className="text-xs px-1 pt-2" style={{ color: "rgba(255,255,255,0.3)" }}>
+              Catalogue de r\u00e9f\u00e9rence
+            </p>
+          </div>
+        )}
 
         {/* Grille */}
         <AnimatePresence mode="popLayout">

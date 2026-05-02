@@ -10,14 +10,26 @@ html {
   --foreground: #111827;
   --card: #ffffff;
   --card-alt: #f4f4fb;
-  --primary: #5331D0;
-  --primary-light: #9B96DA;
-  --primary-dark: #1C0B62;
-  --accent: #9B96DA;
+
+  /* ── Palette marque OptiPilot ──────────────────────────── */
+  --violet:       #5331D0;  /* Violet principal — CTAs, badges, cartes */
+  --violet-light: #7B5CE5;  /* Violet clair — hover, gradients */
+  --rose:         #ec4899;  /* Rose — accent secondaire, alertes douces */
+  --rose-light:   #f472b6;  /* Rose clair */
+  --bleu:         #1C0B62;  /* Bleu nuit — textes titres, dark bg */
+  --bleu-deep:    #0a0318;  /* Bleu très profond — cartes dark */
+  --gris:         #9B96DA;  /* Gris lavande — textes secondaires, icônes */
+  --gris-dark:    #6b7280;  /* Gris neutre — corps de texte */
+  /* ───────────────────────────────────────────────── */
+
+  --primary:      var(--violet);
+  --primary-light: var(--gris);
+  --primary-dark:  var(--bleu);
+  --accent:       var(--gris);
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --text-muted: #6b7280;
+  --text-muted: var(--gris-dark);
   --border: rgba(83,49,208,0.25);
 }
 
@@ -119,6 +131,17 @@ html.dark .page-bg {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Clignotement border — signale un champ à renseigner */
+@keyframes pulseBorder {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(155,150,218,0);   border-color: rgba(83,49,208,0.25); }
+  50%       { box-shadow: 0 0 0 5px rgba(155,150,218,0.18); border-color: rgba(155,150,218,0.7); }
+}
+.pulse-border {
+  animation: pulseBorder 2s ease-in-out infinite;
+  border: 1px solid rgba(83,49,208,0.25);
+  border-radius: 10px;
 }
 
 /* Bounce léger pour les press */
