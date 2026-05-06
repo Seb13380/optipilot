@@ -4,6 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OpticianGuard from "@/components/OpticianGuard";
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 // ─── Types ─────────────────────────────────────────────────────────
 interface MutuelleData {
   nom: string | null;
@@ -182,7 +184,7 @@ function NouveauClientPageInner() {
       if (nom) params.append("nom", nom);
       if (prenom) params.append("prenom", prenom);
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients/search?${params}`,
+        `${BACKEND}/api/clients/search?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const clients: ClientFound[] = await res.json();
@@ -218,7 +220,7 @@ function NouveauClientPageInner() {
     try {
       let client;
       if (clientFound) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients/${clientFound.id}`, {
+        const res = await fetch(`${BACKEND}/api/clients/${clientFound.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -231,7 +233,7 @@ function NouveauClientPageInner() {
         });
         client = await res.json();
       } else {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients`, {
+        const res = await fetch(`${BACKEND}/api/clients`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({

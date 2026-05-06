@@ -6,6 +6,8 @@ import OpticianGuard from "@/components/OpticianGuard";
 import { lockSession } from "@/lib/opticianAuth";
 import { useApp } from "@/lib/AppContext";
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 interface Stats {
   devisJour: number;
   ventesJour: number;
@@ -160,7 +162,7 @@ function DashboardPage() {
     setUsageCount(visits);
     setRoiDismissed(localStorage.getItem("optipilot_roi_dismissed") === "1");
 
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/${userData.magasinId}${userData.role === "vendeur" ? `?userId=${userData.id}` : ""}`, {
+    fetch(`${BACKEND}/api/stats/${userData.magasinId}${userData.role === "vendeur" ? `?userId=${userData.id}` : ""}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
     })
       .then((r) => r.json())
@@ -171,7 +173,7 @@ function DashboardPage() {
     // Charge les stats équipe pour responsable premium
     if (userData.role === "admin" && userData.plan === "premium") {
       setTeamLoading(true);
-      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/team/${userData.magasinId}`, {
+      fetch(`${BACKEND}/api/stats/team/${userData.magasinId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
       })
         .then((r) => r.json())
@@ -193,7 +195,7 @@ function DashboardPage() {
     }
     setAddMemberLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/utilisateurs`, {
+      const res = await fetch(`${BACKEND}/api/utilisateurs`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
         body: JSON.stringify(newMember),
@@ -204,7 +206,7 @@ function DashboardPage() {
       setNewMember({ nom: "", email: "", motDePasse: "", role: "vendeur" });
       // Rafraîchir les stats équipe
       if (user) {
-        const tr = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/team/${user.magasinId}`, {
+        const tr = await fetch(`${BACKEND}/api/stats/team/${user.magasinId}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("optipilot_token") || ""}` },
         });
         const td = await tr.json();

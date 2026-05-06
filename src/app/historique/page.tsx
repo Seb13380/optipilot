@@ -32,6 +32,8 @@ const OFFRE_COLORS: Record<string, string> = {
   premium: "#5331D0",
 };
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 export default function HistoriquePage() {
   const router = useRouter();
   const [devis, setDevis] = useState<DevisItem[]>([]);
@@ -44,7 +46,7 @@ export default function HistoriquePage() {
     const userData = JSON.parse(user);
     const token = localStorage.getItem("optipilot_token") || "";
 
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${userData.magasinId}`, {
+    fetch(`${BACKEND}/api/devis/${userData.magasinId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())

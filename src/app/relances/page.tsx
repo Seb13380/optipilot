@@ -101,6 +101,8 @@ const STATUT_CONFIG = {
   perdu: { label: "Perdu", color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
 };
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 export default function RelancesPage() {
   const router = useRouter();
   const [relances, setRelances] = useState<Relance[]>([]);
@@ -115,7 +117,7 @@ export default function RelancesPage() {
     const userData = JSON.parse(user);
     const token = localStorage.getItem("optipilot_token") || "";
 
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/relances/${userData.magasinId}`, {
+    fetch(`${BACKEND}/api/relances/${userData.magasinId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -139,7 +141,7 @@ export default function RelancesPage() {
     // Si c'est une donnée démo, on ne fait pas de requête
     if (id.startsWith("demo-")) return;
     const token = localStorage.getItem("optipilot_token") || "";
-    await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${id}`, {
+    await fetch(`${BACKEND}/api/devis/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ statut }),

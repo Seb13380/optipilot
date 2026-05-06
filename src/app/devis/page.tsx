@@ -38,6 +38,8 @@ interface RacResult {
   statut: string;
 }
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 export default function DevisPage() {
   const router = useRouter();
   const devisRef = useRef<HTMLDivElement>(null);
@@ -131,7 +133,7 @@ export default function DevisPage() {
     if (savedBridgeUrl) setBridgeUrl(savedBridgeUrl);
 
     // Connexion Socket.io pour récupérer RAC réel en temps réel
-    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000", {
+    const socket = io(BACKEND, {
       transports: ["websocket", "polling"],
     });
     socketRef.current = socket;
@@ -173,7 +175,7 @@ export default function DevisPage() {
       const userRaw = localStorage.getItem("optipilot_user");
       const magasin = userRaw ? JSON.parse(userRaw).magasinId : "";
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients/search?nom=${encodeURIComponent(q)}&magasinId=${magasin}`,
+        `${BACKEND}/api/clients/search?nom=${encodeURIComponent(q)}&magasinId=${magasin}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.ok) setClientSearchResults(await res.json());
@@ -189,7 +191,7 @@ export default function DevisPage() {
       const userRaw = localStorage.getItem("optipilot_user");
       const magasinId = userRaw ? JSON.parse(userRaw).magasinId : "";
       const telephone = clientCreateForm.tel.join("");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients`, {
+      const res = await fetch(`${BACKEND}/api/clients`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ prenom: clientCreateForm.prenom, nom: clientCreateForm.nom, email: clientCreateForm.email, telephone, mutuelle: clientCreateForm.mutuelle, dateNaissance: clientCreateForm.dateNaissance || null, adresse: clientCreateForm.adresse || null, numeroSecu: clientCreateForm.numeroSecu || null, magasinId }),
@@ -232,7 +234,7 @@ export default function DevisPage() {
       const montantSS  = racResult ? racResult.secu  : (offre?.remboursementSecu  ?? 0);
       const montantMut = racResult ? racResult.mutuelle : (offre?.remboursementMutuelle ?? 0);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis`, {
+      const res = await fetch(`${BACKEND}/api/devis`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -253,7 +255,7 @@ export default function DevisPage() {
         // Envoyer le devis par email
         if (newDevisId) {
           try {
-            await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${newDevisId}/email`, {
+            await fetch(`${BACKEND}/api/devis/${newDevisId}/email`, {
               method: "POST",
               headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
               body: JSON.stringify({ email: emailFinal }),
@@ -276,7 +278,7 @@ export default function DevisPage() {
       const token = localStorage.getItem("optipilot_token") || "";
       const montantSS  = racResult ? racResult.secu  : (offre?.remboursementSecu  ?? 0);
       const montantMut = racResult ? racResult.mutuelle : (offre?.remboursementMutuelle ?? 0);
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${devisId}`, {
+      await fetch(`${BACKEND}/api/devis/${devisId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -444,7 +446,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
     const user = userRaw ? JSON.parse(userRaw) : { magasinId: "demo-magasin" };
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rac-request`, {
+      await fetch(`${BACKEND}/api/rac-request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

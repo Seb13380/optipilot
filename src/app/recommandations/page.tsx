@@ -30,6 +30,8 @@ function estDansReseau(nomMutuelle: string): boolean {
   );
 }
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 export default function RecommandationsPage() {
   const router = useRouter();
   const { t } = useApp();
@@ -108,7 +110,7 @@ export default function RecommandationsPage() {
         const niveau = client.niveauGarantie || quest.niveauGarantie;
         if (nomMutuelle && niveau) {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/mutuelles/${encodeURIComponent(nomMutuelle)}/${encodeURIComponent(niveau)}`
+            `${BACKEND}/api/mutuelles/${encodeURIComponent(nomMutuelle)}/${encodeURIComponent(niveau)}`
           );
           if (res.ok) {
             const data = await res.json();
@@ -172,7 +174,7 @@ export default function RecommandationsPage() {
         const confort = offres.find((o) => o.nom === "Confort");
         const premium = offres.find((o) => o.nom === "Premium");
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis`, {
+        const res = await fetch(`${BACKEND}/api/devis`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

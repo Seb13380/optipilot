@@ -29,6 +29,8 @@ type Step = "camera" | "preview" | "result";
 const STABILITY_THRESHOLD = 8;
 const STABLE_FRAMES_NEEDED = 12; // ~1.2s à 10fps
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 export default function ScannerPage() {
   const router = useRouter();
   const { t } = useApp();
@@ -251,7 +253,7 @@ export default function ScannerPage() {
     try {
       const client = JSON.parse(localStorage.getItem("optipilot_client") || "{}");
       if (client.id) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ordonnances`, {
+        const res = await fetch(`${BACKEND}/api/ordonnances`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
