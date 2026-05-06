@@ -202,3 +202,12 @@ model Questionnaire {
 
   @@map("questionnaires")
 }
+
+// ─── Configuration globale (singleton) ─────────────────────────────
+model ConfigGlobale {
+  id                   String @id @default("global")
+  ambassadeursRestants Int    @default(10)
+  ambassadeursTotal    Int    @default(10)
+
+  @@map("config_globale")
+}

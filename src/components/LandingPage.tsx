@@ -4,9 +4,9 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
-// ─── Offre Fondateur — modifier ces deux valeurs ──────────
-const FOUNDER_DEADLINE = new Date("2026-04-30T23:59:59");
-const FOUNDER_PLACES_LEFT = 7; // places restantes sur 10
+// ─── Offre Ambassadeur ─────────────────────────────────────
+const AMBASSADEUR_TOTAL = 10;
+const AMBASSADEUR_PRIX  = 199;
 
 // ─── Animated counter ─────────────────────────────────────
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
@@ -154,41 +154,33 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-// ─── Founder Banner ──────────────────────────────────────
-function FounderBanner() {
-  const { days, hours, minutes, seconds } = useCountdown(FOUNDER_DEADLINE);
-  const expired = days === 0 && hours === 0 && minutes === 0 && seconds === 0;
-  if (expired) return null;
-
-  const pad = (n: number) => String(n).padStart(2, "0");
+// ─── Founder Banner (dynamique) ─────────────────────────
+function FounderBanner({ restants, onClaim }: { restants: number; onClaim: () => void }) {
+  if (restants <= 0) return null;
 
   return (
     <section className="py-3 px-6" style={{ background: "linear-gradient(90deg, #5331D0 0%, #a855f7 100%)" }}>
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
-        <div className="flex items-center gap-2">
-          <span className="text-white font-black text-base">Offre Fondateur — 199€/mois à vie</span>
+        <div className="flex items-center gap-2 flex-wrap justify-center">
+          <span className="text-lg font-black text-white">🔥 Offre Ambassadeur</span>
           <span className="text-white/70 text-sm hidden sm:inline">·</span>
-          <span className="text-white/70 text-sm">{FOUNDER_PLACES_LEFT} places restantes sur 10</span>
+          <span className="text-white font-bold text-sm">{AMBASSADEUR_PRIX}€/mois à vie</span>
+          <span className="text-white/70 text-sm hidden sm:inline">·</span>
+          <span
+            className="px-3 py-0.5 rounded-full text-sm font-black text-white"
+            style={{ background: "rgba(255,255,255,0.22)" }}
+          >
+            {restants}/{AMBASSADEUR_TOTAL} places restantes
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          {[
-            { val: pad(days), label: "j" },
-            { val: pad(hours), label: "h" },
-            { val: pad(minutes), label: "min" },
-            { val: pad(seconds), label: "s" },
-          ].map(({ val, label }, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <span
-                className="font-black text-white text-sm tabular-nums px-2 py-0.5 rounded-lg"
-                style={{ background: "rgba(255,255,255,0.18)", minWidth: "2rem", display: "inline-block", textAlign: "center" }}
-              >
-                {val}
-              </span>
-              <span className="text-white/60 text-xs">{label}</span>
-              {i < 3 && <span className="text-white/50 font-bold text-sm">:</span>}
-            </div>
-          ))}
-        </div>
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={onClaim}
+          className="px-5 py-1.5 rounded-full text-sm font-black text-white whitespace-nowrap shrink-0"
+          style={{ background: "rgba(255,255,255,0.2)", border: "1.5px solid rgba(255,255,255,0.55)" }}
+        >
+          Réserver ma place →
+        </motion.button>
       </div>
     </section>
   );
@@ -202,7 +194,19 @@ export default function LandingPage() {
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoError, setDemoError] = useState("");
   const [demoForm, setDemoForm] = useState({ nom: "", email: "", magasin: "", tel: "" });
+  const [isAmbassadeur, setIsAmbassadeur] = useState(false);
+  const [ambassadeurRestants, setAmbassadeurRestants] = useState<number>(AMBASSADEUR_TOTAL);
   const demoRef = useRef<HTMLElement>(null);
+
+  // Charger le compteur ambassadeur
+  useEffect(() => {
+    fetch("/api/ambassadeur")
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.restants === "number") setAmbassadeurRestants(d.restants);
+      })
+      .catch(() => { /* ignore — garder la valeur par défaut */ });
+  }, []);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -216,7 +220,8 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  function scrollToDemo() {
+  function scrollToDemo(ambassadeur = false) {
+    setIsAmbassadeur(ambassadeur);
     demoRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
@@ -225,10 +230,25 @@ export default function LandingPage() {
     setDemoLoading(true);
     setDemoError("");
     try {
+      // Si offre ambassadeur : décrémenter le compteur en premier
+      if (isAmbassadeur && ambassadeurRestants > 0) {
+        const resAmb = await fetch("/api/ambassadeur", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "reserver" }),
+        });
+        if (!resAmb.ok) {
+          const d = await resAmb.json().catch(() => ({}));
+          throw new Error(d.error || "Plus de place disponible");
+        }
+        const ambData = await resAmb.json();
+        setAmbassadeurRestants(ambData.restants ?? 0);
+      }
+
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(demoForm),
+        body: JSON.stringify({ ...demoForm, offreAmbassadeur: isAmbassadeur }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -432,7 +452,7 @@ export default function LandingPage() {
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 whileHover={{ y: -3 }}
-                onClick={scrollToDemo}
+                onClick={() => scrollToDemo()}
                 className="w-full sm:w-auto text-xl font-black px-10 py-5 rounded-2xl text-white flex items-center justify-center gap-2"
                 style={{
                   background: "linear-gradient(135deg, #5331D0, #7B5CE5)",
@@ -468,7 +488,7 @@ export default function LandingPage() {
         </section>
 
         {/* ══════════════════════════ BANNIÈRE OFFRE FONDATEUR ══════════════════════════ */}
-        <FounderBanner />
+        <FounderBanner restants={ambassadeurRestants} onClaim={() => scrollToDemo(true)} />
 
         {/* ══════════════════════════ VIDÉO EXPLAINER ══════════════════════════ */}
         <section className="py-16 px-6" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(83,49,208,0.04) 50%, transparent 100%)" }}>
@@ -776,6 +796,111 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
+              {/* ── Card Ambassadeur (visible si places restantes) ── */}
+              {ambassadeurRestants > 0 && (
+                <motion.div
+                  className="md:col-span-2 rounded-3xl p-8 relative overflow-hidden"
+                  style={{
+                    background: "linear-gradient(135deg, #1e1040 0%, #0d0830 60%, #1e1040 100%)",
+                    border: "2px solid rgba(236,72,153,0.55)",
+                    boxShadow: "0 0 40px rgba(236,72,153,0.18), 0 20px 60px rgba(83,49,208,0.2)",
+                  }}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5 }}
+                >
+                  {/* Halo décoratif */}
+                  <div
+                    className="absolute -top-16 -right-16 w-64 h-64 rounded-full pointer-events-none"
+                    style={{
+                      background: "radial-gradient(circle, rgba(236,72,153,0.15) 0%, transparent 70%)",
+                      filter: "blur(30px)",
+                    }}
+                  />
+
+                  <div className="flex flex-col md:flex-row md:items-center gap-8 relative">
+
+                    {/* Gauche : texte + prix */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span
+                          className="px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest text-white"
+                          style={{ background: "linear-gradient(90deg,#ec4899,#f472b6)" }}
+                        >
+                          Ambassadeur
+                        </span>
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-black text-white"
+                          style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}
+                        >
+                          🔥 {ambassadeurRestants}/{AMBASSADEUR_TOTAL} places restantes
+                        </span>
+                      </div>
+
+                      <h3 className="text-2xl md:text-3xl font-black mb-1" style={{ color: "#FDFDFE" }}>
+                        Prix garanti à vie
+                      </h3>
+                      <p className="text-base mb-5" style={{ color: "rgba(155,150,218,0.7)" }}>
+                        Réservé aux {AMBASSADEUR_TOTAL} premiers opticiens qui nous font confiance.
+                        Ce tarif ne changera jamais — même quand le produit montera en prix.
+                      </p>
+
+                      <div className="flex items-end gap-2 mb-2">
+                        <span
+                          className="text-6xl font-black"
+                          style={{ background: "linear-gradient(135deg,#ec4899,#f472b6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                        >
+                          {AMBASSADEUR_PRIX}
+                        </span>
+                        <span className="text-2xl font-bold mb-2" style={{ color: "#9B96DA" }}>€</span>
+                        <span className="text-base mb-2.5 ml-1" style={{ color: "#9B96DA" }}>/&nbsp;mois à vie</span>
+                      </div>
+                      <p className="text-sm line-through" style={{ color: "rgba(155,150,218,0.4)" }}>
+                        Au lieu de 299€/mois — économie de 100€/mois
+                      </p>
+                    </div>
+
+                    {/* Droite : avantages + CTA */}
+                    <div className="flex-1 flex flex-col gap-5">
+                      <ul className="flex flex-col gap-2.5">
+                        {[
+                          "Toutes les fonctionnalités Premium incluses",
+                          "Prix bloqué à 199€/mois — pour toujours",
+                          "Accès prioritaire aux nouvelles fonctionnalités",
+                          "Badge Ambassadeur OptiPilot",
+                          "Support direct avec le fondateur",
+                          "Co-construction du produit avec votre feedback",
+                        ].map((feat) => (
+                          <li key={feat} className="flex items-start gap-3">
+                            <svg className="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <path d="M3 8l3.5 3.5L13 4.5" stroke="#f472b6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span className="text-sm font-medium" style={{ color: "#DDDAF5" }}>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ y: -2 }}
+                        onClick={() => scrollToDemo(true)}
+                        className="w-full py-4 rounded-2xl text-base font-black text-white"
+                        style={{
+                          background: "linear-gradient(135deg, #ec4899 0%, #f472b6 100%)",
+                          boxShadow: "0 6px 24px rgba(236,72,153,0.4)",
+                        }}
+                      >
+                        Réserver ma place Ambassadeur →
+                      </motion.button>
+                      <p className="text-center text-xs" style={{ color: "rgba(155,150,218,0.45)" }}>
+                        Sans engagement · 30 jours gratuits inclus
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* ── Plan Standard ── */}
               <RevealLeft delay={0.1}>
                 <div
@@ -818,7 +943,7 @@ export default function LandingPage() {
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     whileHover={{ y: -2 }}
-                    onClick={scrollToDemo}
+                    onClick={() => scrollToDemo()}
                     className="w-full py-4 rounded-2xl text-base font-bold text-white"
                     style={{ background: "rgba(83,49,208,0.55)", border: "2px solid rgba(83,49,208,0.6)" }}
                   >
@@ -881,7 +1006,7 @@ export default function LandingPage() {
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     whileHover={{ y: -2 }}
-                    onClick={scrollToDemo}
+                    onClick={() => scrollToDemo()}
                     className="w-full py-4 rounded-2xl text-base font-black text-white"
                     style={{ background: "linear-gradient(135deg,#5331D0,#7B5CE5)", boxShadow: "0 6px 24px rgba(83,49,208,0.45)" }}
                   >
@@ -1019,10 +1144,14 @@ export default function LandingPage() {
                   className="rounded-3xl p-10 text-center"
                   style={{ background: "rgba(34,197,94,0.1)", border: "2px solid rgba(34,197,94,0.3)" }}
                 >
-                  <span className="text-5xl">✅</span>
-                  <h3 className="text-2xl font-black text-white mt-4 mb-2">Demande envoyée !</h3>
+                  <span className="text-5xl">{isAmbassadeur ? "🔥" : "✅"}</span>
+                  <h3 className="text-2xl font-black text-white mt-4 mb-2">
+                    {isAmbassadeur ? "Place Ambassadeur réservée !" : "Demande envoyée !"}
+                  </h3>
                   <p style={{ color: "#9B96DA" }}>
-                    Nous vous recontacterons dans les 24h pour planifier votre démo personnalisée.
+                    {isAmbassadeur
+                      ? "Votre place est réservée à 199€/mois à vie. Nous vous contactons dans les 24h pour finaliser."
+                      : "Nous vous recontacterons dans les 24h pour planifier votre démo personnalisée."}
                   </p>
                 </motion.div>
               ) : (
@@ -1030,10 +1159,35 @@ export default function LandingPage() {
                   onSubmit={handleDemoSubmit}
                   className="rounded-3xl p-8 flex flex-col gap-4"
                   style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(155,150,218,0.2)",
+                    background: isAmbassadeur ? "rgba(236,72,153,0.06)" : "rgba(255,255,255,0.04)",
+                    border: isAmbassadeur ? "1px solid rgba(236,72,153,0.35)" : "1px solid rgba(155,150,218,0.2)",
                   }}
                 >
+                  {/* Badge ambassadeur dans le formulaire */}
+                  {isAmbassadeur && (
+                    <div
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                      style={{ background: "rgba(236,72,153,0.12)", border: "1px solid rgba(236,72,153,0.3)" }}
+                    >
+                      <span className="text-2xl">🔥</span>
+                      <div>
+                        <p className="font-black text-sm" style={{ color: "#f472b6" }}>
+                          Offre Ambassadeur — 199€/mois à vie
+                        </p>
+                        <p className="text-xs" style={{ color: "rgba(155,150,218,0.65)" }}>
+                          {ambassadeurRestants}/{AMBASSADEUR_TOTAL} places · Prix garanti pour toujours
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsAmbassadeur(false)}
+                        className="ml-auto text-xs"
+                        style={{ color: "rgba(155,150,218,0.5)" }}
+                      >
+                        Changer →
+                      </button>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-bold" style={{ color: "#9B96DA" }}>Prénom &amp; Nom *</label>
@@ -1089,8 +1243,14 @@ export default function LandingPage() {
                     disabled={demoLoading}
                     className="w-full py-5 rounded-2xl text-xl font-black text-white mt-2 flex items-center justify-center gap-3"
                     style={{
-                      background: demoLoading ? "rgba(83,49,208,0.55)" : "linear-gradient(135deg,#5331D0,#7B5CE5)",
-                      boxShadow: "0 6px 24px rgba(83,49,208,0.5)",
+                      background: demoLoading
+                        ? "rgba(83,49,208,0.55)"
+                        : isAmbassadeur
+                          ? "linear-gradient(135deg,#ec4899,#f472b6)"
+                          : "linear-gradient(135deg,#5331D0,#7B5CE5)",
+                      boxShadow: isAmbassadeur
+                        ? "0 6px 24px rgba(236,72,153,0.45)"
+                        : "0 6px 24px rgba(83,49,208,0.5)",
                       cursor: demoLoading ? "not-allowed" : "pointer",
                     }}
                   >
@@ -1103,7 +1263,7 @@ export default function LandingPage() {
                         />
                         Envoi en cours…
                       </>
-                    ) : "Demander ma démo gratuite →"}
+                    ) : isAmbassadeur ? "Réserver ma place Ambassadeur →" : "Demander ma démo gratuite →"}
                   </motion.button>
                   {demoError && (
                     <p className="text-center text-sm font-semibold mt-1" style={{ color: "#f87171" }}>{demoError}</p>

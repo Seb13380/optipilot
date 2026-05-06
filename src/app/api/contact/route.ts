@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     const email = sanitize(body.email);
     const magasin = sanitize(body.magasin);
     const tel = sanitize(body.tel);
+    const offreAmbassadeur = body.offreAmbassadeur === true;
 
     // Basic validation
     if (!nom || !email || !magasin) {
@@ -50,23 +51,30 @@ export async function POST(req: NextRequest) {
       from: `"OptiPilot Contact" <${smtpUser}>`,
       to: emailTo,
       replyTo: email,
-      subject: `Demande de démo OptiPilot — ${magasin}`,
+      subject: offreAmbassadeur
+        ? `🔥 OFFRE AMBASSADEUR — Réservation de ${magasin}`
+        : `Demande de démo OptiPilot — ${magasin}`,
       text: [
         `Nom : ${nom}`,
         `Email : ${email}`,
         `Magasin : ${magasin}`,
         `Téléphone : ${tel || "Non renseigné"}`,
+        offreAmbassadeur ? `\nOFFRE : Ambassadeur 199€/mois à vie` : "",
         "",
-        "Demande reçue via le formulaire de la landing page OptiPilot.",
+        offreAmbassadeur
+          ? "Demande de réservation pour l'OFFRE AMBASSADEUR (199€/mois à vie)."
+          : "Demande reçue via le formulaire de la landing page OptiPilot.",
       ].join("\n"),
       html: `
         <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px;background:#07021a;color:#DDDAF5;border-radius:16px;">
-          <h2 style="color:#a78bfa;margin-top:0;">Nouvelle demande de démo OptiPilot</h2>
+          ${offreAmbassadeur ? `<div style="background:linear-gradient(90deg,#ec4899,#f472b6);padding:12px 20px;border-radius:10px;margin-bottom:20px;"><strong style="color:#fff;font-size:16px">🔥 Réservation Offre Ambassadeur — 199€/mois à vie</strong></div>` : ""}
+          <h2 style="color:#a78bfa;margin-top:0;">${offreAmbassadeur ? "Nouvelle réservation Ambassadeur" : "Nouvelle demande de démo OptiPilot"}</h2>
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:8px 0;color:#9B96DA;width:120px;">Nom</td><td style="padding:8px 0;color:#fff;font-weight:600;">${nom}</td></tr>
             <tr><td style="padding:8px 0;color:#9B96DA;">Email</td><td style="padding:8px 0;color:#fff;font-weight:600;"><a href="mailto:${email}" style="color:#a78bfa;">${email}</a></td></tr>
             <tr><td style="padding:8px 0;color:#9B96DA;">Magasin</td><td style="padding:8px 0;color:#fff;font-weight:600;">${magasin}</td></tr>
             <tr><td style="padding:8px 0;color:#9B96DA;">Téléphone</td><td style="padding:8px 0;color:#fff;font-weight:600;">${tel || "—"}</td></tr>
+            ${offreAmbassadeur ? `<tr><td style="padding:8px 0;color:#9B96DA;">Offre</td><td style="padding:8px 0;color:#f472b6;font-weight:700;">Ambassadeur 199€/mois à vie</td></tr>` : ""}
           </table>
         </div>
       `,

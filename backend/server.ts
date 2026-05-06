@@ -1458,6 +1458,68 @@ io.on("connection", (socket) => {
   });
 });
 
+// ─── Offre Ambassadeur ───────────────────────────────────
+// GET  /api/ambassadeur         → { restants, total }
+// POST /api/ambassadeur/reserver → décrémente d'1, retourne nouveau { restants, total }
+// POST /api/ambassadeur/reset    → (admin) remet à N
+
+app.get("/api/ambassadeur", async (_req, res) => {
+  try {
+    const cfg = await prisma.configGlobale.upsert({
+      where: { id: "global" },
+      create: { id: "global", ambassadeursRestants: 10, ambassadeursTotal: 10 },
+      update: {},
+    });
+    res.json({ restants: cfg.ambassadeursRestants, total: cfg.ambassadeursTotal });
+  } catch (err) {
+    console.error("GET /api/ambassadeur error:", err);
+    res.status(500).json({ error: "Erreur lecture config ambassadeur" });
+  }
+});
+
+app.post("/api/ambassadeur/reserver", async (req, res) => {
+  try {
+    // Lecture atomique pour éviter les race conditions
+    const cfg = await prisma.configGlobale.upsert({
+      where: { id: "global" },
+      create: { id: "global", ambassadeursRestants: 10, ambassadeursTotal: 10 },
+      update: {},
+    });
+    if (cfg.ambassadeursRestants <= 0) {
+      return res.status(409).json({ error: "Toutes les places ont été réservées.", restants: 0 });
+    }
+    const updated = await prisma.configGlobale.update({
+      where: { id: "global" },
+      data: { ambassadeursRestants: { decrement: 1 } },
+    });
+    res.json({ restants: updated.ambassadeursRestants, total: updated.ambassadeursTotal });
+  } catch (err) {
+    console.error("POST /api/ambassadeur/reserver error:", err);
+    res.status(500).json({ error: "Erreur réservation ambassadeur" });
+  }
+});
+
+app.post("/api/ambassadeur/reset", async (req, res) => {
+  // Protégé par token admin simple
+  const adminKey = process.env.ADMIN_SECRET_KEY || "optipilot-admin";
+  const { secretKey, restants } = req.body as { secretKey?: string; restants?: number };
+  if (secretKey !== adminKey) {
+    return res.status(403).json({ error: "Non autorisé" });
+  }
+  try {
+    const newVal = typeof restants === "number" ? restants : 10;
+    const updated = await prisma.configGlobale.upsert({
+      where: { id: "global" },
+      create: { id: "global", ambassadeursRestants: newVal, ambassadeursTotal: 10 },
+      update: { ambassadeursRestants: newVal },
+    });
+    res.json({ restants: updated.ambassadeursRestants, total: updated.ambassadeursTotal });
+  } catch (err) {
+    console.error("POST /api/ambassadeur/reset error:", err);
+    res.status(500).json({ error: "Erreur reset ambassadeur" });
+  }
+});
+
 // ─── Start ────────────────────────────────────────────────
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 4000;
 httpServer.listen(PORT, () => {
