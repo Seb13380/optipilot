@@ -77,6 +77,30 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(400).json({ error: "Email et mot de passe requis" });
     }
 
+    // ── Compte démo intégré (toujours disponible) ──────────────────────────
+    if (email === "demo@optipilot.fr" && motDePasse === "demo1234") {
+      const demoToken = signToken({
+        userId: "demo-user",
+        magasinId: "demo-magasin",
+        role: "admin",
+        email: "demo@optipilot.fr",
+      });
+      return res.json({
+        token: demoToken,
+        user: {
+          id: "demo-user",
+          nom: "Dr. Martin",
+          email: "demo@optipilot.fr",
+          role: "admin",
+          magasinId: "demo-magasin",
+          magasinNom: "Optique Lumière (Démo)",
+          onboardingDone: true,
+          plan: "premium",
+          trialEndsAt: null,
+        },
+      });
+    }
+
     const user = await prisma.utilisateur.findUnique({
       where: { email },
       include: { magasin: true },

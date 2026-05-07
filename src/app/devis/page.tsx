@@ -441,6 +441,24 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
   }
 
   async function confirmerRACReel() {
+    // Sans bridge : afficher immédiatement le RAC estimé calculé depuis l'offre
+    if (!bridgeUrl) {
+      setRacStatut("loading");
+      setTimeout(() => {
+        const secuEst = offre?.remboursementSecu ?? 0;
+        const mutEst = offre?.remboursementMutuelle ?? 0;
+        setRacResult({
+          montant: resteACharge,
+          secu: secuEst,
+          mutuelle: mutEst,
+          detail: `${client.mutuelle || "Mutuelle"} ${client.niveauGarantie || ""} — estimation grille tarifaire`.trim(),
+          statut: "estimé",
+        });
+        setRacStatut("confirmed");
+      }, 600);
+      return;
+    }
+
     setRacStatut("loading");
     const userRaw = localStorage.getItem("optipilot_user");
     const user = userRaw ? JSON.parse(userRaw) : { magasinId: "demo-magasin" };
@@ -460,18 +478,17 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
         }),
       });
     } catch {
-      // Mode démo : simulation réponse 3 secondes
-      setTimeout(() => {
-        const demoResult: RacResult = {
-          montant: Math.max(0, totalDevis - (offre?.remboursementSecu || 30) - 185),
-          secu: offre?.remboursementSecu || 30,
-          mutuelle: 185,
-          detail: `${client.mutuelle || "MGEN"} ${client.niveauGarantie || "Confort"} — ${offre?.type || "Progressif"}`,
-          statut: "accordé",
-        };
-        setRacResult(demoResult);
-        setRacStatut("confirmed");
-      }, 3000);
+      // Fallback si backend injoignable
+      const secuEst = offre?.remboursementSecu ?? 0;
+      const mutEst = offre?.remboursementMutuelle ?? 0;
+      setRacResult({
+        montant: resteACharge,
+        secu: secuEst,
+        mutuelle: mutEst,
+        detail: `${client.mutuelle || "Mutuelle"} ${client.niveauGarantie || ""} — estimation grille tarifaire`.trim(),
+        statut: "estimé",
+      });
+      setRacStatut("confirmed");
     }
   }
 
@@ -1072,14 +1089,18 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   style={{
                     padding: "22px 24px",
                     fontSize: "1.125rem",
-                    background: "linear-gradient(135deg, #5331D0, #7c3aed)",
+                    background: bridgeUrl
+                      ? "linear-gradient(135deg, #5331D0, #7c3aed)"
+                      : "linear-gradient(135deg, #1C0B62, #5331D0)",
                     boxShadow: "0 6px 28px rgba(83,49,208,0.45)",
                   }}
                 >
                   <span style={{ fontSize: "1.25rem", lineHeight: 1 }}>►</span>
                   <div className="text-left">
-                    <div>Confirmer et obtenir RAC réel</div>
-                    <div style={{ fontSize: "0.85rem", opacity: 0.85, fontWeight: 500 }}>Connexion automatique mutuelle</div>
+                    <div>{bridgeUrl ? "Confirmer et obtenir RAC réel" : "Valider le RAC estimé"}</div>
+                    <div style={{ fontSize: "0.85rem", opacity: 0.85, fontWeight: 500 }}>
+                      {bridgeUrl ? "Connexion automatique mutuelle" : "Basé sur la grille tarifaire de votre mutuelle"}
+                    </div>
                   </div>
                 </motion.button>
               )}
@@ -1123,7 +1144,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                     <div>
-                      <p className="text-xl font-bold" style={{ color: "#a78bfa" }}>Remboursement confirmé</p>
+                      <p className="text-xl font-bold" style={{ color: "#a78bfa" }}>{racResult.statut === "estimé" ? "RAC estimé" : "Remboursement confirmé"}</p>
                       <p className="text-base" style={{ color: "#9B96DA" }}>{racResult.detail}</p>
                     </div>
                   </div>
@@ -1141,7 +1162,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                       className="flex justify-between items-center p-3 rounded-xl mt-1"
                       style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.4)" }}
                     >
-                      <span className="text-lg font-bold" style={{ color: "#FDFDFE" }}>Votre RAC réel</span>
+                      <span className="text-lg font-bold" style={{ color: "#FDFDFE" }}>{racResult.statut === "estimé" ? "RAC estimé" : "Votre RAC réel"}</span>
                       <span className="text-4xl font-black" style={{ color: "#FDFDFE" }}>{racResult.montant}€</span>
                     </div>
                   </div>
@@ -1447,8 +1468,8 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                       prixVerres: totalVerres,
                       prixMonture,
                       prixTotal: totalDevis,
-                      remboursementSecu: offre?.remboursementSecu || 0,
-                      remboursementMutuelle: offre?.remboursementMutuelle || 0,
+                      remboursementSecu: racResult?.secu ?? offre?.remboursementSecu ?? 0,
+                      remboursementMutuelle: racResult?.mutuelle ?? offre?.remboursementMutuelle ?? 0,
                     };
                     const hash = encodeURIComponent(JSON.stringify(payload));
                     window.open(`https://livebyoptimum.com#optipilot-devis=${hash}`, "_blank");
