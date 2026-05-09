@@ -1185,6 +1185,17 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                       Voir autres options
                     </motion.button>
                   </div>
+
+                  {/* Simulateur vision */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => router.push("/vision")}
+                    className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 mt-1"
+                    style={{ background: "rgba(83,49,208,0.12)", color: "#9B96DA", border: "1px solid rgba(83,49,208,0.3)" }}
+                  >
+                    <span>👁️</span>
+                    Montrer la différence visuelle au client
+                  </motion.button>
                 </motion.div>
               )}
 

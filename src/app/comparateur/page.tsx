@@ -482,6 +482,20 @@ export default function ComparateurPage() {
           Voir mes recommandations →
         </motion.button>
 
+        {/* Simulateur vision */}
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => router.push("/vision")}
+          className="w-full py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2"
+          style={{ background: "rgba(28,11,98,0.6)", color: "#9B96DA", border: "1.5px solid rgba(83,49,208,0.35)" }}
+        >
+          <span style={{ fontSize: 20 }}>👁️</span>
+          Simulateur AVANT / APRÈS — Voir la différence
+        </motion.button>
+
       </main>
     </div>
   );
