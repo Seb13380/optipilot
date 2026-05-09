@@ -7,8 +7,10 @@ import OpticianGuard from "@/components/OpticianGuard";
 
 // ─── Types ────────────────────────────────────────────────────
 interface OrdoValues {
-  se: number;       // Équivalent sphérique (pire œil)
-  cyl: number;      // Cylindre max (astigmatisme)
+  se: number;           // Équivalent sphérique (pire œil)
+  cyl: number;          // Cylindre max (astigmatisme)
+  add: number;          // Addition (presbytie → progressif)
+  isProgressif: boolean;
   sign: "myopie" | "hypermetropie" | "none";
   hasData: boolean;
   label: string;
@@ -27,16 +29,19 @@ function parseOrdonnance(): OrdoValues {
       Math.abs(parseFloat(o.odCylindre) || 0),
       Math.abs(parseFloat(o.ogCylindre) || 0)
     );
-    if (se === 0 && cyl === 0) throw new Error("zero");
-    const sign: OrdoValues["sign"] = se < 0 ? "myopie" : "hypermetropie";
-    const signLabel = sign === "myopie" ? "Myopie" : "Hypermétropie";
+    const add = parseFloat(o.odAddition || o.ogAddition || o.addition || "0") || 0;
+    if (se === 0 && cyl === 0 && add === 0) throw new Error("zero");
+    const isProgressif = add > 0;
+    const sign: OrdoValues["sign"] = se < 0 ? "myopie" : se > 0 ? "hypermetropie" : "none";
+    const signLabel = sign === "myopie" ? "Myopie" : sign === "hypermetropie" ? "Hypermétropie" : "Emmétrope";
     const cylLabel = cyl > 0.5 ? ` + Astigmatisme (cyl. ${cyl.toFixed(2)})` : "";
+    const addLabel = isProgressif ? ` · Add. +${add.toFixed(2)}` : "";
     return {
-      se, cyl, sign, hasData: true,
-      label: `${signLabel} ${se > 0 ? "+" : ""}${se.toFixed(2)} D${cylLabel}`,
+      se, cyl, add, isProgressif, sign, hasData: true,
+      label: `${signLabel}${se !== 0 ? " " + (se > 0 ? "+" : "") + se.toFixed(2) + " D" : ""}${cylLabel}${addLabel}`.trim(),
     };
   } catch {
-    return { se: -3, cyl: 1.25, sign: "myopie", hasData: false, label: "Myopie −3.00 D (exemple)" };
+    return { se: -3, cyl: 1.25, add: 0, isProgressif: false, sign: "myopie", hasData: false, label: "Myopie −3.00 D (exemple)" };
   }
 }
 
@@ -276,18 +281,78 @@ const LENTILLES = [
 
 type LentilleId = typeof LENTILLES[number]["id"];
 
+// ─── Config couloir progressif ────────────────────────────────
+const CORRIDORS: Record<LentilleId, { topHalf: number; botHalf: number; blur: number; opacity: number } | null> = {
+  none:      null,
+  essentiel: { topHalf: 10, botHalf: 18, blur: 6,   opacity: 0.55 },
+  confort:   { topHalf: 16, botHalf: 27, blur: 3.5,  opacity: 0.38 },
+  premium:   { topHalf: 24, botHalf: 38, blur: 1.5,  opacity: 0.15 },
+};
+
+// ─── Points mode progressif ───────────────────────────────────
+const POINTS_PROGRESSIF: Record<LentilleId, string[]> = {
+  none:      ["Presbytie non corrigée ✗", "Fatigue visuelle intense ✗", "Vision de près floue ✗", "Difficultés à lire ✗"],
+  essentiel: ["Correction loin et près ✓", "Couloir de vision étroit", "Distorsions périphériques fortes", "Temps d'adaptation long"],
+  confort:   ["Couloir intermédiaire large ✓", "Distorsions réduites ✓", "Adaptation rapide ✓", "Confort écran & lecture ✓"],
+  premium:   ["Grand couloir panoramique ✓", "Distorsions quasi nulles ✓", "Adaptation naturelle ✓", "Vision loin / écran / près ✓"],
+};
+
+// ─── Overlay champs visuels progressif ───────────────────────
+function ProgressiveFieldsOverlay({ topHalf, botHalf, blur, opacity }: {
+  topHalf: number; botHalf: number; blur: number; opacity: number;
+}) {
+  const tl = 50 - topHalf;
+  const tr = 50 + topHalf;
+  const bl = 50 - botHalf;
+  const br = 50 + botHalf;
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }}>
+      {/* Périphérie gauche */}
+      <div className="absolute inset-0" style={{
+        clipPath: `polygon(0% 0%, ${tl}% 0%, ${bl}% 100%, 0% 100%)`,
+        backdropFilter: `blur(${blur}px)`,
+        background: `rgba(8,4,24,${opacity})`,
+      }} />
+      {/* Périphérie droite */}
+      <div className="absolute inset-0" style={{
+        clipPath: `polygon(${tr}% 0%, 100% 0%, 100% 100%, ${br}% 100%)`,
+        backdropFilter: `blur(${blur}px)`,
+        background: `rgba(8,4,24,${opacity})`,
+      }} />
+      {/* Bordures du couloir */}
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1={tl} y1="0" x2={bl} y2="100" stroke="rgba(251,191,36,0.55)" strokeWidth="0.35" />
+        <line x1={tr} y1="0" x2={br} y2="100" stroke="rgba(251,191,36,0.55)" strokeWidth="0.35" />
+      </svg>
+      {/* Étiquettes zones */}
+      <div className="absolute" style={{ top: "6%", left: "50%", transform: "translateX(-50%)", zIndex: 6, whiteSpace: "nowrap" }}>
+        <span style={{ background: "rgba(10,3,56,0.82)", color: "rgba(155,150,218,0.95)", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, letterSpacing: "0.08em" }}>LOIN</span>
+      </div>
+      <div className="absolute" style={{ top: "44%", left: "50%", transform: "translateX(-50%)", zIndex: 6, whiteSpace: "nowrap" }}>
+        <span style={{ background: "rgba(10,3,56,0.82)", color: "rgba(155,150,218,0.95)", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, letterSpacing: "0.08em" }}>INTER.</span>
+      </div>
+      <div className="absolute" style={{ bottom: "6%", left: "50%", transform: "translateX(-50%)", zIndex: 6, whiteSpace: "nowrap" }}>
+        <span style={{ background: "rgba(10,3,56,0.82)", color: "rgba(155,150,218,0.95)", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, letterSpacing: "0.08em" }}>PRÈS</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page principale ──────────────────────────────────────────
 export default function SimulateurVisionPage() {
   const router = useRouter();
-  const [ordo, setOrdo] = useState<OrdoValues>({ se: -3, cyl: 1.25, sign: "myopie", hasData: false, label: "Myopie −3.00 D (exemple)" });
+  const [ordo, setOrdo] = useState<OrdoValues>({ se: -3, cyl: 1.25, add: 0, isProgressif: false, sign: "myopie", hasData: false, label: "Myopie −3.00 D (exemple)" });
   const [scene, setScene] = useState<string>("nuit");
   const [lentille, setLentille] = useState<LentilleId>("confort");
+  const [modeVerre, setModeVerre] = useState<"unifocal" | "progressif">("unifocal");
   const [sliderX, setSliderX] = useState(48);
   const [dragging, setDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setOrdo(parseOrdonnance());
+    const parsed = parseOrdonnance();
+    setOrdo(parsed);
+    if (parsed.isProgressif) setModeVerre("progressif");
   }, []);
 
   const blurPx = getBlurPx(ordo.se);
@@ -335,6 +400,8 @@ export default function SimulateurVisionPage() {
   const blurLabel = getBlurLabel(blurPx);
   const blurPct = Math.min(100, Math.round((blurPx / 30) * 100));
   const blurColor = blurPx <= 5 ? "#22c55e" : blurPx <= 12 ? "#f97316" : "#ef4444";
+  const corridorConfig = modeVerre === "progressif" ? CORRIDORS[lentille] : null;
+  const displayPoints = modeVerre === "progressif" ? POINTS_PROGRESSIF[lentille] : [...selectedLentille.points];
 
   return (
     <OpticianGuard>
@@ -399,6 +466,35 @@ export default function SimulateurVisionPage() {
               )}
             </motion.div>
           )}
+
+          {/* ─── Mode Unifocal / Progressif ─── */}
+          <div>
+            <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: "rgba(155,150,218,0.6)" }}>
+              Type de verre
+              {!ordo.isProgressif && <span className="ml-2 px-1.5 py-0.5 rounded" style={{ background: "rgba(83,49,208,0.2)", color: "rgba(155,150,218,0.55)", fontSize: 9, fontWeight: 600 }}>démo</span>}
+              {ordo.isProgressif && <span className="ml-2 px-1.5 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.15)", color: "#86efac", fontSize: 9, fontWeight: 600 }}>détecté</span>}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {(["unifocal", "progressif"] as const).map(m => (
+                <motion.button
+                  key={m}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setModeVerre(m)}
+                  className="py-3 rounded-xl flex items-center justify-center gap-2"
+                  style={{
+                    background: modeVerre === m ? "rgba(83,49,208,0.32)" : "rgba(28,11,98,0.45)",
+                    border: `1.5px solid ${modeVerre === m ? "rgba(83,49,208,0.75)" : "rgba(83,49,208,0.18)"}`,
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>{m === "unifocal" ? "🔵" : "🔶"}</span>
+                  <span className="text-sm font-semibold" style={{ color: modeVerre === m ? "#FDFDFE" : "#9B96DA" }}>
+                    {m === "unifocal" ? "Unifocal" : "Progressif"}
+                  </span>
+                </motion.button>
+              ))}
+            </div>
+          </div>
 
           {/* ─── Sélecteur de scène ─── */}
           <div>
@@ -517,6 +613,16 @@ export default function SimulateurVisionPage() {
                   )}
                 </div>
 
+                {/* Champs visuels progressif — clippé côté APRÈS */}
+                {corridorConfig && (
+                  <div
+                    className="absolute inset-0"
+                    style={{ clipPath: `inset(0 0 0 ${sliderX}%)`, willChange: "clip-path" }}
+                  >
+                    <ProgressiveFieldsOverlay {...corridorConfig} />
+                  </div>
+                )}
+
                 {/* Ligne séparatrice */}
                 <div
                   className="absolute top-0 bottom-0 pointer-events-none"
@@ -568,13 +674,19 @@ export default function SimulateurVisionPage() {
                   style={{ background: "rgba(10,3,56,0.9)", borderTop: "1px solid rgba(83,49,208,0.2)" }}
                 >
                   <p className="text-sm font-bold mb-2.5" style={{ color: selectedLentille.color }}>
-                    {selectedLentille.label === "Sans correction" ? "Sans correction" : `Verre ${selectedLentille.label}`}
+                    {selectedLentille.label === "Sans correction"
+                      ? "Sans correction"
+                      : `Verre ${selectedLentille.label}${modeVerre === "progressif" ? " Progressif" : ""}`}
                   </p>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-                    {selectedLentille.points.map((p, i) => (
+                    {displayPoints.map((p, i) => (
                       <p key={i} className="text-xs flex items-start gap-1.5" style={{ color: p.includes("✓") ? "#86efac" : "rgba(155,150,218,0.8)" }}>
-                        {p.includes("✓") ? <span style={{ color: "#22c55e", flexShrink: 0 }}>✓</span> : <span style={{ color: "#ef4444", flexShrink: 0 }}>·</span>}
-                        <span>{p.replace(" ✓", "")}</span>
+                        {p.includes("✓")
+                          ? <span style={{ color: "#22c55e", flexShrink: 0 }}>✓</span>
+                          : p.includes("✗")
+                          ? <span style={{ color: "#ef4444", flexShrink: 0 }}>✗</span>
+                          : <span style={{ color: "#9B96DA", flexShrink: 0 }}>·</span>}
+                        <span>{p.replace(" ✓", "").replace(" ✗", "")}</span>
                       </p>
                     ))}
                   </div>
@@ -582,6 +694,20 @@ export default function SimulateurVisionPage() {
               </AnimatePresence>
             </motion.div>
           </AnimatePresence>
+
+          {/* ─── Mention légale simulateur ─── */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: { delay: 0.4 } }}
+            className="rounded-xl px-4 py-3 flex gap-3 items-start"
+            style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.18)" }}
+          >
+            <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>⚖️</span>
+            <p className="text-xs leading-relaxed" style={{ color: "rgba(155,150,218,0.6)" }}>
+              <strong style={{ color: "rgba(251,191,36,0.75)" }}>Simulation à titre illustratif uniquement.</strong>
+              {" "}La perception visuelle réelle dépend de l'adaptation individuelle, de l'anatomie oculaire, de la posture de port et du centrage des verres. Cette simulation ne se substitue pas à l'essai en magasin ni à l'avis de votre opticien diplômé.
+            </p>
+          </motion.div>
 
           {/* ─── CTA ─── */}
           <div className="flex flex-col gap-3">
