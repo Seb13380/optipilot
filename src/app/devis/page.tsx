@@ -1469,6 +1469,8 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={() => {
+                    const userRaw2 = localStorage.getItem("optipilot_user");
+                    const magasinId = userRaw2 ? (JSON.parse(userRaw2).magasinId || "") : "";
                     const payload = {
                       nom: client.nom || "",
                       prenom: client.prenom || "",
@@ -1481,6 +1483,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                       prixTotal: totalDevis,
                       remboursementSecu: racResult?.secu ?? offre?.remboursementSecu ?? 0,
                       remboursementMutuelle: racResult?.mutuelle ?? offre?.remboursementMutuelle ?? 0,
+                      magasinId,
                     };
                     const hash = encodeURIComponent(JSON.stringify(payload));
                     window.open(`https://livebyoptimum.com#optipilot-devis=${hash}`, "_blank");
