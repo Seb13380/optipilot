@@ -290,6 +290,216 @@ const KNOWLEDGE: EntreeKnowledge[] = [
 ];
 
 // ────────────────────────────────────────────────────────────
+// OBJECTIONS COMMERCIALES
+// ────────────────────────────────────────────────────────────
+
+interface EntreeObjection {
+  /** Patterns déclencheurs (normalisés) */
+  patterns: string[];
+  /** Signal court pour les logs / analytics */
+  signal: string;
+  repondre: (ctx: ContexteClient) => ReponseConseiller;
+}
+
+const OBJECTIONS: EntreeObjection[] = [
+
+  // ── "C'est cher" / "trop cher" / "c'est le prix ?" ─────────
+  {
+    signal: "objection_prix",
+    patterns: ["c'est cher", "trop cher", "c est cher", "c est trop cher", "prix eleve", "ca coute cher",
+                "beaucoup d'argent", "beaucoup d argent", "pas les moyens", "hors budget", "trop couteux",
+                "couteux", "c est quoi ce prix", "c est le prix", "si cher"],
+    repondre: (ctx) => {
+      const budgetMsg = ctx.budget === "economique"
+        ? "Je comprends tout à fait votre contrainte de budget. "
+        : "";
+      const mutuelleMsg = "Votre mutuelle prend en charge une partie importante de ce devis — le RAC final peut être bien inférieur au prix affiché.";
+      const dureeMsg = "Rapporté à 2 ans d'utilisation quotidienne, le coût journalier est souvent inférieur à 1 €.";
+      return {
+        texte: `${budgetMsg}Le prix d'un équipement optique de qualité reflète la précision de fabrication et les traitements appliqués. ${mutuelleMsg}`,
+        conseils: [
+          dureeMsg,
+          ctx.typeVerre === "progressif"
+            ? "Sur un progressif, la qualité du verre impacte directement le confort — une économie en entrée de gamme peut se traduire par une paire que l'on porte peu."
+            : "Un verre avec antireflet, traitement durci et filtre adaptés protège votre vision sur la durée.",
+          "Le 100% Santé (Classe A) est disponible si vous souhaitez un équipement sans reste à charge.",
+          ctx.conduiteNuit ? "En conduite de nuit, un verre de qualité n'est pas un luxe — c'est une question de sécurité." : "Un équipement bien adapté réduit la fatigue visuelle et améliore votre quotidien.",
+        ],
+        attention: "Demandez à voir le détail du remboursement mutuelle — le RAC réel est souvent bien inférieur au prix catalogue.",
+      };
+    },
+  },
+
+  // ── "Je vais réfléchir" / "je vais y penser" ───────────────
+  {
+    signal: "objection_reflexion",
+    patterns: ["je vais reflechir", "je vais y penser", "j'y pense", "je reflechi", "reflechir",
+                "pas decide", "pas encore decide", "prendre le temps", "comparer ailleurs",
+                "je reviendrai", "on verra", "peut etre", "voir ailleurs"],
+    repondre: (ctx) => ({
+      texte: "Tout à fait, prendre le temps de choisir est important pour un équipement que vous portez tous les jours. Permettez-moi de résumer les points clés de cette recommandation pour que vous puissiez y réfléchir.",
+      conseils: [
+        ctx.typeVerre === "progressif"
+          ? "Sur un premier progressif, la qualité du verre facilite vraiment l'adaptation — c'est l'investissement le plus impactant."
+          : "L'antireflet et l'indice recommandés sont adaptés à votre correction spécifique.",
+        "Votre mutuelle vous rembourse une partie fixe quel que soit le magasin — le vrai critère est la qualité du service et du verre.",
+        "Les tarifs en ligne peuvent sembler moins chers, mais sans essayage et centrage professionnel, le confort est souvent moindre.",
+        "Votre ordonnance est valable 3 ans — vous pouvez revenir, mais les prix évoluent.",
+      ],
+      attention: "Si vous avez des questions spécifiques sur les verres ou les prix, n'hésitez pas — je suis là pour comparer clairement.",
+    }),
+  },
+
+  // ── "Mon ancien opticien" / "j'avais avant" / "chez mon opticien" ──
+  {
+    signal: "objection_fidelite",
+    patterns: ["mon ancien opticien", "mon opticien", "mon autre opticien", "j'avais chez", "j avais chez",
+                "avant j avais", "avant je payais", "mon opticien habituel", "je connais mon opticien",
+                "d habitude", "d'habitude", "ma paire precedente", "ma precedente paire"],
+    repondre: (ctx) => ({
+      texte: "Votre expérience avec votre équipement précédent est une référence utile. Permettez-moi de vous expliquer en quoi ce devis correspond précisément à votre profil actuel.",
+      conseils: [
+        "Les verres progressent : les gammes actuelles offrent souvent plus de confort et de traitements qu'il y a 2-3 ans.",
+        ctx.typeVerre === "progressif"
+          ? "Si votre précédent progressif vous a semblé difficile, les designs actuels ont des couloirs élargis — l'adaptation est généralement meilleure."
+          : "Les antireflets modernes ont des propriétés antisalissures que les anciens modèles n'avaient pas.",
+        "Votre ordonnance a peut-être évolué — la nouvelle correction est adaptée à votre vision actuelle.",
+        "N'hésitez pas à comparer précisément les caractéristiques des verres (indice, traitements, design) — pas seulement le prix.",
+      ],
+      attention: "Si vous avez apprécié ou eu des difficultés avec votre paire précédente, dites-le moi — je peux adapter la recommandation.",
+    }),
+  },
+
+  // ── "Ma mutuelle rembourse combien" / "c'est remboursé ?" ───
+  {
+    signal: "objection_remboursement",
+    patterns: ["ma mutuelle", "remboursement", "remboursé", "rembourse", "secu", "securite sociale",
+                "ce qui reste", "reste a charge", "rac", "je vais payer combien", "combien je paie",
+                "prise en charge", "pris en charge"],
+    repondre: (ctx) => ({
+      texte: "Bonne question — le remboursement dépend de votre contrat mutuelle et du type de verres choisi. Voici ce qui s'applique généralement :",
+      conseils: [
+        "La Sécurité Sociale rembourse une base forfaitaire : environ 2,84 € par verre unifocal, 2,84 € par verre progressif.",
+        "Votre mutuelle complète ce remboursement selon votre contrat — consultez votre tableau de garanties.",
+        "Pour les verres Classe A (100% Santé), la prise en charge totale est garantie.",
+        "Pour les verres Classe B (hors 100% Santé), la prise en charge partielle dépend de votre niveau de mutuelle.",
+        "Le simulateur RAC de cet outil vous donne une estimation basée sur les valeurs de remboursement de votre contrat.",
+      ],
+      attention: "Consultez votre carte mutuelle ou votre espace adhérent en ligne pour connaître votre barème exact.",
+    }),
+  },
+
+  // ── "J'ai déjà des lunettes" / "mes lunettes actuelles marchent" ──
+  {
+    signal: "objection_pas_envie",
+    patterns: ["j ai deja", "j'ai deja", "j'ai mes lunettes", "mes lunettes marchent", "mes lunettes actuelles",
+                "pas envie de changer", "pas besoin", "ca va bien", "elles sont bonnes", "j en ai pas besoin",
+                "pas vraiment besoin"],
+    repondre: (ctx) => ({
+      texte: "Si votre correction actuelle vous convient, c'est une bonne base. Cependant, votre ordonnance a évolué — votre nouvelle correction est différente de la précédente.",
+      conseils: [
+        "Porter une correction inadaptée fatigue davantage les yeux et peut générer des maux de tête.",
+        ctx.intensite === "forte"
+          ? "Avec une correction significative, un décalage entre l'ordonnance et vos verres est rapidement perceptible."
+          : "Même un léger décalage de correction peut provoquer de la fatigue visuelle en fin de journée.",
+        ctx.conduiteNuit
+          ? "En conduite de nuit particulièrement, une correction à jour améliore la sécurité."
+          : "Les yeux compensent naturellement un certain temps — puis la fatigue s'installe.",
+        "Un essayage avec les nouveaux verres vous permettrait de percevoir directement la différence.",
+      ],
+      attention: "Votre ophtalmologiste a prescrit cette nouvelle correction pour une raison — le confort visuel s'améliorera avec un équipement mis à jour.",
+    }),
+  },
+
+  // ── "Je vois bien sans lunettes" / "je mets pas souvent mes lunettes" ──
+  {
+    signal: "objection_vision_correcte",
+    patterns: ["je vois bien", "je vois correct", "je porte peu", "je mets peu", "je mets pas souvent",
+                "je porte rarement", "j oublie mes lunettes", "sans lunettes ca va"],
+    repondre: (ctx) => ({
+      texte: "C'est possible si votre correction est légère — mais ne pas corriger sa vision a des conséquences progressives sur le confort et la santé visuelle.",
+      conseils: [
+        "Les yeux non corrigés compensent en forçant les muscles oculaires — source de fatigue et maux de tête.",
+        ctx.typeCorrection?.toLowerCase().includes("myopie")
+          ? "En myopie, ne pas corriger peut aussi ralentir les reflexes de distance (utile en voiture, sport)."
+          : "En hypermétropie, l'effort d'accommodation constant est plus fatigant qu'il n'y paraît.",
+        "Des verres légers et confortables (bon antireflet, indice adapté) se portent naturellement plus souvent.",
+        "La photophobie et la sensibilité lumineuse augmentent souvent sans correction adaptée.",
+      ],
+    }),
+  },
+
+  // ── "En ligne c'est moins cher" / "je vais commander sur internet" ──
+  {
+    signal: "objection_internet",
+    patterns: ["en ligne", "internet", "sur le net", "commande en ligne", "moins cher sur", "site opticien",
+                "sur internet", "afflelou en ligne", "optical center en ligne", "pas cher en ligne",
+                "dollar eyeglasses", "zenni", "commander sur"],
+    repondre: (ctx) => ({
+      texte: "Les prix en ligne peuvent paraître attractifs, mais plusieurs éléments essentiels manquent à la commande en ligne.",
+      conseils: [
+        "Le centrage des verres (distance pupillaire, hauteur de mont.) doit être précis — une erreur de 1-2 mm change le confort.",
+        "En magasin, l'opticien mesure avec précision et garantit l'adaptation à votre monture.",
+        ctx.typeVerre === "progressif"
+          ? "Sur un progressif, le centrage est critique — un mauvais centrage rend le verre inconfortable malgré la qualité."
+          : "Les verres avec cylindre (astigmatisme) sont particulièrement sensibles au positionnement.",
+        "En cas de problème (vision floue, inconfort), le retour est complexe en ligne. En magasin, l'opticien ajuste.",
+        "Le prix total (verre + livraison + retouche éventuelle) est souvent comparable.",
+      ],
+      attention: "La sécurité sociale et de nombreuses mutuelles ne remboursent pas les achats sur certains sites en ligne.",
+    }),
+  },
+
+  // ── "Je préfère attendre" / "pas urgent" ───────────────────
+  {
+    signal: "objection_attente",
+    patterns: ["pas urgent", "pas presse", "je peux attendre", "j'attends", "pas tout de suite",
+                "plus tard", "ca peut attendre", "dans quelques mois", "l annee prochaine"],
+    repondre: (ctx) => ({
+      texte: "Je comprends qu'il n'y ait pas d'urgence immédiate. Voici tout de même quelques éléments à garder en tête.",
+      conseils: [
+        "Votre ordonnance est valable 3 ans — mais votre correction actuelle peut ne plus correspondre à vos yeux.",
+        ctx.conduiteNuit ? "La conduite nocturne avec une correction inadaptée représente un risque réel." : "Plus vous attendez, plus les yeux compensent — et plus l'adaptation à une nouvelle correction demande du temps.",
+        ctx.presbytie ? "La presbytie progresse — attendre quelques mois ne résoudra pas l'inconfort de lecture." : "",
+        "Les délais de fabrication sont de 7 à 10 jours — commander maintenant, c'est être équipé dans la semaine.",
+      ].filter(Boolean) as string[],
+    }),
+  },
+
+  // ── "Mon médecin / ophtalmo m'a dit" ────────────────────────
+  {
+    signal: "objection_medecin",
+    patterns: ["mon ophtalmo", "mon medecin", "mon ophtalmologiste", "mon docteur", "le medecin m a dit",
+                "l ophtalmo m a dit", "le specialiste", "mon specialiste"],
+    repondre: (ctx) => ({
+      texte: "L'avis de votre ophtalmologiste est la référence absolue pour votre santé visuelle. L'opticien est complémentaire : il réalise votre correction selon la prescription.",
+      conseils: [
+        "L'ordonnance de l'ophtalmologiste définit la correction (sphère, cylindre, addition) — l'opticien choisit le verre le mieux adapté à votre usage.",
+        "Si votre ophtalmologiste a fait des recommandations particulières (type de verre, traitement), mentionnez-les.",
+        "En cas de doute sur la correction, un contrôle de vision en magasin peut confirmer le confort.",
+        "Les verres proposés correspondent exactement à la prescription de votre ordonnance.",
+      ],
+    }),
+  },
+
+  // ── "Ça va prendre du temps" / "je suis pressé" ─────────────
+  {
+    signal: "objection_temps",
+    patterns: ["j ai pas le temps", "je suis presse", "ca prend du temps", "vite fait", "rapidement",
+                "en combien de temps", "combien de temps ca prend", "c est long"],
+    repondre: () => ({
+      texte: "La prise de mesures et le choix de votre équipement prennent 20 à 30 minutes. La fabrication est ensuite réalisée en atelier sous 5 à 10 jours.",
+      conseils: [
+        "Certains magasins proposent des verres en 1 heure pour des corrections simples — renseignez-vous.",
+        "La prise de mesures rapide (centrage, distance pupillaire) est réalisée en quelques minutes avec nos outils.",
+        "Vous pouvez pré-sélectionner vos montures et valider le devis rapidement sur ce support.",
+        "Un bon équipement bien centré vaut 30 minutes d'attention — c'est du confort pour 2 ans.",
+      ],
+    }),
+  },
+];
+
+// ────────────────────────────────────────────────────────────
 // MOTEUR DE RECHERCHE
 // ────────────────────────────────────────────────────────────
 
@@ -301,11 +511,29 @@ function normaliser(texte: string): string {
     .replace(/[^a-z0-9 ]/g, " ");
 }
 
+/** Détecte si la question contient un signal d'objection commerciale */
+function detecterObjection(q: string, ctx: ContexteClient): ReponseConseiller | null {
+  for (const obj of OBJECTIONS) {
+    for (const pattern of obj.patterns) {
+      if (q.includes(normaliser(pattern))) {
+        return obj.repondre(ctx);
+      }
+    }
+  }
+  return null;
+}
+
 export function repondreQuestion(
   question: string,
   contexte: ContexteClient
 ): ReponseConseiller {
   const q = normaliser(question);
+
+  // Priorité 1 : objection commerciale
+  const objectionReponse = detecterObjection(q, contexte);
+  if (objectionReponse) return objectionReponse;
+
+  // Priorité 2 : base de connaissances métier
   let meilleure: EntreeKnowledge | null = null;
   let scoreMax = 0;
 
@@ -346,6 +574,17 @@ export function questionsSuggerees(contexte: ContexteClient): string[] {
   suggestions.push("Comment s'adapter à de nouvelles lunettes ?");
 
   return suggestions.slice(0, 5);
+}
+
+/** Retourne les réponses aux objections les plus fréquentes (pour affichage proactif) */
+export function objectionsSuggerees(): string[] {
+  return [
+    "C'est trop cher",
+    "Ma mutuelle rembourse combien ?",
+    "Je vais réfléchir",
+    "En ligne c'est moins cher",
+    "Mon ancien opticien faisait autrement",
+  ];
 }
 
 /** Retourne toutes les questions disponibles */

@@ -8,7 +8,7 @@ import OpticianGuard from "@/components/OpticianGuard";
 import { useApp } from "@/lib/AppContext";
 import type { OffreVerre, RecommandationResult } from "@/lib/recommandation";
 import { calculerRecommandations, getCategorieCorrection } from "@/lib/recommandation";
-import { repondreQuestion, questionsSuggerees, type ContexteClient, type ReponseConseiller } from "@/lib/conseillerOpticien";
+import { repondreQuestion, questionsSuggerees, objectionsSuggerees, type ContexteClient, type ReponseConseiller } from "@/lib/conseillerOpticien";
 import { analyserOrdonnance } from "@/lib/analyseOrdonnance";
 
 // Correspondance réseau opticien → réseau mutuelle (doit rester coté opticien — jamais exposé au client)
@@ -575,6 +575,21 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                               onClick={() => envoyerQuestion(q)}
                               className="text-sm px-3 py-2 rounded-xl font-medium transition-all"
                               style={{ background: "rgba(83,49,208,0.2)", color: "#a89cf7", border: "1px solid rgba(83,49,208,0.4)" }}
+                            >
+                              {q}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Objections commerciales */}
+                        <p className="text-sm font-semibold mt-4 mb-2" style={{ color: "rgba(236,72,153,0.7)" }}>Le client hésite ?</p>
+                        <div className="flex flex-wrap gap-2">
+                          {objectionsSuggerees().map((q, i) => (
+                            <button
+                              key={i}
+                              onClick={() => envoyerQuestion(q)}
+                              className="text-sm px-3 py-2 rounded-xl font-medium transition-all"
+                              style={{ background: "rgba(236,72,153,0.12)", color: "#f472b6", border: "1px solid rgba(236,72,153,0.35)" }}
                             >
                               {q}
                             </button>
