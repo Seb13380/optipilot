@@ -46,6 +46,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   // Routes publiques — pas de JWT
   if (
     req.path === "/health" ||
+    req.path === "/api/health" ||
     req.path.startsWith("/api/auth/") ||
     (req.method === "POST" && req.path === "/api/noemie/push")
   ) return next();
@@ -66,6 +67,9 @@ app.use(requireAuth);
 
 // ─── Health Check ─────────────────────────────────────────
 app.get("/health", (_req, res) => {
+  res.json({ status: "ok", service: "OptiPilot Backend" });
+});
+app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "OptiPilot Backend" });
 });
 
