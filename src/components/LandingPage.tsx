@@ -550,40 +550,36 @@ export default function LandingPage() {
               </p>
             </Reveal>
 
-            <div className="flex flex-col gap-6 max-w-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
                 {
                   icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="1.5"/><path d="M12 6v6l4 2" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                   title: "Jusqu'à 10 minutes perdues par client — pour de la saisie administrative",
                   desc: "Ordonnance recopiée à la main. Remboursements calculés un par un. Devis assemblé manuellement. Sur 10 clients par jour, c'est près de 2 heures que vous ne passerez pas avec vos clients.",
                   accent: "#ef4444",
-                  offset: "ml-0",
                 },
                 {
                   icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 17 22 17 22 11" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                   title: "1 devis sur 3 s'évapore — sans jamais être relancé",
                   desc: "Le client « réfléchit » et ne revient pas. Sans relance structurée, ce chiffre d'affaires est définitivement perdu.",
                   accent: "#f59e0b",
-                  offset: "ml-[8%]",
                 },
                 {
                   icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M9 14l-4-4 4-4" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 10h11a4 4 0 010 8h-1" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                   title: "\"Ma mutuelle rembourse combien ?\" — et vous cherchez dans 3 tableaux.",
                   desc: "Le client pose la question en caisse. Vous consultez la grille, calculez le RAC, vérifiez le plafond annuel. OptiPilot affiche le reste à charge en temps réel, sans calcul manuel.",
                   accent: "#8b5cf6",
-                  offset: "ml-[16%]",
                 },
                 {
                   icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#10b981" strokeWidth="1.5"/><path d="M2 10h20" stroke="#10b981" strokeWidth="1.5"/><path d="M6 15h4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round"/></svg>,
                   title: "Rapprochements bancaires : savoir ce que la mutuelle a vraiment versé.",
                   desc: "Entre ce qui est promis et ce qui arrive sur le compte, l'écart se creuse en silence. OptiPilot centralise les remboursements attendus et vous alerte sur les anomalies.",
                   accent: "#10b981",
-                  offset: "ml-[24%]",
                 },
               ].map((item, i) => (
                 <RevealCard key={i} delay={i * 0.1}>
                   <div
-                    className={`rounded-3xl p-7 ${item.offset}`}
+                    className="rounded-3xl p-7 h-full"
                     style={{
                       background: "#fff",
                       border: `1.5px solid ${item.accent}30`,
