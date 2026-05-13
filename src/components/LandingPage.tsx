@@ -555,7 +555,7 @@ export default function LandingPage() {
                 {
                   icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="1.5"/><path d="M12 6v6l4 2" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                   title: "Jusqu'à 10 minutes perdues par client — pour de la saisie administrative",
-                  desc: "Ordonnance recopieé à la main. Remboursements calculés un par un. Devis assemblé manuellement. Sur 10 clients par jour, c'est près de 2 heures que vous ne passerez pas avec vos clients. Les grandes enseignes ont automatisé tout ça. OptiPilot vous donne le même avantage.",
+                  desc: "Ordonnance recopiée à la main. Remboursements calculés un par un. Devis assemblé manuellement. Sur 10 clients par jour, c'est près de 2 heures que vous ne passerez pas avec vos clients.",
                   accent: "#ef4444",
                 },
                 {
@@ -565,10 +565,16 @@ export default function LandingPage() {
                   accent: "#f59e0b",
                 },
                 {
-                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 22V12h6v10" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                  title: "Optic 2000, Krys, Afflelou investissent. L'écart se creuse.",
-                  desc: "Les grandes enseignes investissent dans des outils numériques. L'optique indépendante peine à offrir la même fluidité, la même confiance client.",
+                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M9 14l-4-4 4-4" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 10h11a4 4 0 010 8h-1" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                  title: "\"Ma mutuelle rembourse combien ?\" — et vous cherchez dans 3 tableaux.",
+                  desc: "Le client pose la question en caisse. Vous consultez la grille, calculez le RAC, vérifiez le plafond annuel. OptiPilot affiche le reste à charge en temps réel, sans calcul manuel.",
                   accent: "#8b5cf6",
+                },
+                {
+                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#10b981" strokeWidth="1.5"/><path d="M2 10h20" stroke="#10b981" strokeWidth="1.5"/><path d="M6 15h4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+                  title: "Rapprochements bancaires : savoir ce que la mutuelle a vraiment versé.",
+                  desc: "Entre ce qui est promis et ce qui arrive sur le compte, l'écart se creuse en silence. OptiPilot centralise les remboursements attendus et vous alerte sur les anomalies.",
+                  accent: "#10b981",
                 },
               ].map((item, i) => (
                 <RevealCard key={i} delay={i * 0.1}>
