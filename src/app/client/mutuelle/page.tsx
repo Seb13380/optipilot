@@ -248,6 +248,17 @@ export default function ClientMutuellePage() {
     }
   }
 
+  function getBridgeUrl() {
+    const ip = localStorage.getItem("optipilot_bridge_ip") || "";
+    const port = localStorage.getItem("optipilot_bridge_port") || "5174";
+    return ip ? `http://${ip}:${port}` : null;
+  }
+
+  function getBridgeHeaders() {
+    const token = localStorage.getItem("optipilot_bridge_token") || "optipilot-bridge-secret-CHANGEZ-MOI";
+    return { "Content-Type": "application/json", "x-bridge-token": token };
+  }
+
   function confirmer() {
     localStorage.setItem("optipilot_mutuelle", JSON.stringify(mutuelle));
     setConfirmed(true);
@@ -259,7 +270,9 @@ export default function ClientMutuellePage() {
         const ord = JSON.parse(localStorage.getItem("optipilot_ordonnance") || "{}");
         const q = mutuelle.nom || ord?.patient?.nom || "";
         if (!q) { setLookupLoading(false); setStep("create"); return; }
-        const res = await fetch(`/api/bridge/clients?q=${encodeURIComponent(q)}`);
+        const bridgeBase = getBridgeUrl();
+        if (!bridgeBase) { setLookupLoading(false); setStep("create"); return; }
+        const res = await fetch(`${bridgeBase}/api/clients/search?q=${encodeURIComponent(q)}`, { headers: getBridgeHeaders(), signal: AbortSignal.timeout(6000) });
         const data = await res.json();
         if (data.ok && data.clients?.length > 0) {
           setLookupResults(data.clients);
@@ -288,14 +301,18 @@ export default function ClientMutuellePage() {
       numeroMutuelle: mutuelle.numAdherent,
     };
     try {
-      const res = await fetch("/api/bridge/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        localStorage.setItem("optipilot_client", JSON.stringify({ ...payload, id: data.id }));
+      const bridgeBase = getBridgeUrl();
+      if (bridgeBase) {
+        const res = await fetch(`${bridgeBase}/api/clients`, {
+          method: "POST",
+          headers: getBridgeHeaders(),
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(8000),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          localStorage.setItem("optipilot_client", JSON.stringify({ ...payload, id: data.id }));
+        }
       }
     } catch {
       // bridge indisponible — on continue quand même
