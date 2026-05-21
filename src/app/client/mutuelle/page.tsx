@@ -195,10 +195,28 @@ export default function ClientMutuellePage() {
     }
   }, [startStabilityLoop]);
 
-  // Auto-démarrage de la caméra à l'ouverture de la page
+  // Auto-démarrage de la caméra — sauf si mutuelle déjà connue (import Optimum ou nouveau-client)
   useEffect(() => {
+    const clientRaw = localStorage.getItem("optipilot_client");
+    if (clientRaw) {
+      try {
+        const client = JSON.parse(clientRaw);
+        if (client.mutuelle && client.id) {
+          // Client déjà enregistré avec mutuelle → skip direct vers questionnaire
+          localStorage.setItem("optipilot_mutuelle", JSON.stringify({ mutuelle: client.mutuelle, nom: client.nom, prenom: client.prenom, numAdherent: client.numAdherent || "" }));
+          router.replace("/questionnaire");
+          return;
+        }
+        if (client.mutuelle) {
+          // Mutuelle connue mais client pas encore sauvé — pré-remplit, skip caméra
+          setMutuelle({ mutuelle: client.mutuelle, nom: client.nom, prenom: client.prenom, numAdherent: client.numAdherent || "" });
+          setStep("result");
+          return;
+        }
+      } catch { /* continue */ }
+    }
     startCamera();
-  }, [startCamera]);
+  }, [startCamera, router]);
 
   useEffect(() => {
     return () => {
