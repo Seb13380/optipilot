@@ -34,6 +34,29 @@ type Step = "scan" | "analyse" | "lookup" | "confirm-existing" | "new-client" | 
 
 const NIVEAUX = ["Non renseigné", "Base", "Confort", "Confort+", "Premium", "Option 1", "Option 2", "Option 3"];
 
+// ─── Styles partagés ─────────────────────────────────────────────
+const cardStyle = { background: "rgba(10,3,56,0.92)", border: "1.5px solid rgba(83,49,208,0.4)" };
+const inputStyle = { borderColor: "rgba(83,49,208,0.35)", background: "rgba(2,0,23,0.7)", color: "#FDFDFE" };
+const inputClass = "w-full px-4 py-3.5 rounded-2xl text-base border-2 outline-none transition-all";
+const labelClass = "block text-xs font-bold mb-1.5 tracking-wider uppercase";
+
+// ─── Composant champ texte ────────────────────────────────────────
+function InputField({ label, value, onChange, type = "text", placeholder = "", required = false }: {
+  label: string; value: string; onChange: (v: string) => void;
+  type?: string; placeholder?: string; required?: boolean;
+}) {
+  return (
+    <div>
+      <label className={labelClass} style={{ color: "#9B96DA" }}>{label}{required && " *"}</label>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder} required={required} className={inputClass} style={inputStyle}
+        onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+        onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
+      />
+    </div>
+  );
+}
+
 // ─── Composant Caméra ─────────────────────────────────────────────
 function CameraCapture({ label, onCapture, onSkip }: {
   label: string;
@@ -255,27 +278,6 @@ function NouveauClientPageInner() {
       setError("Erreur lors de la sauvegarde");
       setStep(clientFound ? "confirm-existing" : "new-client");
     }
-  }
-
-  const cardStyle = { background: "rgba(10,3,56,0.92)", border: "1.5px solid rgba(83,49,208,0.4)" };
-  const inputStyle = { borderColor: "rgba(83,49,208,0.35)", background: "rgba(2,0,23,0.7)", color: "#FDFDFE" };
-  const inputClass = "w-full px-4 py-3.5 rounded-2xl text-base border-2 outline-none transition-all";
-  const labelClass = "block text-xs font-bold mb-1.5 tracking-wider uppercase";
-
-  function InputField({ label, value, onChange, type = "text", placeholder = "", required = false }: {
-    label: string; value: string; onChange: (v: string) => void;
-    type?: string; placeholder?: string; required?: boolean;
-  }) {
-    return (
-      <div>
-        <label className={labelClass} style={{ color: "#9B96DA" }}>{label}{required && " *"}</label>
-        <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder} required={required} className={inputClass} style={inputStyle}
-          onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
-        />
-      </div>
-    );
   }
 
   return (
