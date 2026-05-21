@@ -94,7 +94,7 @@ export default function QuestionnairePage() {
 
   function back() {
     if (step > 1) setStep((s) => s - 1);
-    else router.back();
+    else router.replace("/scanner");
   }
 
   async function submitQuestionnaire() {
