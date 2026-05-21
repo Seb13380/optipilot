@@ -7,6 +7,20 @@ import { broadcast } from "../server";
 export const router = Router();
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Session Optimum Live — stockée en mémoire par le background script
+// ─────────────────────────────────────────────────────────────────────────────
+let optimumSession: { ci_sessions: string; updatedAt: number } | null = null;
+
+// POST /session — reçoit le cookie ci_sessions depuis l'extension Chrome
+router.post("/session", (req: Request, res: Response) => {
+  const { ci_sessions } = req.body;
+  if (!ci_sessions) { res.status(400).json({ ok: false, error: "ci_sessions requis" }); return; }
+  optimumSession = { ci_sessions, updatedAt: Date.now() };
+  console.log("[Optimum] Session reçue — cookie stocké en mémoire");
+  res.json({ ok: true });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /api/schema
 // Découverte du schéma Optimum — à utiliser lors de la config initiale
 // ─────────────────────────────────────────────────────────────────────────────
@@ -20,13 +34,46 @@ router.get("/schema", async (_req: Request, res: Response) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /api/clients/search?q=Dupont
-// Recherche un client dans Optimum par nom ou prénom
+// GET /clients/search?q=Dupont
+// Recherche un client — via API Optimum Live si session dispo, sinon SQL
 // ─────────────────────────────────────────────────────────────────────────────
 router.get("/clients/search", async (req: Request, res: Response) => {
   const q = String(req.query.q || "").trim();
   if (!q) { res.json({ ok: true, clients: [] }); return; }
 
+  // ── Priorité 1 : API Optimum Live (si session disponible, < 2h) ──────────
+  const sessionAge = optimumSession ? (Date.now() - optimumSession.updatedAt) / 1000 : Infinity;
+  if (optimumSession && sessionAge < 7000) {
+    try {
+      const url = `https://livebyoptimum.com/ref/get4json_clients_par_debut_nom?debut_nom=${encodeURIComponent(q)}&option_creer=true`;
+      const resp = await fetch(url, {
+        headers: {
+          Cookie: `ci_sessions=${optimumSession.ci_sessions}; language=fr; secteur_activite_type=1`,
+          "X-Requested-With": "XMLHttpRequest",
+          "X-Xhr-Referer": "https://livebyoptimum.com/accueil",
+          Accept: "application/json, text/javascript, */*; q=0.01",
+        },
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (Array.isArray(data)) {
+          const clients = data.map((c: { nom?: string; prenom?: string; date_naissance?: string; id_client?: string | number; [key: string]: unknown }) => ({
+            id: c.id_client || null,
+            nom: c.nom || "",
+            prenom: c.prenom || "",
+            dateNaissance: c.date_naissance || "",
+            source: "optimum-live",
+          }));
+          res.json({ ok: true, clients });
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("[Optimum Live API] Erreur :", (err as Error).message);
+    }
+  }
+
+  // ── Priorité 2 : SQL Server local (Optimum Desktop) ─────────────────────
   try {
     const p = await getPool();
     const c = SCHEMA.clients;
