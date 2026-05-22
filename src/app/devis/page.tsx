@@ -634,10 +634,10 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                 green
               />
               <div
-                className="flex items-center justify-between p-5 rounded-xl mt-2"
+                className="flex flex-col items-start p-5 rounded-xl mt-2"
                 style={{ background: "linear-gradient(135deg, rgba(83,49,208,0.12), rgba(83,49,208,0.22))", border: "1px solid rgba(83,49,208,0.4)" }}
               >
-                <p className="text-lg font-bold" style={{ color: "#FDFDFE" }}>
+                <p className="text-sm font-semibold uppercase tracking-wide mb-1" style={{ color: "rgba(155,150,218,0.7)" }}>
                   Reste à Charge
                 </p>
                 <p className="text-4xl font-black" style={{ color: "#9B96DA" }}>
