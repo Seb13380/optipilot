@@ -202,9 +202,9 @@ export default function ClientMutuellePage() {
       try {
         const client = JSON.parse(clientRaw);
         if (client.mutuelle && client.id) {
-          // Client déjà enregistré avec mutuelle → skip direct vers questionnaire
+          // Client déjà enregistré avec mutuelle → skip direct vers bienvenue
           localStorage.setItem("optipilot_mutuelle", JSON.stringify({ mutuelle: client.mutuelle, nom: client.nom, prenom: client.prenom, numAdherent: client.numAdherent || "" }));
-          router.replace("/questionnaire");
+          router.replace("/bienvenue");
           return;
         }
         if (client.mutuelle) {
@@ -318,13 +318,13 @@ export default function ClientMutuellePage() {
       // bridge indisponible — on continue quand même
     } finally {
       setCreateLoading(false);
-      router.push("/questionnaire");
+      router.push("/bienvenue");
     }
   }
 
   function selectClient(client: BridgeClient) {
     localStorage.setItem("optipilot_client", JSON.stringify(client));
-    router.push("/questionnaire");
+    router.push("/bienvenue");
   }
 
   return (
@@ -729,7 +729,7 @@ export default function ClientMutuellePage() {
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.97 }}
-              onClick={() => router.push("/questionnaire")}
+              onClick={() => router.push("/bienvenue")}
               className="py-3 rounded-2xl font-semibold text-base"
               style={{ background: "transparent", color: "#6b7280" }}
             >

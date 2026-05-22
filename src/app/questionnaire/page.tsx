@@ -128,7 +128,7 @@ export default function QuestionnairePage() {
       // Continue sans backend
     }
 
-    router.push("/recommandations");
+    router.push("/monture-choix");
   }
 
   function update(patch: Partial<QuestionnaireData>) {
