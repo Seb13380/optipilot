@@ -330,8 +330,9 @@ export default function ScannerPage() {
                 className="rounded-2xl overflow-hidden relative shadow-lg"
                 style={{
                   background: "#000",
-                  minHeight: videoRotation !== 0 ? "75vw" : 300,
-                  height: videoRotation !== 0 ? "75vw" : undefined,
+                  minHeight: videoRotation !== 0 ? "75vw" : 280,
+                  height: videoRotation !== 0 ? "75vw" : "48vh",
+                  maxHeight: videoRotation !== 0 ? "75vw" : "52vh",
                 }}
               >
                 <video
@@ -349,8 +350,8 @@ export default function ScannerPage() {
                     display: cameraStarted ? "block" : "none",
                   } : {
                     width: "100%",
+                    height: "100%",
                     objectFit: "cover",
-                    minHeight: 300,
                     display: cameraStarted ? "block" : "none",
                   }}
                 />
