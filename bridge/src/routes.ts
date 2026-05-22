@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { exec } from "child_process";
 import { getPool, discoverSchema, sql } from "./db";
 import { SCHEMA, reloadSchema } from "./schema-map";
 import { autoDetectSchema, saveSchemaOverride, deleteSchemaOverride, hasSchemaOverride, loadSchemaOverride } from "./auto-map";
@@ -18,6 +19,28 @@ router.post("/session", (req: Request, res: Response) => {
   optimumSession = { ci_sessions, updatedAt: Date.now() };
   console.log("[Optimum] Session reçue — cookie stocké en mémoire");
   res.json({ ok: true });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /open-optimum-devis
+// Ouvre Optimum Live dans le navigateur du PC avec le payload devis encodé
+// dans le hash URL — l'extension devis-inject.js détecte le hash et affiche
+// le panneau de remplissage.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/open-optimum-devis", (req: Request, res: Response) => {
+  const payload = req.body;
+  const encoded = encodeURIComponent(JSON.stringify(payload));
+  const url = `https://livebyoptimum.com/accueil#optipilot-devis=${encoded}`;
+  // Ouvre dans le navigateur par défaut sur Windows
+  exec(`start "" "${url}"`, { shell: "cmd.exe" }, (err) => {
+    if (err) {
+      console.error("[OptiPilot] Erreur ouverture Optimum :", err.message);
+      res.status(500).json({ ok: false, error: err.message });
+    } else {
+      console.log("[OptiPilot] Optimum Live ouvert avec payload devis");
+      res.json({ ok: true });
+    }
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -67,6 +67,7 @@ export default function DevisPage() {
   const [bridgeUrl, setBridgeUrl] = useState<string | null>(null);
   const [optimumStatut, setOptimumStatut] = useState<OptimumStatut>("idle");
   const [optimumError, setOptimumError] = useState<string | null>(null);
+  const [optimumToast, setOptimumToast] = useState("");
 
   // Remise opticien
   const [remise, setRemise] = useState(0);
@@ -505,6 +506,48 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
     } finally {
       setStockLoading(false);
     }
+  }
+
+  async function ouvrirDansOptimum() {
+    const userRaw = localStorage.getItem("optipilot_user");
+    const user = userRaw ? JSON.parse(userRaw) : {};
+    const payload = {
+      nom: client.nom || "",
+      prenom: client.prenom || "",
+      mutuelle: client.mutuelle || "",
+      niveauGarantie: (client as { niveauGarantie?: string }).niveauGarantie || "",
+      verrier: offre?.verrier || "",
+      offre: offre?.nom || offre?.gamme || "",
+      prixVerres: totalVerres,
+      prixMonture,
+      prixTotal: totalDevis,
+      remboursementSecu: racResult?.secu ?? offre?.remboursementSecu ?? 0,
+      remboursementMutuelle: racResult?.mutuelle ?? offre?.remboursementMutuelle ?? 0,
+      magasinId: user.magasinId || "",
+    };
+
+    const bridgeIp = localStorage.getItem("optipilot_bridge_ip");
+    const bridgePort = localStorage.getItem("optipilot_bridge_port") || "5174";
+    const bridgeToken = localStorage.getItem("optipilot_bridge_token") || "";
+
+    if (bridgeIp) {
+      try {
+        const res = await fetch(`http://${bridgeIp}:${bridgePort}/open-optimum-devis`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-bridge-token": bridgeToken },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          setOptimumToast("✓ Optimum Live ouvert sur le PC");
+          setTimeout(() => setOptimumToast(""), 3000);
+          return;
+        }
+      } catch { /* fallback */ }
+    }
+
+    // Fallback : ouvrir directement (mode desktop avec extension)
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    window.open(`https://livebyoptimum.com/accueil#optipilot-devis=${encoded}`, "_blank");
   }
 
   return (
@@ -1298,6 +1341,26 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               )}
             </motion.button>
           ) : null}
+
+          <div className="flex gap-3">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={ouvrirDansOptimum}
+              className="flex-1 py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2"
+              style={{ background: "linear-gradient(135deg, rgba(83,49,208,0.25), rgba(83,49,208,0.4))", color: "#FDFDFE", border: "2px solid rgba(83,49,208,0.6)" }}
+            >
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Ouvrir dans Optimum
+            </motion.button>
+          </div>
+          {optimumToast && (
+            <div className="py-3 rounded-xl text-center text-sm font-semibold" style={{ background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" }}>
+              {optimumToast}
+            </div>
+          )}
 
           <div className="flex gap-3">
             <motion.button
