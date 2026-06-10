@@ -157,9 +157,12 @@ function NouveauClientPageInner() {
     const nom = searchParams.get("nom") || "";
     const prenom = searchParams.get("prenom") || "";
     const mutuelle = searchParams.get("mutuelle") || "";
+    const telephone = searchParams.get("telephone") || "";
+    const email = searchParams.get("email") || "";
+    const ddn = searchParams.get("ddn") || "";
     if (!nom && !prenom) return;
     setFromOptimum(true);
-    setForm((p) => ({ ...p, nom, prenom, mutuelle }));
+    setForm((p) => ({ ...p, nom, prenom, mutuelle, telephone, email, dateNaissance: ddn }));
     setStep("new-client");
   }, [searchParams]);
 

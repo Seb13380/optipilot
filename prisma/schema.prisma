@@ -24,6 +24,8 @@ model Magasin {
   trialEndsAt      DateTime?
   stripeCustomerId String?
   stripeSubId      String?
+  // Catalogue verriers personnalisé (JSON array de TarifVerrier)
+  verriersConfig   Json?
   // Personnalisation visuelle
   logoUrl          String?  // base64 ou URL
   couleurPrimaire  String?  // ex: "#5331D0"

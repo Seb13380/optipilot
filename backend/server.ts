@@ -684,7 +684,7 @@ app.put("/api/magasin/:id", async (req, res) => {
     const {
       nom, siret, adresse, ville, codePostal,
       email, telephone, reseauMutuelle, loginMutuelle, mdpMutuelle,
-      onboardingDone, logoUrl, couleurPrimaire,
+      onboardingDone, logoUrl, couleurPrimaire, verriersConfig,
     } = req.body;
 
     // Vérifier si le siret est déjà utilisé par UN AUTRE magasin
@@ -713,6 +713,7 @@ app.put("/api/magasin/:id", async (req, res) => {
         ...(onboardingDone !== undefined && { onboardingDone }),
         ...(logoUrl !== undefined && { logoUrl }),
         ...(couleurPrimaire !== undefined && { couleurPrimaire }),
+        ...(verriersConfig !== undefined && { verriersConfig }),
       },
     });
     res.json(magasin);

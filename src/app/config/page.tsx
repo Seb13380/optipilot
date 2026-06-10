@@ -48,12 +48,18 @@ interface ConfigRelance {
 }
 
 const VERRIERS_DEFAUT: TarifVerrier[] = [
-  { id: "1", verrier: "Essilor",    gamme: "Varilux Comfort", offre: "essentiel", matiere: "CR39",   indice: "1.5",  prixUnifocal: 180, prixProgressif: 380, actif: true  },
-  { id: "2", verrier: "Essilor",    gamme: "Crizal Sapphire", offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 220, prixProgressif: 450, actif: true  },
-  { id: "3", verrier: "Zeiss",      gamme: "Individual 2",    offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 260, prixProgressif: 520, actif: true  },
-  { id: "4", verrier: "Nikon",      gamme: "Lite AS",          offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 140, prixProgressif: 290, actif: true  },
-  { id: "5", verrier: "Hoya",       gamme: "Lifestyle 3+",     offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 160, prixProgressif: 340, actif: false },
-  { id: "6", verrier: "100% Santé", gamme: "Classe A",          offre: "essentiel", matiere: "CR39",   indice: "1.5",  prixUnifocal: 0,   prixProgressif: 0,   actif: true  },
+  { id: "1",  verrier: "Essilor",    gamme: "Varilux Comfort",        offre: "essentiel", matiere: "CR39",   indice: "1.5",  prixUnifocal: 180, prixProgressif: 380, actif: true  },
+  { id: "2",  verrier: "Essilor",    gamme: "Crizal Sapphire",        offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 220, prixProgressif: 450, actif: true  },
+  { id: "3",  verrier: "Zeiss",      gamme: "Individual 2",           offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 260, prixProgressif: 520, actif: false },
+  { id: "4",  verrier: "Nikon",      gamme: "Lite AS",                offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 140, prixProgressif: 290, actif: false },
+  { id: "5",  verrier: "Hoya",       gamme: "Lifestyle 3+",           offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 160, prixProgressif: 340, actif: false },
+  { id: "6",  verrier: "BBGR",       gamme: "Natrio Confort",         offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 130, prixProgressif: 280, actif: false },
+  { id: "7",  verrier: "BBGR",       gamme: "Natrio Premium",         offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 170, prixProgressif: 360, actif: false },
+  { id: "8",  verrier: "Kodak",      gamme: "Unique HD",              offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 120, prixProgressif: 260, actif: false },
+  { id: "9",  verrier: "Kodak",      gamme: "Precise PB",             offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 155, prixProgressif: 320, actif: false },
+  { id: "10", verrier: "Rodenstock", gamme: "Progressiv Life",        offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 145, prixProgressif: 300, actif: false },
+  { id: "11", verrier: "Rodenstock", gamme: "Impression 5",           offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 200, prixProgressif: 420, actif: false },
+  { id: "12", verrier: "100% Santé", gamme: "Classe A",               offre: "essentiel", matiere: "CR39",   indice: "1.5",  prixUnifocal: 0,   prixProgressif: 0,   actif: true  },
 ];
 
 const RESEAUX_OPTIQUES = [
@@ -264,11 +270,17 @@ export default function ConfigPage() {
           logoUrl:         data.logoUrl        ?? undefined,
           couleurPrimaire: data.couleurPrimaire ?? undefined,
         });
+        // Charger les verriers depuis la base si configurés
+        if (Array.isArray(data.verriersConfig) && data.verriersConfig.length > 0) {
+          setVerriers(data.verriersConfig as TarifVerrier[]);
+        }
+        setVerriersCharged(true);
       })
       .catch(() => { /* backend non dispo, garde les valeurs par défaut */ });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [verriers, setVerriers] = useState<TarifVerrier[]>(VERRIERS_DEFAUT);
+  const [verriersCharged, setVerriersCharged] = useState(false);
   const [reseauxPartenaires, setReseauxPartenaires] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("optipilot_reseaux_partenaires") || "[]"); }
     catch { return []; }
@@ -318,6 +330,7 @@ export default function ConfigPage() {
               siret:           magasin.siret,
               logoUrl:         magasin.logoUrl   ?? null,
               couleurPrimaire: magasin.couleurPrimaire ?? null,
+              verriersConfig:  verriers,
             }),
           });
           if (res.ok) {
