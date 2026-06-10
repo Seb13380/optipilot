@@ -276,16 +276,21 @@ function DashboardPage() {
 
         {/* Alerte trial */}
         <AnimatePresence>
-          {s?.trialDaysLeft !== null && s?.trialDaysLeft !== undefined && s.trialDaysLeft <= 7 && (
+          {s?.plan === "trial" && s?.trialDaysLeft !== null && s?.trialDaysLeft !== undefined && s.trialDaysLeft >= 0 && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               className="mb-4 px-5 py-3 rounded-2xl flex items-center justify-between gap-4"
-              style={{ background: s.trialDaysLeft <= 2 ? "rgba(239,68,68,0.15)" : "rgba(139,92,246,0.18)", border: `1px solid ${s.trialDaysLeft <= 2 ? "rgba(239,68,68,0.4)" : "rgba(139,92,246,0.5)"}` }}
+              style={{
+                background: s.trialDaysLeft <= 3 ? "rgba(239,68,68,0.15)" : s.trialDaysLeft <= 7 ? "rgba(245,158,11,0.15)" : "rgba(139,92,246,0.12)",
+                border: `1px solid ${s.trialDaysLeft <= 3 ? "rgba(239,68,68,0.4)" : s.trialDaysLeft <= 7 ? "rgba(245,158,11,0.4)" : "rgba(139,92,246,0.3)"}`,
+              }}
             >
-              <span style={{ color: s.trialDaysLeft <= 2 ? "#ef4444" : "#a78bfa" }} className="font-semibold text-base">
-                {t.trialPeriod} — {s.trialDaysLeft} {t.daysRemaining}{s.trialDaysLeft > 1 ? "s" : ""}
+              <span style={{ color: s.trialDaysLeft <= 3 ? "#ef4444" : s.trialDaysLeft <= 7 ? "#f59e0b" : "#a78bfa" }} className="font-semibold text-base">
+                {s.trialDaysLeft === 0
+                  ? "⚠️ Votre essai est terminé — abonnez-vous pour continuer"
+                  : `Essai gratuit — ${s.trialDaysLeft} jour${s.trialDaysLeft > 1 ? "s" : ""} restant${s.trialDaysLeft > 1 ? "s" : ""}`}
               </span>
               <button
                 onClick={() => router.push("/abonnement")}

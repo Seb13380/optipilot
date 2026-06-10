@@ -65,7 +65,42 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 app.use(requireAuth);
 
-// ─── Health Check ─────────────────────────────────────────
+// ─── Middleware vérification expiration essai ─────────────
+// Bloque l'accès si le plan "trial" est expiré
+// Exceptions : routes de paiement/abonnement + stats (pour afficher la bannière)
+const TRIAL_EXEMPT_PATHS = [
+  "/api/auth/",
+  "/api/stripe/",
+  "/api/abonnement",
+  "/api/stats/",
+  "/api/magasin/",
+  "/health",
+  "/api/health",
+];
+app.use(async (req, res, next) => {
+  const user = (req as AuthRequest).user;
+  if (!user?.magasinId) return next();
+  if (TRIAL_EXEMPT_PATHS.some((p) => req.path.startsWith(p))) return next();
+
+  try {
+    const magasin = await prisma.magasin.findUnique({
+      where: { id: user.magasinId },
+      select: { plan: true, trialEndsAt: true },
+    });
+    if (
+      magasin?.plan === "trial" &&
+      magasin?.trialEndsAt &&
+      new Date(magasin.trialEndsAt) < new Date()
+    ) {
+      return res.status(402).json({
+        error: "Essai expiré",
+        code: "TRIAL_EXPIRED",
+        message: "Votre période d'essai de 30 jours est terminée. Abonnez-vous pour continuer.",
+      });
+    }
+  } catch { /* en cas d'erreur DB, on laisse passer */ }
+  next();
+});
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "OptiPilot Backend" });
 });
