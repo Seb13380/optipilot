@@ -343,6 +343,34 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
     });
   }
 
+  async function envoyerViaRelais() {
+    setOptimumStatut("sending");
+    setOptimumError(null);
+    try {
+      const token = localStorage.getItem("optipilot_token");
+      const res = await fetch(`${BACKEND}/api/bridge/devis-push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          client,
+          ordonnance,
+          offre,
+          prixMonture,
+          totalVerres,
+          totalDevis,
+          resteACharge,
+          remise,
+        }),
+      });
+      if (!res.ok) throw new Error(`Erreur serveur (${res.status})`);
+      setOptimumStatut("waiting_cotation");
+      setOptimumToast("⏳ En attente du PC du magasin…");
+    } catch (err) {
+      setOptimumStatut("error");
+      setOptimumError(err instanceof Error ? err.message : "Erreur relais");
+    }
+  }
+
   async function envoyerVersOptimum() {
     const url = bridgeUrl || localStorage.getItem("optipilot_bridge_url") || "http://localhost:5174";
     const token = localStorage.getItem("optipilot_bridge_token") || "";
@@ -1411,7 +1439,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Synchroniser Optimum</p>
                 </div>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(83,49,208,0.25)", color: "#9B96DA" }}>
-                  PC connecté
+                  {bridgeUrl ? "PC connecté" : "Relais cloud"}
                 </span>
               </div>
 
@@ -1419,11 +1447,13 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                 {optimumStatut === "idle" && (
                   <>
                     <p className="text-sm mb-3" style={{ color: "#9B96DA" }}>
-                      Envoie le client, l&apos;ordonnance et le devis directement dans Optimum. La cotation mutuelle revient automatiquement.
+                      {bridgeUrl
+                        ? "Envoie le client, l'ordonnance et le devis directement dans Optimum. La cotation mutuelle revient automatiquement."
+                        : "Le devis sera transmis au PC du magasin via le cloud. Le bridge récupère et remplit Optimum automatiquement."}
                     </p>
                     <motion.button
                       whileTap={{ scale: 0.97 }}
-                      onClick={envoyerVersOptimum}
+                      onClick={bridgeUrl ? envoyerVersOptimum : envoyerViaRelais}
                       className="w-full py-3.5 rounded-xl font-bold text-white text-base flex items-center justify-center gap-2"
                       style={{
                         background: "linear-gradient(135deg, #5331D0, #7c3aed)",

@@ -1584,6 +1584,65 @@ app.post("/api/ambassadeur/reset", async (req, res) => {
   }
 });
 
+// ─── Relais iPad → PC (DevisPending) ─────────────────────────────────────────
+// POST /api/bridge/devis-push  → iPad envoie un devis finalisé
+// GET  /api/bridge/devis-pull  → bridge PC récupère les devis en attente
+// POST /api/bridge/devis-ack   → bridge PC acquitte un devis traité
+
+app.post("/api/bridge/devis-push", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.magasinId!;
+    const payload = req.body;
+    if (!payload || Object.keys(payload).length === 0) {
+      return res.status(400).json({ error: "Payload vide" });
+    }
+    const pending = await prisma.devisPending.create({
+      data: { magasinId, payload, statut: "pending" },
+    });
+    console.log(`📤 DevisPending créé ${pending.id} pour magasin ${magasinId}`);
+    res.json({ id: pending.id });
+  } catch (err) {
+    console.error("POST /api/bridge/devis-push error:", err);
+    res.status(500).json({ error: "Erreur push devis" });
+  }
+});
+
+app.get("/api/bridge/devis-pull", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.magasinId!;
+    const pending = await prisma.devisPending.findMany({
+      where: { magasinId, statut: "pending" },
+      orderBy: { createdAt: "asc" },
+    });
+    // Passer en "processing" pour éviter les doubles traitements
+    if (pending.length > 0) {
+      await prisma.devisPending.updateMany({
+        where: { id: { in: pending.map((d) => d.id) } },
+        data: { statut: "processing" },
+      });
+    }
+    res.json(pending);
+  } catch (err) {
+    console.error("GET /api/bridge/devis-pull error:", err);
+    res.status(500).json({ error: "Erreur pull devis" });
+  }
+});
+
+app.post("/api/bridge/devis-ack", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { id, statut } = req.body as { id: string; statut?: string };
+    if (!id) return res.status(400).json({ error: "id requis" });
+    await prisma.devisPending.update({
+      where: { id },
+      data: { statut: statut || "done" },
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("POST /api/bridge/devis-ack error:", err);
+    res.status(500).json({ error: "Erreur ack devis" });
+  }
+});
+
 // ─── Start ────────────────────────────────────────────────
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 4000;
 httpServer.listen(PORT, () => {
