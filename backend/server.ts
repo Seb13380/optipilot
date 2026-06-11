@@ -197,7 +197,7 @@ app.post("/api/auth/register", async (req, res) => {
     }
 
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
 
     // Créer le magasin puis l'utilisateur (transaction interactive non supportée par proxy Prisma)
     const magasin = await prisma.magasin.create({
