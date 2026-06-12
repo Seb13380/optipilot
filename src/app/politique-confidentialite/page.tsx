@@ -12,8 +12,8 @@ export default function PolitiqueConfidentialite() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">1. Responsable du traitement</h2>
         <p>
-          OptiPilot est édité par Sébastien Cerceau, auto-entrepreneur domicilié en France.
-          Contact : <a href="mailto:contact@optipilot.fr" className="text-blue-600 underline">contact@optipilot.fr</a>
+          OptiPilot est édité par <strong>SGDIGITAL</strong>, micro-entreprise de Sébastien Giordano, domiciliée en France.
+          Contact : <a href="mailto:sgdigitalweb13@gmail.com" className="text-blue-600 underline">sgdigitalweb13@gmail.com</a>
         </p>
       </section>
 
@@ -79,7 +79,7 @@ export default function PolitiqueConfidentialite() {
         <p>
           Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de rectification, de suppression
           et de portabilité de vos données. Pour exercer ces droits, contactez-nous à{" "}
-          <a href="mailto:contact@optipilot.fr" className="text-blue-600 underline">contact@optipilot.fr</a>.
+          <a href="mailto:sgdigitalweb13@gmail.com" className="text-blue-600 underline">sgdigitalweb13@gmail.com</a>.
         </p>
       </section>
 
@@ -95,7 +95,7 @@ export default function PolitiqueConfidentialite() {
         <h2 className="text-xl font-semibold mb-3">9. Contact</h2>
         <p>
           Pour toute question relative à cette politique :{" "}
-          <a href="mailto:contact@optipilot.fr" className="text-blue-600 underline">contact@optipilot.fr</a>
+          <a href="mailto:sgdigitalweb13@gmail.com" className="text-blue-600 underline">sgdigitalweb13@gmail.com</a>
         </p>
       </section>
     </main>
