@@ -1591,7 +1591,7 @@ app.post("/api/ambassadeur/reset", async (req, res) => {
 
 app.post("/api/bridge/devis-push", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const magasinId = req.magasinId!;
+    const magasinId = req.user?.magasinId!;
     const payload = req.body;
     if (!payload || Object.keys(payload).length === 0) {
       return res.status(400).json({ error: "Payload vide" });
@@ -1609,7 +1609,7 @@ app.post("/api/bridge/devis-push", requireAuth, async (req: AuthRequest, res) =>
 
 app.get("/api/bridge/devis-pull", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const magasinId = req.magasinId!;
+    const magasinId = req.user?.magasinId!;
     const pending = await prisma.devisPending.findMany({
       where: { magasinId, statut: "pending" },
       orderBy: { createdAt: "asc" },
