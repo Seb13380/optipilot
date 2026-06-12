@@ -160,8 +160,10 @@ function NouveauClientPageInner() {
     const telephone = searchParams.get("telephone") || "";
     const email = searchParams.get("email") || "";
     const ddn = searchParams.get("ddn") || "";
+    const numAdherent = searchParams.get("numAdherent") || "";
+    const numContrat = searchParams.get("numContrat") || "";
     setFromOptimum(true);
-    setForm((p) => ({ ...p, nom, prenom, mutuelle, telephone, email, dateNaissance: ddn }));
+    setForm((p) => ({ ...p, nom, prenom, mutuelle, telephone, email, dateNaissance: ddn, numAdherent, numContrat }));
     setStep("new-client");
   }, [searchParams]);
 
