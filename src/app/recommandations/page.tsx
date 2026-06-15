@@ -32,6 +32,39 @@ function estDansReseau(nomMutuelle: string): boolean {
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
 
+// Gammes par verrier, tier et type de verre
+function getGammeVerrier(verrier: string, tier: "Essentiel" | "Confort" | "Premium", typeVerre: string): string {
+  const prog = typeVerre === "Progressif" || typeVerre === "Profondeur de champ";
+  const MAP: Record<string, Record<"Essentiel" | "Confort" | "Premium", string>> = {
+    "Essilor": {
+      Essentiel: prog ? "Varilux Liberty 3.0"  : "Crizal Easy 1.5",
+      Confort:   prog ? "Varilux Comfort Max"   : "Eyezen+ 1.6",
+      Premium:   prog ? "Varilux Physio 3.0"    : "Crizal Sapphire",
+    },
+    "Hoya": {
+      Essentiel: prog ? "Summit CD"             : "Hilux 1.5",
+      Confort:   prog ? "Hoyalux GP Wide"       : "Hilux 1.6",
+      Premium:   prog ? "Hoyalux iD MySelf"     : "Nulux EP 1.67",
+    },
+    "Zeiss": {
+      Essentiel: prog ? "Progressive Precision" : "EnergizeMe 1.5",
+      Confort:   prog ? "Progressive Plus 2"    : "Single Vision ClearView",
+      Premium:   prog ? "Individual 2"          : "Individual",
+    },
+    "Nikon": {
+      Essentiel: prog ? "Presio S"              : "See Max 1.5",
+      Confort:   prog ? "Presio Power"          : "See Max Life",
+      Premium:   prog ? "Presio ClearMax"       : "See Max Life Pro",
+    },
+    "BBGR": {
+      Essentiel: prog ? "Novitex 1.5"           : "Orma 1.5",
+      Confort:   prog ? "Novitex 1.6"           : "Confort Digital 1.6",
+      Premium:   prog ? "Novitex Expert"        : "Confort Digital Pro",
+    },
+  };
+  return MAP[verrier]?.[tier] ?? "";
+}
+
 export default function RecommandationsPage() {
   const router = useRouter();
   const { t } = useApp();
@@ -46,6 +79,7 @@ export default function RecommandationsPage() {
   const [chatMessages, setChatMessages] = useState<{ from: "user" | "bot"; texte: string; conseils?: string[]; attention?: string }[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
+  const [verrierFiltre, setVerrierFiltre] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -298,8 +332,32 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
             )}
 
             {/* Cartes des 3 offres */}
+            {/* Filtre verrier */}
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold shrink-0" style={{ color: "rgba(155,150,218,0.7)" }}>Verrier :</p>
+              {["Essilor", "Hoya", "Zeiss", "Nikon", "BBGR"].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setVerrierFiltre(verrierFiltre === v ? "" : v)}
+                  className="px-3 py-1.5 rounded-full text-sm font-semibold transition-all"
+                  style={{
+                    background: verrierFiltre === v ? "rgba(83,49,208,0.5)" : "rgba(83,49,208,0.12)",
+                    color: verrierFiltre === v ? "#FDFDFE" : "#9B96DA",
+                    border: `1.5px solid ${verrierFiltre === v ? "rgba(139,92,246,0.7)" : "rgba(83,49,208,0.3)"}`,
+                  }}
+                >
+                  {v}
+                </button>
+              ))}
+              {verrierFiltre && (
+                <button onClick={() => setVerrierFiltre("")} className="text-xs px-2 py-1 rounded-full" style={{ color: "rgba(155,150,218,0.55)" }}>✕ Réinitialiser</button>
+              )}
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {result.offres.map((offre, i) => {
+              {(verrierFiltre
+                ? result.offres.map((o) => ({ ...o, verrier: verrierFiltre, gamme: getGammeVerrier(verrierFiltre, o.nom, result.typeVerre) }))
+                : result.offres
+              ).map((offre, i) => {
                 const couleur = COULEURS[offre.nom];
                 const isSelected = selected === offre.nom;
 

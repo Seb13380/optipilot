@@ -79,6 +79,15 @@ export default function DevisPage() {
   const [stockPanelOpen, setStockPanelOpen] = useState(false);
   const [stockSearch, setStockSearch] = useState("");
 
+  // Changement de verre
+  const [verrierOverride, setVerrierOverride] = useState("");
+  const [gammeOverride, setGammeOverride] = useState("");
+  const [verrierPanelOpen, setVerrierPanelOpen] = useState(false);
+
+  // Renouvellement anticipé
+  const [renouvelAnticipe, setRenouvelAnticipe] = useState(false);
+  const [motifAnticipe, setMotifAnticipe] = useState("");
+
   // Saisie manuelle monture (bridge non connecté)
   const [montureManuelle, setMontureManuelle] = useState({ fabricant: "", marque: "", modele: "", calibreOeil: "", calibrePont: "", calibreBranche: "" });
 
@@ -166,6 +175,14 @@ export default function DevisPage() {
   const totalDevis = totalBrut - remise;
   const remboursement = offre ? offre.remboursementSecu + offre.remboursementMutuelle : 0;
   const resteACharge = Math.max(0, totalDevis - remboursement);
+  const verrierAffiche = verrierOverride || offre?.verrier || "";
+  const gammeAffichee  = gammeOverride  || offre?.gamme  || "";
+  const MOTIFS_ANTICIPE: Record<string, string> = {
+    adaptation_opticien:     "Adaptation opticien — changement de correction (ordonnance < 3 ans)",
+    degradation_performances: "Dégradation des performances oculaires de l'équipement",
+    condition_medicale:       "Condition médicale particulière (glaucome, DMLA, cataracte évolutive…)",
+    pathologie_non_oculaire:  "Pathologie non oculaire ou traitement médicamenteux long cours",
+  };
 
   async function rechercherClient(q: string) {
     setClientSearchQuery(q);
@@ -360,6 +377,10 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
           totalDevis,
           resteACharge,
           remise,
+          verrierChoisi: verrierOverride || offre?.verrier,
+          gammeChoisie:  gammeOverride  || offre?.gamme,
+          renouvelAnticipe,
+          motifAnticipe: renouvelAnticipe ? motifAnticipe : undefined,
         }),
       });
       if (!res.ok) throw new Error(`Erreur serveur (${res.status})`);
@@ -420,14 +441,16 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
           clientId,
           ordonnanceId: ordoId,
           monture: prixMonture,
-          verrier: offre?.verrier || "",
-          gamme: offre?.gamme || "",
+          verrier: verrierOverride || offre?.verrier || "",
+          gamme:   gammeOverride   || offre?.gamme   || "",
           offre: offre?.nom || "",
           prixVerres: totalVerres,
           totalDevis,
           resteACharge,
           remboursementSecu: offre?.remboursementSecu || 0,
           remboursementMutuelle: offre?.remboursementMutuelle || 0,
+          renouvelAnticipe,
+          motifAnticipe: renouvelAnticipe ? motifAnticipe : undefined,
         }),
       });
       if (!devisRes.ok) throw new Error(`Erreur devis (${devisRes.status})`);
@@ -544,14 +567,17 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
       prenom: client.prenom || "",
       mutuelle: client.mutuelle || "",
       niveauGarantie: (client as { niveauGarantie?: string }).niveauGarantie || "",
-      verrier: offre?.verrier || "",
-      offre: offre?.nom || offre?.gamme || "",
+      verrier: verrierOverride || offre?.verrier || "",
+      gamme:   gammeOverride   || offre?.gamme   || "",
+      offre: offre?.nom || "",
       prixVerres: totalVerres,
       prixMonture,
       prixTotal: totalDevis,
       remboursementSecu: racResult?.secu ?? offre?.remboursementSecu ?? 0,
       remboursementMutuelle: racResult?.mutuelle ?? offre?.remboursementMutuelle ?? 0,
       magasinId: user.magasinId || "",
+      renouvelAnticipe,
+      motifAnticipe: renouvelAnticipe ? motifAnticipe : undefined,
     };
 
     const bridgeIp = localStorage.getItem("optipilot_bridge_ip");
@@ -667,7 +693,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               />
               </div>
               <DevisLigne
-                label={`Verres — ${offre?.verrier || ""} ${offre?.gamme || ""}`}
+                label={`Verres — ${verrierAffiche} ${gammeAffichee}`}
                 value={`${totalVerres}€`}
                 sub={offre ? `Indice ${offre.indice} • Classe ${offre.classe100ps}` : undefined}
               />
@@ -1119,7 +1145,112 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               </AnimatePresence>
             </div>
 
-            {/* ─── REMISE OPTICIEN ─── */}
+            {/* ─── CHANGER LE VERRE ─── */}
+            <div className="rounded-2xl overflow-hidden" style={{ background: "#0A0338", border: "1px solid rgba(83,49,208,0.4)" }}>
+              <button
+                className="w-full flex items-center justify-between px-5 py-4"
+                onClick={() => setVerrierPanelOpen((v) => !v)}
+              >
+                <div>
+                  <p className="section-label">VERRE</p>
+                  <p className="text-sm font-semibold mt-0.5" style={{ color: verrierOverride ? "#FDFDFE" : "#9B96DA" }}>
+                    {verrierAffiche}{gammeAffichee ? ` — ${gammeAffichee}` : ""}
+                  </p>
+                </div>
+                <span className="text-xs px-3 py-1 rounded-lg" style={{ background: "rgba(83,49,208,0.18)", color: "#9B96DA" }}>
+                  {verrierPanelOpen ? "Fermer" : "Changer"}
+                </span>
+              </button>
+              <AnimatePresence>
+                {verrierPanelOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="px-5 pb-4"
+                    style={{ borderTop: "1px solid rgba(83,49,208,0.2)" }}
+                  >
+                    <div className="flex flex-wrap gap-2 mt-3 mb-3">
+                      {["Essilor", "Hoya", "Zeiss", "Nikon", "BBGR"].map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => { setVerrierOverride(v); setGammeOverride(""); }}
+                          className="px-3 py-1.5 rounded-full text-sm font-semibold"
+                          style={{
+                            background: verrierOverride === v ? "rgba(83,49,208,0.5)" : "rgba(83,49,208,0.12)",
+                            color: verrierOverride === v ? "#FDFDFE" : "#9B96DA",
+                            border: `1.5px solid ${verrierOverride === v ? "rgba(139,92,246,0.7)" : "rgba(83,49,208,0.3)"}`,
+                          }}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      value={gammeOverride}
+                      onChange={(e) => setGammeOverride(e.target.value)}
+                      placeholder={`Gamme (ex: ${offre?.gamme || "Varilux Comfort Max"})`}
+                      className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                      style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                    />
+                    {(verrierOverride || gammeOverride) && (
+                      <button
+                        onClick={() => { setVerrierOverride(""); setGammeOverride(""); }}
+                        className="mt-2 text-xs"
+                        style={{ color: "rgba(155,150,218,0.55)" }}
+                      >
+                        ✕ Réinitialiser
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* ─── RENOUVELLEMENT ANTICIPÉ ─── */}
+            <div className="rounded-2xl p-5" style={{ background: "#0A0338", border: `1px solid ${renouvelAnticipe ? "rgba(139,92,246,0.6)" : "rgba(83,49,208,0.4)"}` }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="section-label">RENOUVELLEMENT ANTICIPÉ</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.5)" }}>Art. D.165-1 CSS — prise en charge anticipée SS &amp; mutuelle</p>
+                </div>
+                <button
+                  onClick={() => { setRenouvelAnticipe((v) => !v); if (renouvelAnticipe) setMotifAnticipe(""); }}
+                  className="relative w-12 h-6 rounded-full transition-colors shrink-0"
+                  style={{ background: renouvelAnticipe ? "#5331D0" : "rgba(83,49,208,0.25)" }}
+                >
+                  <span
+                    className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                    style={{ left: renouvelAnticipe ? "calc(100% - 22px)" : "2px" }}
+                  />
+                </button>
+              </div>
+              {renouvelAnticipe && (
+                <div className="mt-4 flex flex-col gap-2">
+                  {[
+                    { value: "adaptation_opticien",      label: "Adaptation opticien",                                detail: "Changement de correction — ordonnance < 3 ans · Délai min : 1 an (≥ 16 ans)" },
+                    { value: "degradation_performances",  label: "Dégradation des performances oculaires",             detail: "Ordonnance < 3 ans · Délai min : 1 an (≥ 16 ans), pas de délai ( < 16 ans)" },
+                    { value: "condition_medicale",        label: "Condition médicale particulière",                     detail: "Glaucome, DMLA, cataracte évolutive… · Prescription ophtalmo requise" },
+                    { value: "pathologie_non_oculaire",   label: "Pathologie non oculaire / traitement long cours",    detail: "Diabète, Sida, corticoïdes… · Prescription ophtalmo requise" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setMotifAnticipe(opt.value)}
+                      className="w-full text-left px-3 py-2.5 rounded-xl"
+                      style={{
+                        background: motifAnticipe === opt.value ? "rgba(83,49,208,0.3)" : "rgba(83,49,208,0.1)",
+                        border: `1.5px solid ${motifAnticipe === opt.value ? "rgba(139,92,246,0.7)" : "rgba(83,49,208,0.2)"}`,
+                      }}
+                    >
+                      <p className="text-sm font-semibold" style={{ color: motifAnticipe === opt.value ? "#FDFDFE" : "#9B96DA" }}>{opt.label}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.5)" }}>{opt.detail}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ─── REMISE OPTICIEN ─── */
             <div
               className="rounded-2xl p-5 flex items-center gap-4"
               style={{ background: "#0A0338", border: "1px solid rgba(192,132,252,0.35)" }}
