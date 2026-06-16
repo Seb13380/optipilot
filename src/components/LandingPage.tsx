@@ -198,6 +198,13 @@ export default function LandingPage() {
   const [ambassadeurRestants, setAmbassadeurRestants] = useState<number>(AMBASSADEUR_TOTAL);
   const demoRef = useRef<HTMLElement>(null);
 
+  // Calculateur ROI
+  const [roiClients, setRoiClients] = useState(10);
+  const [roiPanier, setRoiPanier] = useState(350);
+  const [roiClientsSup, setRoiClientsSup] = useState(2);
+  const [roiAugPanier, setRoiAugPanier] = useState(15);
+  const roiGain = Math.round((roiClientsSup * roiPanier + roiClients * roiPanier * roiAugPanier / 100) * 4.46);
+
   // Charger le compteur ambassadeur
   useEffect(() => {
     fetch("/api/ambassadeur")
@@ -366,29 +373,25 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <a
-            href="/login"
-            className="hidden sm:inline-flex text-sm font-bold px-4 py-2 rounded-xl transition-colors"
-            style={{ color: "#5331D0", border: "1px solid rgba(83,49,208,0.3)" }}
-          >
-            Connexion
-          </a>
+          <div className="hidden sm:flex items-center gap-3">
+            <a href="/login" className="text-sm font-bold px-4 py-2 rounded-xl transition-colors" style={{ color: "#5331D0", border: "1px solid rgba(83,49,208,0.3)" }}>Se connecter</a>
+            <button onClick={() => scrollToDemo()} className="text-sm font-black px-5 py-2 rounded-xl text-white" style={{ background: "linear-gradient(135deg, #5331D0, #7B5CE5)" }}>Demander une démo</button>
+          </div>
         </motion.nav>
 
         {/* ══════════════════════════ HERO ══════════════════════════ */}
         <section
           id="hero"
-          className="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-28 pb-20"
-          style={{
-            background: "radial-gradient(ellipse 80% 60% at 50% 10%, rgba(83,49,208,0.12) 0%, transparent 70%)",
-          }}
+          className="min-h-screen flex flex-col justify-center px-6 pt-28 pb-16"
+          style={{ background: "radial-gradient(ellipse 80% 60% at 50% 10%, rgba(83,49,208,0.1) 0%, transparent 70%)" }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="max-w-4xl mx-auto"
-          >
+          <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* ── Colonne gauche ── */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+            >
             {/* Badge */}
             <motion.span
               initial={{ opacity: 0, scale: 0.92 }}
@@ -402,7 +405,7 @@ export default function LandingPage() {
             </motion.span>
 
             {/* Accroche principale */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.08] mb-6" style={{ color: "#1C0B62" }}>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.08] mb-6" style={{ color: "#1C0B62" }}>
               Redevenez opticien.
               <br />
               <span
@@ -417,10 +420,10 @@ export default function LandingPage() {
             </h1>
 
             {/* Sous-titre */}
-            <p className="text-lg md:text-xl mb-3 max-w-2xl mx-auto leading-relaxed" style={{ color: "#374151" }}>
+            <p className="text-lg mb-3 max-w-lg leading-relaxed" style={{ color: "#374151" }}>
               Vous passez trop de temps sur les prises en charge, pas assez à vendre.
             </p>
-            <p className="text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed" style={{ color: "#6b7280" }}>
+            <p className="text-base mb-8 max-w-lg leading-relaxed" style={{ color: "#6b7280" }}>
               Pendant qu&apos;OptiPilot gère mutuelles et devis, vous faites ce que vous aimez&nbsp;: soigner et conseiller vos clients.
             </p>
 
@@ -429,66 +432,124 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-wrap items-center justify-center gap-4 mb-10"
+              className="flex flex-wrap gap-3 mb-8"
             >
               {[
-                { stat: "Jusqu'à 2h gagnées / jour", detail: "= 2 à 4 clients en plus" },
-                { stat: "1 600 € gagnés / mois", detail: "soit +19 000 € par an en moyenne" },
+                { stat: "Jusqu'à 2h", detail: "gagnées / jour" },
+                { stat: "+10 à 25%", detail: "de panier moyen" },
+                { stat: "+4 000 à 8 000€", detail: "de CA potentiel / mois" },
               ].map((item, i) => (
-                <div key={i} className="px-5 py-3 rounded-2xl" style={{ background: "rgba(83,49,208,0.08)", border: "1px solid rgba(83,49,208,0.18)" }}>
-                  <p className="text-base font-black" style={{ color: "#5331D0" }}>{item.stat}</p>
-                  <p className="text-xs font-semibold" style={{ color: "#6b7280" }}>{item.detail}</p>
+                <div key={i} className="px-4 py-2.5 rounded-xl" style={{ background: "rgba(83,49,208,0.08)", border: "1px solid rgba(83,49,208,0.15)" }}>
+                  <p className="text-sm font-black" style={{ color: "#5331D0" }}>{item.stat}</p>
+                  <p className="text-xs font-medium" style={{ color: "#6b7280" }}>{item.detail}</p>
                 </div>
               ))}
             </motion.div>
 
-            {/* CTA unique */}
+            {/* CTA */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.45 }}
-              className="flex flex-col items-center gap-3 mb-10"
+              className="flex flex-col sm:flex-row gap-3 mb-6"
             >
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 whileHover={{ y: -3 }}
                 onClick={() => scrollToDemo()}
-                className="w-full sm:w-auto text-xl font-black px-10 py-5 rounded-2xl text-white flex items-center justify-center gap-2"
-                style={{
-                  background: "linear-gradient(135deg, #5331D0, #7B5CE5)",
-                  boxShadow: "0 8px 28px rgba(83,49,208,0.45)",
-                }}
+                className="text-base font-black px-8 py-4 rounded-xl text-white flex items-center justify-center gap-2"
+                style={{ background: "linear-gradient(135deg, #5331D0, #7B5CE5)", boxShadow: "0 8px 28px rgba(83,49,208,0.4)" }}
               >
                 Demander une démo gratuite
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </motion.button>
-              <a href="/login" className="text-sm font-semibold transition-colors" style={{ color: "rgba(83,49,208,0.6)" }}>
-                Déjà inscrit ? Se connecter →
-              </a>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { const el = document.querySelector("video"); if (el) { const s = el.closest("section"); if (s) s.scrollIntoView({ behavior: "smooth" }); } }}
+                className="text-base font-semibold px-7 py-4 rounded-xl flex items-center justify-center gap-2"
+                style={{ color: "#5331D0", border: "2px solid rgba(83,49,208,0.3)" }}
+              >
+                Voir une démo sur une vraie ordonnance →
+              </motion.button>
             </motion.div>
 
             {/* Trust badges */}
-            <div className="flex flex-wrap items-center justify-center gap-5">
-              {["✓ Essai gratuit 30 jours", "✓ Sans engagement", "✓ Sans carte bancaire", "✓ Données hébergées en France (RGPD)"].map((badge, i) => (
-                <motion.span
-                  key={badge}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.45, delay: 0.85 + i * 0.1 }}
-                  className="text-sm font-semibold"
-                  style={{ color: "#6b7280" }}
-                >
+            <div className="flex flex-wrap gap-4">
+              {["✓ Essai gratuit 30 jours", "✓ Sans engagement", "✓ Sans carte bancaire", "✓ RGPD — France"].map((badge, i) => (
+                <motion.span key={badge} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 + i * 0.1 }} className="text-sm font-medium" style={{ color: "#6b7280" }}>
                   {badge}
                 </motion.span>
               ))}
             </div>
+            </motion.div>
 
-
-          </motion.div>
+            {/* ── Colonne droite : mockup ── */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="hidden lg:flex flex-col gap-4"
+            >
+              {/* Widget étapes */}
+              <div className="rounded-2xl p-5" style={{ background: "#fff", boxShadow: "0 20px 60px rgba(83,49,208,0.14)", border: "1px solid rgba(83,49,208,0.1)" }}>
+                {[
+                  { n: 1, label: "Ordonnance scannée" },
+                  { n: 2, label: "Analyse IA (2-3 sec)" },
+                  { n: 3, label: "PEC prête à envoyer" },
+                ].map((s, i) => (
+                  <div key={i} className="flex items-center gap-3 py-2.5" style={{ borderBottom: i < 2 ? "1px solid rgba(83,49,208,0.07)" : "none" }}>
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-black" style={{ background: "rgba(83,49,208,0.1)", color: "#5331D0" }}>{s.n}</span>
+                    <span className="text-sm font-semibold flex-1" style={{ color: "#374151" }}>{s.label}</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#22c55e" fillOpacity="0.12"/><path d="M7 12l3.5 3.5L17 8" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                ))}
+              </div>
+              {/* Widget résultat analyse */}
+              <div className="rounded-2xl p-5" style={{ background: "#fff", boxShadow: "0 20px 60px rgba(83,49,208,0.14)", border: "1px solid rgba(83,49,208,0.1)" }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#22c55e" }} />
+                  <span className="text-sm font-black" style={{ color: "#1C0B62" }}>Analyse terminée</span>
+                </div>
+                <div className="flex flex-col gap-2.5">
+                  {[
+                    { name: "Mutuelle Almerys", val: "352,45 €", col: "#5331D0" },
+                    { name: "Sécu AMO", val: "105,20 €", col: "#7c3aed" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: "rgba(83,49,208,0.05)", border: "1px solid rgba(83,49,208,0.1)" }}>
+                      <div>
+                        <p className="text-xs font-bold" style={{ color: "#1C0B62" }}>{item.name}</p>
+                        <p className="text-xs" style={{ color: "#9ca3af" }}>Remboursement</p>
+                      </div>
+                      <span className="text-sm font-black" style={{ color: item.col }}>{item.val}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: "rgba(34,197,94,0.07)", border: "1.5px solid rgba(34,197,94,0.25)" }}>
+                    <span className="text-sm font-bold" style={{ color: "#1C0B62" }}>Reste à charge client</span>
+                    <span className="text-lg font-black" style={{ color: "#22c55e" }}>0,00 €</span>
+                  </div>
+                </div>
+                <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} onClick={() => scrollToDemo()} className="w-full py-3 rounded-xl text-sm font-black text-white mt-4" style={{ background: "linear-gradient(135deg, #5331D0, #7c3aed)" }}>
+                  Envoyer la PEC →
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
         </section>
 
         {/* ══════════════════════════ BANNIÈRE OFFRE FONDATEUR ══════════════════════════ */}
         <FounderBanner restants={ambassadeurRestants} onClaim={() => scrollToDemo(true)} />
+
+        {/* ══════════════════════════ LOGOS MUTUELLES ══════════════════════════ */}
+        <section className="py-8 px-6" style={{ background: "#f9f9ff", borderTop: "1px solid rgba(83,49,208,0.08)", borderBottom: "1px solid rgba(83,49,208,0.08)" }}>
+          <div className="max-w-5xl mx-auto">
+            <p className="text-center text-xs font-black uppercase tracking-widest mb-5" style={{ color: "rgba(83,49,208,0.45)" }}>Agréé par les réseaux</p>
+            <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+              {["Almerys", "Viamedis", "KLESIA", "Santéclair", "SP Santé", "AMUTEX", "Apicil"].map((name) => (
+                <span key={name} className="text-sm font-black" style={{ color: "#9ca3af", letterSpacing: "0.04em" }}>{name}</span>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* ══════════════════════════ VIDÉO EXPLAINER ══════════════════════════ */}
         <section className="py-16 px-6" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(83,49,208,0.04) 50%, transparent 100%)" }}>
@@ -543,55 +604,92 @@ export default function LandingPage() {
             <Reveal>
               <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#5331D0" }}>Le constat</p>
               <h2 className="text-3xl md:text-4xl font-black text-center mb-4" style={{ color: "#1C0B62" }}>
-                Vous reconnaissez-vous dans ces situations&nbsp;?
+                Combien vous coûte votre administratif&nbsp;?
               </h2>
-              <p className="text-center text-lg mb-14" style={{ color: "#6b7280" }}>
-                Chaque minute perdue sur une PEC, c&apos;est un client de moins. Chaque devis sans relance, c&apos;est du chiffre d&apos;affaires qui s&apos;évapore.
+              <p className="text-center text-lg mb-12" style={{ color: "#6b7280" }}>
+                Chaque jour, des heures précieuses perdues sur des tâches qui ne font pas votre chiffre d&apos;affaires.
               </p>
             </Reveal>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {[
-                {
-                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="1.5"/><path d="M12 6v6l4 2" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                  title: "Jusqu'à 10 minutes perdues par client — pour de la saisie administrative",
-                  desc: "Ordonnance recopiée à la main. Remboursements calculés un par un. Devis assemblé manuellement. Sur 10 clients par jour, c'est près de 2 heures que vous ne passerez pas avec vos clients.",
-                  accent: "#ef4444",
-                },
-                {
-                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 17 22 17 22 11" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                  title: "1 devis sur 3 s'évapore — sans jamais être relancé",
-                  desc: "Le client « réfléchit » et ne revient pas. Sans relance structurée, ce chiffre d'affaires est définitivement perdu.",
-                  accent: "#f59e0b",
-                },
-                {
-                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M9 14l-4-4 4-4" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 10h11a4 4 0 010 8h-1" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                  title: "\"Ma mutuelle rembourse combien ?\" — et vous cherchez dans 3 tableaux.",
-                  desc: "Le client pose la question en caisse. Vous consultez la grille, calculez le RAC, vérifiez le plafond annuel. OptiPilot affiche le reste à charge en temps réel, sans calcul manuel.",
-                  accent: "#8b5cf6",
-                },
-                {
-                  icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#10b981" strokeWidth="1.5"/><path d="M2 10h20" stroke="#10b981" strokeWidth="1.5"/><path d="M6 15h4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-                  title: "Rapprochements bancaires : savoir ce que la mutuelle a vraiment versé.",
-                  desc: "Entre ce qui est promis et ce qui arrive sur le compte, l'écart se creuse en silence. OptiPilot centralise les remboursements attendus et vous alerte sur les anomalies.",
-                  accent: "#10b981",
-                },
+                { value: "5 à 15 min", label: "par prise en charge", desc: "saisie + vérification mutuelle" },
+                { value: "10 PEC", label: "/ jour en moyenne", desc: "soit 50 à 150 min de paperasse" },
+                { value: "Jusqu’à 2h", label: "perdues chaque jour", desc: "qui ne génèrent pas de CA" },
+                { value: "450+ h", label: "/ an consacrées", desc: "à la paperasse administrative" },
               ].map((item, i) => (
-                <RevealCard key={i} delay={i * 0.1}>
-                  <div
-                    className="rounded-3xl p-7 h-full"
-                    style={{
-                      background: "#fff",
-                      border: `1.5px solid ${item.accent}30`,
-                      boxShadow: `0 4px 24px ${item.accent}10`,
-                    }}
-                  >
-                    <div>{item.icon}</div>
-                    <h3 className="text-xl font-black mt-4 mb-3" style={{ color: "#1C0B62" }}>{item.title}</h3>
-                    <p className="text-base leading-relaxed" style={{ color: "#6b7280" }}>{item.desc}</p>
+                <RevealCard key={i} delay={i * 0.08}>
+                  <div className="rounded-2xl p-5 text-center h-full" style={{ background: "#fff", border: "1.5px solid rgba(83,49,208,0.12)", boxShadow: "0 2px 12px rgba(83,49,208,0.06)" }}>
+                    <p className="text-2xl md:text-3xl font-black mb-1" style={{ color: "#1C0B62" }}>{item.value}</p>
+                    <p className="text-sm font-bold mb-1" style={{ color: "#5331D0" }}>{item.label}</p>
+                    <p className="text-xs leading-snug" style={{ color: "#9ca3af" }}>{item.desc}</p>
                   </div>
                 </RevealCard>
               ))}
+            </div>
+
+            <Reveal delay={0.15}>
+              <div className="rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6" style={{ background: "linear-gradient(135deg, #5331D0 0%, #7c3aed 100%)" }}>
+                <div className="shrink-0 text-center">
+                  <p className="text-5xl md:text-6xl font-black text-white leading-none">11</p>
+                  <p className="text-lg font-bold text-white">semaines</p>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>par an</p>
+                </div>
+                <div>
+                  <p className="text-xl md:text-2xl font-black text-white mb-2">
+                    C&apos;est plus de 11 semaines par an à faire de la paperasse au lieu de votre vrai métier.
+                  </p>
+                  <p className="text-base" style={{ color: "rgba(255,255,255,0.75)" }}>
+                    OptiPilot réduit le temps de traitement de chaque dossier de 10…15 min à moins de 1 min. Vous récupérez ces 11 semaines pour vendre, fidéliser et vous développer.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ══════════════════════════ CALCULATEUR ROI ══════════════════════════ */}
+        <section className="py-20 px-6" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(83,49,208,0.06) 0%, transparent 70%)" }}>
+          <div className="max-w-5xl mx-auto">
+            <Reveal>
+              <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#5331D0" }}>ROI</p>
+              <h2 className="text-3xl md:text-4xl font-black text-center mb-3" style={{ color: "#1C0B62" }}>
+                Et si vous gagniez sur tous les tableaux&nbsp;?
+              </h2>
+              <p className="text-center text-lg mb-12" style={{ color: "#6b7280" }}>Calculez votre retour sur investissement avec OptiPilot</p>
+            </Reveal>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              {/* Inputs */}
+              <div className="rounded-2xl p-6" style={{ background: "#fff", border: "1px solid rgba(83,49,208,0.15)", boxShadow: "0 4px 24px rgba(83,49,208,0.08)" }}>
+                {[
+                  { label: "Nombre de clients / jour", val: roiClients, set: setRoiClients, min: 1, max: 50, step: 1 },
+                  { label: "Panier moyen actuel", val: roiPanier, set: setRoiPanier, min: 100, max: 2000, step: 50 },
+                  { label: "Clients supplémentaires / jour grâce à OptiPilot", val: roiClientsSup, set: setRoiClientsSup, min: 0, max: 10, step: 1 },
+                  { label: "Augmentation panier moyen (%)", val: roiAugPanier, set: setRoiAugPanier, min: 0, max: 50, step: 1 },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between py-4" style={{ borderBottom: i < 3 ? "1px solid rgba(83,49,208,0.08)" : "none" }}>
+                    <span className="text-sm font-semibold max-w-45 leading-snug" style={{ color: "#374151" }}>{item.label}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => item.set(Math.max(item.min, item.val - item.step))} className="w-8 h-8 rounded-lg flex items-center justify-center text-base font-black" style={{ background: "rgba(83,49,208,0.1)", color: "#5331D0" }}>−</button>
+                      <span className="w-16 text-center text-base font-black" style={{ color: "#1C0B62" }}>{item.val}{item.label.includes("%") ? " %" : item.label.includes("Panier") ? " €" : ""}</span>
+                      <button onClick={() => item.set(Math.min(item.max, item.val + item.step))} className="w-8 h-8 rounded-lg flex items-center justify-center text-base font-black" style={{ background: "rgba(83,49,208,0.1)", color: "#5331D0" }}>+</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Résultat */}
+              <div className="rounded-2xl p-8 text-center" style={{ background: "linear-gradient(135deg, #5331D0 0%, #7c3aed 100%)", boxShadow: "0 20px 60px rgba(83,49,208,0.4)" }}>
+                <p className="text-sm font-black uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.7)" }}>Votre gain potentiel / mois</p>
+                <p className="text-5xl font-black text-white mb-1">+{roiGain.toLocaleString("fr-FR")} €</p>
+                <p className="text-base mb-6" style={{ color: "rgba(255,255,255,0.7)" }}>de chiffre d&apos;affaires supplémentaire</p>
+                <div className="flex flex-col gap-2 text-sm mb-6" style={{ color: "rgba(255,255,255,0.85)" }}>
+                  <p>⏱ Gain de temps estimé : <strong className="text-white">2h / jour</strong></p>
+                  <p>💡 Rentabilisé <strong className="text-white">dès la première semaine</strong></p>
+                </div>
+                <motion.button whileTap={{ scale: 0.97 }} whileHover={{ y: -2 }} onClick={() => scrollToDemo()} className="w-full py-3.5 rounded-xl text-sm font-black text-white" style={{ background: "rgba(255,255,255,0.2)", border: "1.5px solid rgba(255,255,255,0.4)" }}>
+                  Demander une démo →
+                </motion.button>
+              </div>
             </div>
           </div>
         </section>
@@ -672,6 +770,34 @@ export default function LandingPage() {
                 );
               })}
             </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════ AVANT / AVEC ══════════════════════════ */}
+        <section className="py-12 px-6" style={{ background: "linear-gradient(160deg, #0a0318 0%, #1e1b4b 100%)" }}>
+          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Reveal>
+              <div className="rounded-2xl p-6 h-full" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(239,68,68,0.25)" }}>
+                <p className="text-base font-black mb-4" style={{ color: "#f87171" }}>Avant OptiPilot</p>
+                {["Saisie manuelle fastidieuse", "Erreurs et rejets fréquents", "Relances chronophages", "Temps perdu et stress"].map((item) => (
+                  <div key={item} className="flex items-center gap-3 py-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4L4 12" stroke="#f87171" strokeWidth="2" strokeLinecap="round"/></svg>
+                    <span className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <div className="rounded-2xl p-6 h-full" style={{ background: "rgba(83,49,208,0.15)", border: "1.5px solid rgba(139,92,246,0.5)" }}>
+                <p className="text-base font-black mb-4" style={{ color: "#a78bfa" }}>Avec OptiPilot</p>
+                {["Automatisation complète", "Zéro erreur, 99 % de réussite", "Relances automatiques", "Plus de temps, plus de ventes"].map((item) => (
+                  <div key={item} className="flex items-center gap-3 py-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span className="text-sm font-medium text-white">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
           </div>
         </section>
 
