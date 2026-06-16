@@ -1250,7 +1250,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               )}
             </div>
 
-            {/* ─── REMISE OPTICIEN ─── */
+            {/* ─── REMISE OPTICIEN ─── */}
             <div
               className="rounded-2xl p-5 flex items-center gap-4"
               style={{ background: "#0A0338", border: "1px solid rgba(192,132,252,0.35)" }}
