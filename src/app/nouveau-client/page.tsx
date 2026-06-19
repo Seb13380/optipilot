@@ -162,8 +162,12 @@ function NouveauClientPageInner() {
     const ddn = searchParams.get("ddn") || "";
     const numAdherent = searchParams.get("numAdherent") || "";
     const numContrat = searchParams.get("numContrat") || "";
+    const adresse = searchParams.get("adresse") || "";
+    const codePostal = searchParams.get("codePostal") || "";
+    const ville = searchParams.get("ville") || "";
+    const adresseComplete = [adresse, codePostal, ville].filter(Boolean).join(" ");
     setFromOptimum(true);
-    setForm((p) => ({ ...p, nom, prenom, mutuelle, telephone, email, dateNaissance: ddn, numAdherent, numContrat }));
+    setForm((p) => ({ ...p, nom, prenom, mutuelle, telephone, email, dateNaissance: ddn, numAdherent, numContrat, adresse: adresseComplete || p.adresse }));
     setStep("new-client");
   }, [searchParams]);
 
