@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
 import OpticianGuard from "@/components/OpticianGuard";
@@ -42,15 +42,22 @@ export default function AnalyseVisagePage() {
         video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setMode("camera");
+      setMode("camera"); // d'abord afficher la vidéo dans le DOM
     } catch {
       setError("Impossible d'accéder à la caméra. Vérifiez les autorisations.");
     }
   }, []);
+
+  // Une fois le mode "camera" actif et la balise <video> dans le DOM, on assigne le stream
+  useEffect(() => {
+    if (mode === "camera" && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {
+        setError("Impossible de démarrer la caméra.");
+        setMode("idle");
+      });
+    }
+  }, [mode]);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -145,10 +152,17 @@ export default function AnalyseVisagePage() {
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="rounded-2xl p-4 mb-6 text-sm font-medium flex items-center gap-3"
+                className="rounded-2xl p-4 mb-6 text-sm font-medium flex flex-col gap-3"
                 style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}
               >
-                <span>⚠️</span> {error}
+                <div className="flex items-center gap-3">
+                  <span>⚠️</span> {error}
+                </div>
+                <a href="/recommandations"
+                  className="text-center py-2 px-4 rounded-xl font-bold text-white text-sm"
+                  style={{ background: "#7c3aed" }}>
+                  Passer cette étape → Voir les recommandations
+                </a>
               </motion.div>
             )}
           </AnimatePresence>
@@ -251,9 +265,14 @@ export default function AnalyseVisagePage() {
                 className="w-16 h-16 rounded-full border-4 mx-auto mb-6"
                 style={{ borderColor: "#ede9fe", borderTopColor: "#7c3aed" }} />
               <h2 className="text-xl font-black mb-2" style={{ color: "#1C0B62" }}>Analyse en cours…</h2>
-              <p className="text-sm" style={{ color: "#9ca3af" }}>
+              <p className="text-sm mb-6" style={{ color: "#9ca3af" }}>
                 L&apos;IA analyse la morphologie, le style et prépare vos recommandations
               </p>
+              <a href="/recommandations"
+                className="inline-block py-2 px-6 rounded-xl font-bold text-sm"
+                style={{ background: "#f3f4f6", color: "#6b7280" }}>
+                Passer cette étape →
+              </a>
             </motion.div>
           )}
 
