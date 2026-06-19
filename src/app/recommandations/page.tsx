@@ -132,6 +132,8 @@ export default function RecommandationsPage() {
         ogCylindre: parseFloat(ordo.ogCylindre) || 0,
         odAddition: parseFloat(ordo.odAddition) || 0,
         ogAddition: parseFloat(ordo.ogAddition) || 0,
+        deuxPaires: ordo.deuxPaires === "true" || ordo.deuxPaires === true,
+        intoleranceProgressifs: ordo.intoleranceProgressifs === "true" || ordo.intoleranceProgressifs === true,
       };
 
       // Catégorie de correction pour choisir le bon tarif SS et mutuelle

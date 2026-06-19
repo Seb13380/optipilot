@@ -11,6 +11,10 @@ export interface OrdonnanceData {
   ogAddition?: number;
   odAxe?: number;
   ogAxe?: number;
+  /** true si l'ordonnance prescrit explicitement 2 paires (VL + VP) */
+  deuxPaires?: boolean;
+  /** true si l'ordonnance mentionne une intolérance aux verres progressifs */
+  intoleranceProgressifs?: boolean;
 }
 
 // ─── Transposition en cylindre positif ────────────────────────────────────────
@@ -265,9 +269,15 @@ export function calculerRecommandations(
   const categorie = getCategorieCorrection(ordo);
   const preferenceM = questionnaire.preferenceMonture || "";
 
+  // ── 2 paires prescrites ou intolérance progressifs → unifocaux VL séparément ──
+  const forcerDeuxPaires = ordo.deuxPaires === true || ordo.intoleranceProgressifs === true;
+
   // ── Type de verre étendu — unifocal, anti-fatigue, progressif, profondeur de champ ──
   let typeVerre: string;
-  if (addition >= 1.5) {
+  if (forcerDeuxPaires) {
+    // Ordonnance prescrit 2 paires ou intolérance aux progressifs → paire principale en unifocal VL
+    typeVerre = "Unifocal";
+  } else if (addition >= 1.5) {
     // Presbytie confirmée ou avancée → progressif obligatoire
     typeVerre = "Progressif";
   } else if (addition >= 0.75 && tempsEcran >= 4) {
@@ -318,6 +328,15 @@ export function calculerRecommandations(
       ? `Des verres profondeur de champ d'indice ${indiceLabel} — plage de vision de travail élargie (30‬cm à 1,5‬m) pour le bureau et les écrans`
     : `Des verres unifocaux d'indice ${indiceLabel} — qualité optique précise, adaptés à votre correction`
   );
+
+  // Mention explicite si 2 paires prescrites ou intolérance progressifs
+  if (forcerDeuxPaires) {
+    argumentaireGlobal.push(
+      ordo.intoleranceProgressifs
+        ? "⚠️ Intolérance aux progressifs notée sur l'ordonnance — cette paire est pour la vision de loin (VL). Une seconde paire de vision de près (VP) est recommandée ci-dessous."
+        : "⚠️ 2 paires prescrites sur l'ordonnance (VL + VP) — cette paire est pour la vision de loin. La paire vision de près est détaillée ci-dessous."
+    );
+  }
 
   // Antireflet
   if (questionnaire.conduiteNuit) {
@@ -535,7 +554,17 @@ export function calculerRecommandations(
     },
   };
 
-  const secondePaire = questionnaire.typeSport
+  const secondePaire = forcerDeuxPaires
+    ? {
+        titre: ordo.intoleranceProgressifs
+          ? "Deuxième paire — vision de près (intolérance progressifs)"
+          : "Deuxième paire — vision de près (2 paires prescrites)",
+        description: ordo.intoleranceProgressifs
+          ? `L'ophtalmologue a noté une intolérance aux verres progressifs. Deux paires unifocales sont prescrites : cette paire pour la vision de loin (VL), et une seconde paire de verres unifocaux de près (VP) avec addition +${addition.toFixed(2)} D. Cette solution assure un confort optimal sans les contraintes des progressifs.`
+          : `L'ophtalmologue a prescrit 2 paires de lunettes : une pour la vision de loin (VL) et une pour la vision de près (VP). Cette approche garantit un confort maximal à chaque distance.`,
+        conseil: `Verres unifocaux de près avec addition +${addition.toFixed(2)} D — même indice que la paire VL pour une esthétique homogène. Vérifier que le contrat mutuelle prend en charge les deux paires (souvent couvert par le 100 % Santé Classe A).`,
+      }
+    : questionnaire.typeSport
     ? SECONDE_PAIRE[questionnaire.typeSport]
     : isPDC
     ? {

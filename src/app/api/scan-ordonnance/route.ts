@@ -54,6 +54,10 @@ En manuscrit : souvent écrite après "Le " ou "Fait le " ou "À [ville], le " o
 ⚠️ NE PAS prendre la date de naissance du patient ni la date d'expiration.
 Si ambiguïté entre JJ et MM (ex: 06/03 ou 03/06), préférer la lecture JJ/MM/AAAA.
 
+═══ CAS PARTICULIERS ═══
+- deuxPaires : mettre true si l'ordonnance mentionne EXPLICITEMENT "2 paires", "deux paires", "VL + VP", "VP + VL", "vision de loin + vision de près", "2 équipements" ou toute formulation prescrivant deux équipements distincts. false sinon.
+- intoleranceProgressifs : mettre true si l'ordonnance mentionne "intolérance progressifs", "intolérant aux progressifs", "ne supporte pas les progressifs", "mal supporté les progressifs", "contre-indication progressifs", "échec progressifs" ou équivalent. false sinon.
+
 ═══ FORMAT DE SORTIE ═══
 Retourne UNIQUEMENT ce JSON valide, sans aucun texte avant ni après :
 {
@@ -70,7 +74,9 @@ Retourne UNIQUEMENT ce JSON valide, sans aucun texte avant ni après :
   "ogAddition": null,
   "ecartPupillaire": null,
   "prescripteur": null,
-  "dateOrdonnance": null
+  "dateOrdonnance": null,
+  "deuxPaires": false,
+  "intoleranceProgressifs": false
 }
 
 ═══ RÈGLES STRICTES ═══
@@ -155,6 +161,10 @@ export async function POST(request: NextRequest) {
       if (!ordonnance[`${eye}Cylindre`]) ordonnance[`${eye}Cylindre`] = "+0.00";
       if (!ordonnance[`${eye}Axe`])      ordonnance[`${eye}Axe`]      = "0";
     }
+
+    // Normalisation des champs booléens (jamais null — défaut = "false")
+    if (ordonnance.deuxPaires === null) ordonnance.deuxPaires = "false";
+    if (ordonnance.intoleranceProgressifs === null) ordonnance.intoleranceProgressifs = "false";
 
     // Nettoyer le nomPatient : retirer tout ce qui suit "Bienvenue" si GPT a capturé du texte parasite
     if (ordonnance.nomPatient) {
