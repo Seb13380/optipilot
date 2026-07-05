@@ -68,15 +68,28 @@ export default function AnalyseVisagePage() {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh || video.readyState < 2) return;
+
+    // Recadrage sur la zone visage (correspond à l'ovale guide)
+    const cropW = Math.round(vw * 0.7);
+    const cropH = Math.round(vh * 0.85);
+    const cropX = Math.round((vw - cropW) / 2);
+    const cropY = Math.round((vh - cropH) / 2);
+
+    // Taille cible : max 900px sur le côté le plus long
+    const scale = Math.min(900 / cropW, 900 / cropH, 1);
+    canvas.width = Math.round(cropW * scale);
+    canvas.height = Math.round(cropH * scale);
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     // Miroir pour selfie naturel
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
     setPreview(dataUrl);
     stopCamera();
     setMode("preview");
@@ -234,8 +247,8 @@ export default function AnalyseVisagePage() {
             <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
               className="rounded-3xl overflow-hidden"
               style={{ background: "#fff", boxShadow: "0 4px 32px rgba(124,58,237,0.1)" }}>
-              <img src={preview} alt="Photo à analyser" className="w-full object-cover"
-                style={{ maxHeight: "400px", objectFit: "cover" }} />
+              <img src={preview} alt="Photo à analyser" className="w-full"
+                style={{ maxHeight: "400px", objectFit: "contain", background: "#f3f4f6" }} />
               <div className="p-6 text-center">
                 <p className="text-sm mb-4 font-medium" style={{ color: "#6b7280" }}>
                   Bonne photo ? Lancez l&apos;analyse IA.
@@ -292,8 +305,8 @@ export default function AnalyseVisagePage() {
               <div className="rounded-3xl overflow-hidden"
                 style={{ background: "#fff", boxShadow: "0 4px 24px rgba(124,58,237,0.08)" }}>
                 {preview && (
-                  <img src={preview} alt="Visage analysé" className="w-full object-cover"
-                    style={{ maxHeight: "280px", objectFit: "cover" }} />
+                  <img src={preview} alt="Visage analysé" className="w-full"
+                    style={{ maxHeight: "280px", objectFit: "contain", background: "#f3f4f6" }} />
                 )}
                 <div className="p-6">
                   <div className="flex items-center gap-3 mb-3">

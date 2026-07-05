@@ -42,7 +42,7 @@ Retourne UNIQUEMENT ce JSON valide, sans texte avant ni après :
 }
 
 ═══ RÈGLES ═══
-1. Si la photo est floue, mal cadrée ou ne montre pas clairement un visage → retourner null pour tous les champs sauf un message dans "conseil"
+1. Fais de ton mieux même si la photo n'est pas parfaite. Ne rejette que si le visage est totalement absent ou indéchiffrable (pas de traits visibles du tout)
 2. Rester positif et bienveillant dans le conseil
 3. Les tableaux doivent contenir des chaînes courtes (2-4 mots max)
 4. Ne jamais mentionner de marques commerciales`;
