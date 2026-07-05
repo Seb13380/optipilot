@@ -355,7 +355,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 <button onClick={() => setVerrierFiltre("")} className="text-xs px-2 py-1 rounded-full" style={{ color: "rgba(155,150,218,0.55)" }}>✕ Réinitialiser</button>
               )}
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:flex lg:flex-nowrap lg:overflow-x-auto lg:snap-x lg:snap-mandatory lg:pb-4 lg:-mx-6 lg:px-6">
               {(verrierFiltre
                 ? result.offres.map((o) => ({ ...o, verrier: verrierFiltre, gamme: getGammeVerrier(verrierFiltre, o.nom, result.typeVerre) }))
                 : result.offres
@@ -370,7 +370,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.12 }}
                     onClick={() => setSelected(offre.nom)}
-                    className="rounded-3xl p-7 cursor-pointer transition-all overflow-hidden"
+                    className="rounded-3xl p-7 cursor-pointer transition-all overflow-hidden lg:shrink-0 lg:w-95 lg:snap-start"
                     style={{
                       background: isSelected ? couleur.bg : "#0A0338",
                       border: `2px solid ${isSelected ? couleur.border : "rgba(83,49,208,0.35)"}`,
