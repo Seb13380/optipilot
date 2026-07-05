@@ -140,6 +140,7 @@ function DashboardPage() {
   const [newMember, setNewMember] = useState({ nom: "", email: "", motDePasse: "", role: "vendeur" });
   const [addMemberLoading, setAddMemberLoading] = useState(false);
   const [addMemberError, setAddMemberError] = useState<string | null>(null);
+  const [clientEnAttente, setClientEnAttente] = useState<Record<string, string> | null>(null);
 
   useEffect(() => {
     if (searchParams.get("upgraded") === "1") {
@@ -247,9 +248,88 @@ function DashboardPage() {
   const potentielRelances = relancesCount * (s?.panierMoyen ?? 0);
   const potentielPct = Math.min(100, Math.round((nbDevis / 5) * 100));
 
+  // Polling client en attente (depuis extension PC via Optimum Live)
+  useEffect(() => {
+    const token = localStorage.getItem("optipilot_token");
+    if (!token) return;
+    const check = async () => {
+      try {
+        const res = await fetch(`${BACKEND}/api/bridge/client-pull`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.payload) setClientEnAttente(data.payload as Record<string, string>);
+      } catch { /* silencieux */ }
+    };
+    check();
+    const interval = setInterval(check, 10000); // toutes les 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  async function accepterClientEnAttente() {
+    if (!clientEnAttente) return;
+    const token = localStorage.getItem("optipilot_token");
+    // Acquitter côté backend
+    try {
+      const res = await fetch(`${BACKEND}/api/bridge/client-pull`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data?.id) {
+        await fetch(`${BACKEND}/api/bridge/client-ack`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id: data.id }),
+        });
+      }
+    } catch { /* silencieux */ }
+    // Naviguer vers nouveau-client avec les paramètres
+    const params = new URLSearchParams(clientEnAttente);
+    setClientEnAttente(null);
+    router.push("/nouveau-client?" + params.toString());
+  }
+
   return (
     <div className="page-bg min-h-screen flex flex-col">
       <main className="flex-1 px-6 pb-10 pt-0 w-full max-w-7xl mx-auto">
+
+        {/* Bannière client en attente depuis Optimum Live */}
+        <AnimatePresence>
+          {clientEnAttente && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="fixed top-4 left-4 right-4 z-50 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xl"
+              style={{ background: "linear-gradient(135deg, #5331D0, #7B5CE5)", border: "1.5px solid rgba(255,255,255,0.2)" }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">👤</span>
+                <div>
+                  <p className="text-white font-bold text-base">Client importé depuis Optimum</p>
+                  <p className="text-purple-200 text-sm">{clientEnAttente.prenom} {clientEnAttente.nom}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setClientEnAttente(null)}
+                  className="px-3 py-2 rounded-xl text-sm font-semibold text-white"
+                  style={{ background: "rgba(255,255,255,0.15)" }}
+                >
+                  Ignorer
+                </button>
+                <button
+                  onClick={accepterClientEnAttente}
+                  className="px-4 py-2 rounded-xl text-sm font-bold text-purple-900"
+                  style={{ background: "white" }}
+                >
+                  Ouvrir →
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Confirmation upgrade */}
         <AnimatePresence>

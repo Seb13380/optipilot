@@ -33,11 +33,12 @@ model Magasin {
   onboardingDone   Boolean  @default(false)
   createdAt        DateTime @default(now())
 
-  utilisateurs  Utilisateur[]
-  clients       Client[]
-  devis         Devis[]
-  devisPending  DevisPending[]
-  configTarifs  ConfigTarif[]
+  utilisateurs   Utilisateur[]
+  clients        Client[]
+  devis          Devis[]
+  devisPending   DevisPending[]
+  clientPending  ClientPending[]
+  configTarifs   ConfigTarif[]
 
   @@map("magasins")
 }
@@ -219,6 +220,21 @@ model DevisPending {
   magasin Magasin @relation(fields: [magasinId], references: [id])
 
   @@map("devis_pending")
+}
+
+// ─── Client en attente de transfert vers l'iPad ────────────────────
+// Permet à l'extension PC d'envoyer un client qu'OptiPilot iPad va récupérer
+model ClientPending {
+  id          String   @id @default(uuid())
+  magasinId   String
+  payload     Json     // nom, prenom, ddn, telephone, email, mutuelle, numAdherent...
+  statut      String   @default("pending") // pending | done
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  magasin Magasin @relation(fields: [magasinId], references: [id])
+
+  @@map("client_pending")
 }
 
 // ─── Configuration globale (singleton) ─────────────────────────────

@@ -1643,6 +1643,57 @@ app.post("/api/bridge/devis-ack", requireAuth, async (req: AuthRequest, res) => 
   }
 });
 
+// ─── Relais PC → iPad (ClientPending) ────────────────────────────────────────
+// POST /api/bridge/client-push  → extension PC envoie un client importé depuis Optimum
+// GET  /api/bridge/client-pull  → iPad récupère le client en attente
+// POST /api/bridge/client-ack   → iPad acquitte la réception
+
+app.post("/api/bridge/client-push", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.user?.magasinId!;
+    const payload = req.body;
+    if (!payload || Object.keys(payload).length === 0) {
+      return res.status(400).json({ error: "Payload vide" });
+    }
+    // Remplacer tout client pending existant (1 seul à la fois)
+    await prisma.clientPending.deleteMany({ where: { magasinId, statut: "pending" } });
+    const pending = await prisma.clientPending.create({
+      data: { magasinId, payload, statut: "pending" },
+    });
+    console.log(`👤 ClientPending créé ${pending.id} pour magasin ${magasinId}`);
+    res.json({ id: pending.id });
+  } catch (err) {
+    console.error("POST /api/bridge/client-push error:", err);
+    res.status(500).json({ error: "Erreur push client" });
+  }
+});
+
+app.get("/api/bridge/client-pull", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.user?.magasinId!;
+    const pending = await prisma.clientPending.findFirst({
+      where: { magasinId, statut: "pending" },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(pending ?? null);
+  } catch (err) {
+    console.error("GET /api/bridge/client-pull error:", err);
+    res.status(500).json({ error: "Erreur pull client" });
+  }
+});
+
+app.post("/api/bridge/client-ack", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.body as { id: string };
+    if (!id) return res.status(400).json({ error: "id requis" });
+    await prisma.clientPending.update({ where: { id }, data: { statut: "done" } });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("POST /api/bridge/client-ack error:", err);
+    res.status(500).json({ error: "Erreur ack client" });
+  }
+});
+
 // ─── Start ────────────────────────────────────────────────
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 4000;
 httpServer.listen(PORT, () => {
