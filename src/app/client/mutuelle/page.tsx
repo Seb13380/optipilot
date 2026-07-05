@@ -462,7 +462,7 @@ export default function ClientMutuellePage() {
               </div>
               {/* Bouton photo manuel */}
               <button
-                onClick={captureFrame}
+                onClick={() => captureFrame()}
                 className="absolute top-4 right-4 px-4 py-2 rounded-xl text-sm font-semibold"
                 style={{ background: "rgba(0,0,0,0.5)", color: "white", backdropFilter: "blur(8px)" }}
               >
