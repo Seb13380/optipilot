@@ -93,7 +93,7 @@ export default function ClientMutuellePage() {
     return (total / (frame.data.length / 16)) < 10;
   }
 
-  const captureFrame = useCallback(() => {
+  const captureFrame = useCallback((autoAnalyze = false) => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -131,7 +131,11 @@ export default function ClientMutuellePage() {
     setImageDataUrl(dataUrl);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (timerRef.current) clearInterval(timerRef.current);
-    setStep("preview");
+    if (autoAnalyze) {
+      analyseMutuelleWithImage(dataUrl);
+    } else {
+      setStep("preview");
+    }
   }, []);
 
   const startStabilityLoop = useCallback(() => {
@@ -160,7 +164,7 @@ export default function ClientMutuellePage() {
           if (stableCountRef.current >= STABLE_FRAMES_NEEDED) {
             if (timerRef.current) clearInterval(timerRef.current);
             setAutoCapturing(true);
-            setTimeout(() => { captureFrame(); setAutoCapturing(false); }, 300);
+            setTimeout(() => { captureFrame(true); setAutoCapturing(false); }, 300);
           }
         } else {
           stableCountRef.current = 0;
@@ -225,7 +229,7 @@ export default function ClientMutuellePage() {
     };
   }, []);
 
-  async function analyseMutuelle() {
+  async function analyseMutuelleWithImage(image: string) {
     setScanning(true);
     setScanError("");
     setStep("result");
@@ -233,7 +237,7 @@ export default function ClientMutuellePage() {
       const res = await fetch("/api/scan-mutuelle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: imageDataUrl }),
+        body: JSON.stringify({ image }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -246,6 +250,10 @@ export default function ClientMutuellePage() {
     } finally {
       setScanning(false);
     }
+  }
+
+  async function analyseMutuelle() {
+    await analyseMutuelleWithImage(imageDataUrl);
   }
 
   function getBridgeUrl() {
@@ -349,7 +357,7 @@ export default function ClientMutuellePage() {
         </button>
         <div>
           <p className="text-lg font-bold" style={{ color: "#111827" }}>Scanner ma mutuelle</p>
-          <p className="text-sm" style={{ color: "#6b7280" }}>Photographiez votre carte de tiers payant</p>
+          <p className="text-sm" style={{ color: "#6b7280" }}>Tenez votre carte à la verticale</p>
         </div>
       </div>
 
@@ -385,7 +393,7 @@ export default function ClientMutuellePage() {
                         Activation de la caméra…
                       </p>
                       <p className="text-center text-sm mt-2" style={{ color: "#6b7280" }}>
-                        Posez votre carte mutuelle sur une surface éclairée.
+                        Tenez votre carte mutuelle à la verticale dans le cadre.
                       </p>
                     </div>
                     <motion.button
@@ -404,10 +412,11 @@ export default function ClientMutuellePage() {
             <div
               className="relative overflow-hidden"
               style={{
-                display: cameraStarted ? "block" : "none",
-                flex: videoRotation === 0 ? 1 : "none",
-                height: videoRotation !== 0 ? "75vw" : undefined,
-                minHeight: videoRotation !== 0 ? 180 : undefined,
+                display: cameraStarted ? "flex" : "none",
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#000",
               }}
             >
               <video
@@ -415,30 +424,23 @@ export default function ClientMutuellePage() {
                 autoPlay
                 playsInline
                 muted
-                style={videoRotation !== 0 ? {
-                  /* iOS paysage → on pivote +90° pour affichage portrait */
+                style={{
                   position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  width: "75vw",   // deviendra la hauteur visuelle après rotation
-                  height: "100vw", // deviendra la largeur visuelle après rotation
-                  transform: "translate(-50%, -50%) rotate(90deg)",
-                  objectFit: "cover",
-                } : {
+                  top: 0, left: 0,
                   width: "100%",
                   height: "100%",
-                  maxHeight: "65vh",
                   objectFit: "cover",
+                  transform: videoRotation !== 0 ? "rotate(90deg) scale(1.3)" : "none",
                 }}
               />
-              {/* Cadre carte horizontale */}
+              {/* Cadre carte portrait (carte tenue à la verticale) */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div
                   className="border-4 rounded-xl"
                   style={{
-                    width: "80%",
-                    maxWidth: 480,
-                    aspectRatio: "1.586",
+                    width: "55%",
+                    maxWidth: 260,
+                    aspectRatio: "0.63",
                     borderColor: autoCapturing ? "#22c55e" : `rgba(255,255,255,${0.4 + stableProgress * 0.006})`,
                     boxShadow: autoCapturing ? "0 0 24px rgba(34,197,94,0.6)" : "0 0 20px rgba(0,0,0,0.5)",
                     transition: "border-color 0.2s",
@@ -448,7 +450,7 @@ export default function ClientMutuellePage() {
               {/* Barre de stabilité */}
               <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-2 px-10">
                 <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.75)" }}>
-                  {autoCapturing ? "Capture en cours…" : stableProgress > 0 ? "Maintenez stable…" : "Cadrez votre carte mutuelle"}
+                  {autoCapturing ? "Capture en cours…" : stableProgress > 0 ? "Maintenez stable…" : "Tenez la carte à la verticale"}
                 </p>
                 <div className="w-full max-w-xs rounded-full h-2" style={{ background: "rgba(255,255,255,0.15)" }}>
                   <motion.div
