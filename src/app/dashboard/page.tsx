@@ -254,7 +254,7 @@ function DashboardPage() {
     if (!token) return;
     const check = async () => {
       try {
-        const res = await fetch(`${BACKEND}/api/bridge/client-pull`, {
+        const res = await fetch(`/api/bridge/client-push`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
@@ -272,13 +272,13 @@ function DashboardPage() {
     const token = localStorage.getItem("optipilot_token");
     // Acquitter côté backend
     try {
-      const res = await fetch(`${BACKEND}/api/bridge/client-pull`, {
+      const res = await fetch(`/api/bridge/client-push`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data?.id) {
-        await fetch(`${BACKEND}/api/bridge/client-ack`, {
-          method: "POST",
+        await fetch(`/api/bridge/client-push`, {
+          method: "DELETE",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ id: data.id }),
         });
