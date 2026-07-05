@@ -332,7 +332,7 @@ export default function AnalyseVisagePage() {
                   ✅ Montures recommandées
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {analyse.monturesRecommandees.map((m, i) => (
+                  {(analyse.monturesRecommandees ?? []).map((m, i) => (
                     <span key={i} className="px-4 py-2 rounded-full text-sm font-semibold"
                       style={{ background: "#ede9fe", color: "#5b21b6" }}>
                       {m}
@@ -348,7 +348,7 @@ export default function AnalyseVisagePage() {
                   ❌ À éviter
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {analyse.monturesAEviter.map((m, i) => (
+                  {(analyse.monturesAEviter ?? []).map((m, i) => (
                     <span key={i} className="px-4 py-2 rounded-full text-sm font-semibold"
                       style={{ background: "#fef2f2", color: "#dc2626" }}>
                       {m}
@@ -364,7 +364,7 @@ export default function AnalyseVisagePage() {
                   🎨 Couleurs conseillées
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {analyse.couleursRecommandees.map((c, i) => (
+                  {(analyse.couleursRecommandees ?? []).map((c, i) => (
                     <span key={i} className="px-4 py-2 rounded-full text-sm font-semibold"
                       style={{ background: "#f0fdf4", color: "#166534" }}>
                       {c}
@@ -393,7 +393,7 @@ export default function AnalyseVisagePage() {
                 </button>
                 <button
                   onClick={() => {
-                    const text = `Morphologie : ${analyse.morphologie}\nStyle : ${analyse.style}\nMontures : ${analyse.monturesRecommandees.join(", ")}\nCouleurs : ${analyse.couleursRecommandees.join(", ")}\n\n${analyse.conseil}`;
+                    const text = `Morphologie : ${analyse.morphologie ?? ""}\nStyle : ${analyse.style ?? ""}\nMontures : ${(analyse.monturesRecommandees ?? []).join(", ")}\nCouleurs : ${(analyse.couleursRecommandees ?? []).join(", ")}\n\n${analyse.conseil ?? ""}`;  
                     navigator.clipboard?.writeText(text);
                   }}
                   className="flex-1 py-3 rounded-2xl font-bold text-white"
