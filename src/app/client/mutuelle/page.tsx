@@ -89,8 +89,12 @@ export default function ClientMutuellePage() {
 
   function isBlackFrame(frame: ImageData): boolean {
     let total = 0;
-    for (let i = 0; i < frame.data.length; i += 16) total += frame.data[i];
-    return (total / (frame.data.length / 16)) < 10;
+    const len = frame.data.length;
+    // Luminance réelle (R+G+B) — évite les faux positifs sur cartes bleues/vertes/violettes
+    for (let i = 0; i < len; i += 16) {
+      total += (frame.data[i] + frame.data[i + 1] + frame.data[i + 2]) / 3;
+    }
+    return (total / (len / 16)) < 10;
   }
 
   const captureFrame = useCallback((autoAnalyze = false) => {
