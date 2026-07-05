@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
 import OpticianGuard from "@/components/OpticianGuard";
@@ -23,6 +24,7 @@ const CARNATION_COLOR: Record<string, string> = {
 
 // ─── Composant principal ──────────────────────────────────────
 export default function AnalyseVisagePage() {
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -398,21 +400,34 @@ export default function AnalyseVisagePage() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pb-4">
-                <button onClick={reset}
-                  className="flex-1 py-3 rounded-2xl font-bold transition-colors"
-                  style={{ background: "#f3f4f6", color: "#374151" }}>
-                  Nouvelle analyse
-                </button>
+              <div className="flex flex-col gap-3 pb-4">
                 <button
                   onClick={() => {
-                    const text = `Morphologie : ${analyse.morphologie ?? ""}\nStyle : ${analyse.style ?? ""}\nMontures : ${(analyse.monturesRecommandees ?? []).join(", ")}\nCouleurs : ${(analyse.couleursRecommandees ?? []).join(", ")}\n\n${analyse.conseil ?? ""}`;  
-                    navigator.clipboard?.writeText(text);
+                    if (analyse) {
+                      localStorage.setItem("optipilot_analyse_visage", JSON.stringify(analyse));
+                    }
+                    router.push("/recommandations");
                   }}
-                  className="flex-1 py-3 rounded-2xl font-bold text-white"
-                  style={{ background: "linear-gradient(135deg, #7c3aed, #5b21b6)" }}>
-                  📋 Copier
+                  className="w-full py-4 rounded-2xl font-bold text-white text-lg"
+                  style={{ background: "linear-gradient(135deg, #7c3aed, #5b21b6)", boxShadow: "0 4px 20px rgba(124,58,237,0.4)" }}>
+                  Continuer → Recommandations verres
                 </button>
+                <div className="flex gap-3">
+                  <button onClick={reset}
+                    className="flex-1 py-3 rounded-2xl font-bold transition-colors"
+                    style={{ background: "#f3f4f6", color: "#374151" }}>
+                    Nouvelle analyse
+                  </button>
+                  <button
+                    onClick={() => {
+                      const text = `Morphologie : ${analyse.morphologie ?? ""}\nStyle : ${analyse.style ?? ""}\nMontures : ${(analyse.monturesRecommandees ?? []).join(", ")}\nCouleurs : ${(analyse.couleursRecommandees ?? []).join(", ")}\n\n${analyse.conseil ?? ""}`;  
+                      navigator.clipboard?.writeText(text);
+                    }}
+                    className="flex-1 py-3 rounded-2xl font-bold text-white"
+                    style={{ background: "rgba(124,58,237,0.2)", color: "#7c3aed", border: "1px solid rgba(124,58,237,0.3)" }}>
+                    📋 Copier
+                  </button>
+                </div>
               </div>
 
             </motion.div>
