@@ -78,8 +78,9 @@ export async function POST(request: NextRequest) {
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
-      max_tokens: 800,
+      max_tokens: 1200,
       temperature: 0.2,
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "user",
@@ -98,12 +99,22 @@ export async function POST(request: NextRequest) {
     });
 
     const content = response.choices[0]?.message?.content || "";
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
+    if (!content) {
+      console.error("Réponse IA vide, finish_reason:", response.choices[0]?.finish_reason);
       return NextResponse.json({ error: "Réponse IA invalide" }, { status: 500 });
     }
 
-    const analyse = JSON.parse(jsonMatch[0]);
+    let analyse: unknown;
+    try {
+      analyse = JSON.parse(content);
+    } catch {
+      console.error("JSON.parse échoué, contenu:", content.slice(0, 200));
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        return NextResponse.json({ error: "Réponse IA invalide" }, { status: 500 });
+      }
+      analyse = JSON.parse(jsonMatch[0]);
+    }
     return NextResponse.json({ analyse, source: "gpt4o" });
 
   } catch (err) {
