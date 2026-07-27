@@ -189,6 +189,7 @@ function FounderBanner({ restants, onClaim }: { restants: number; onClaim: () =>
 // ─── Main Component ─────────────────────────────────────
 export default function LandingPage() {
   const router = useRouter();
+  const [curtainOpen, setCurtainOpen] = useState(false);
   const [navScrolled, setNavScrolled] = useState(false);
   const [demoSent, setDemoSent] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
@@ -213,6 +214,12 @@ export default function LandingPage() {
         if (typeof d.restants === "number") setAmbassadeurRestants(d.restants);
       })
       .catch(() => { /* ignore — garder la valeur par défaut */ });
+  }, []);
+
+  // Rideau d'ouverture
+  useEffect(() => {
+    const t = setTimeout(() => setCurtainOpen(true), 2400);
+    return () => clearTimeout(t);
   }, []);
 
   // Redirect if already logged in
@@ -271,6 +278,69 @@ export default function LandingPage() {
 
   return (
     <>
+      {/* ══════════════════════════ RIDEAU D'OUVERTURE ══════════════════════════ */}
+      <AnimatePresence>
+        {!curtainOpen && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none" }}>
+            {/* Panneau gauche */}
+            <motion.div
+              style={{
+                position: "absolute", top: 0, bottom: 0, left: 0, right: "50%",
+                background: "linear-gradient(160deg, #1C0B62 0%, #5331D0 100%)",
+              }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 1, ease: [0.76, 0, 0.24, 1], delay: 0.15 }}
+            />
+            {/* Panneau droit */}
+            <motion.div
+              style={{
+                position: "absolute", top: 0, bottom: 0, left: "50%", right: 0,
+                background: "linear-gradient(160deg, #5331D0 0%, #1C0B62 100%)",
+              }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 1, ease: [0.76, 0, 0.24, 1], delay: 0.15 }}
+            />
+            {/* Logo central + shimmer */}
+            <motion.div
+              style={{
+                position: "absolute", inset: 0,
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 16,
+              }}
+              exit={{ opacity: 0, transition: { duration: 0.25 } }}
+            >
+              {/* Conteneur logo avec shimmer */}
+              <div style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 14, overflow: "hidden", borderRadius: 16, padding: "12px 24px" }}>
+                <Image
+                  src="/assets/images/Logo-OptiPilot.png"
+                  alt="OptiPilot"
+                  width={56}
+                  height={56}
+                  style={{ objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(155,150,218,0.6))" }}
+                />
+                <span style={{ color: "#fff", fontSize: 30, fontWeight: 900, letterSpacing: "-0.02em" }}>
+                  OptiPilot
+                </span>
+                {/* Shimmer gauche → droite → gauche */}
+                <motion.div
+                  style={{
+                    position: "absolute", inset: 0,
+                    background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.55) 50%, transparent 100%)",
+                    width: "60%",
+                  }}
+                  initial={{ x: "-100%" }}
+                  animate={{ x: ["−100%", "260%", "-100%"] }}
+                  transition={{ duration: 1.6, times: [0, 0.55, 1], ease: "easeInOut", delay: 0.3 }}
+                />
+              </div>
+              <span style={{ color: "rgba(155,150,218,0.7)", fontSize: 13, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase" }}>
+                Copilote IA pour opticiens
+              </span>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* ─── JSON-LD structured data ─── */}
       <script
         type="application/ld+json"
@@ -698,15 +768,15 @@ export default function LandingPage() {
         <section
           id="solution"
           className="py-20 px-6"
-          style={{ background: "linear-gradient(160deg, #0a0318 0%, #1e1b4b 50%, #2e1d6e 100%)" }}
+          style={{ background: "linear-gradient(160deg, #f8f5ff 0%, #ede9fe 50%, #e8e0ff 100%)" }}
         >
           <div className="max-w-5xl mx-auto">
             <Reveal>
-              <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#a89cf7" }}>La solution</p>
-              <h2 className="text-3xl md:text-4xl font-black text-center mb-4 text-white">
+              <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#5331D0" }}>La solution</p>
+              <h2 className="text-3xl md:text-4xl font-black text-center mb-4" style={{ color: "#1C0B62" }}>
                 OptiPilot automatise ce qui prend du temps
               </h2>
-              <p className="text-center text-lg mb-16" style={{ color: "#9B96DA" }}>
+              <p className="text-center text-lg mb-16" style={{ color: "#4b5563" }}>
                 Pour que vous puissiez vous concentrer sur ce qui compte vraiment&nbsp;: votre expertise et votre client.
               </p>
             </Reveal>
@@ -748,8 +818,8 @@ export default function LandingPage() {
                   <div
                     className="flex flex-col sm:flex-row items-start gap-6 p-7 rounded-3xl"
                     style={{
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(155,150,218,0.15)",
+                      background: "#fff",
+                      border: "1px solid rgba(83,49,208,0.12)", boxShadow: "0 4px 24px rgba(83,49,208,0.08)",
                     }}
                   >
                     <div
@@ -762,8 +832,8 @@ export default function LandingPage() {
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-xs font-black" style={{ color: item.color }}>ÉTAPE {item.step}</span>
                       </div>
-                      <h3 className="text-xl font-black text-white mb-2">{item.title}</h3>
-                      <p className="text-base leading-relaxed" style={{ color: "#9B96DA" }}>{item.desc}</p>
+                      <h3 className="text-xl font-black mb-2" style={{ color: "#1C0B62" }}>{item.title}</h3>
+                      <p className="text-base leading-relaxed" style={{ color: "#4b5563" }}>{item.desc}</p>
                     </div>
                   </div>
                 </Rev>
@@ -802,18 +872,18 @@ export default function LandingPage() {
         </section>
 
         {/* ══════════════════════════ COMPATIBILITÉ LOGICIELS ══════════════════════════ */}
-        <section className="py-14 px-6" style={{ background: "linear-gradient(160deg, #0a0318 0%, #1e1b4b 100%)" }}>
+        <section className="py-14 px-6" style={{ background: "#f9f8ff" }}>
           <div className="max-w-5xl mx-auto">
             <Reveal>
-              <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#a89cf7" }}>Compatibilité</p>
-              <h2 className="text-2xl md:text-3xl font-black text-center mb-3 text-white">Compatible avec votre logiciel actuel</h2>
-              <p className="text-center text-base mb-10" style={{ color: "#9B96DA" }}>
+              <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#5331D0" }}>Compatibilité</p>
+              <h2 className="text-2xl md:text-3xl font-black text-center mb-3" style={{ color: "#1C0B62" }}>Compatible avec votre logiciel actuel</h2>
+              <p className="text-center text-base mb-10" style={{ color: "#4b5563" }}>
                 OptiPilot ne remplace pas votre logiciel opticien — il le complète. Il fonctionne en parallèle de votre outil :
                               </p>
             </Reveal>
             <div className="flex flex-wrap items-center justify-center gap-4">
               {["Optimum", "BB Soft", "iGest", "GEO Optique", "Optosoftware"].map((name) => (
-                <div key={name} className="px-6 py-3 rounded-2xl font-bold text-white text-sm" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(155,150,218,0.25)" }}>{name}</div>
+                <div key={name} className="px-6 py-3 rounded-2xl font-bold text-sm" style={{ background: "#fff", border: "1px solid rgba(83,49,208,0.2)", color: "#5331D0", boxShadow: "0 2px 12px rgba(83,49,208,0.08)" }}>{name}</div>
               ))}
             </div>
             <p className="text-center text-xs mt-6" style={{ color: "rgba(155,150,218,0.5)" }}>
@@ -1256,14 +1326,14 @@ export default function LandingPage() {
           id="demo"
           ref={demoRef}
           className="py-20 px-6"
-          style={{ background: "linear-gradient(160deg, #0a0318 0%, #1e1b4b 60%, #2e1d6e 100%)" }}
+          style={{ background: "linear-gradient(160deg, #f0edff 0%, #e8e0ff 60%, #ddd5ff 100%)" }}
         >
           <div className="max-w-2xl mx-auto">
             <Reveal>
-              <h2 className="text-3xl md:text-4xl font-black text-center mb-3 text-white">
+              <h2 className="text-3xl md:text-4xl font-black text-center mb-3" style={{ color: "#1C0B62" }}>
                 Voyez OptiPilot dans votre magasin — en 15 minutes chrono.
               </h2>
-              <p className="text-center text-lg mb-10" style={{ color: "#9B96DA" }}>
+              <p className="text-center text-lg mb-10" style={{ color: "#4b5563" }}>
                 On vous montre le scan d'ordonnance, le calcul mutuelle en direct et les relances automatiques. Sur vos propres données si vous le souhaitez. Sans engagement, aucune carte bancaire requise.
               </p>
             </Reveal>
@@ -1277,11 +1347,10 @@ export default function LandingPage() {
                   style={{ background: "rgba(34,197,94,0.1)", border: "2px solid rgba(34,197,94,0.3)" }}
                 >
                   <span className="text-5xl">{isAmbassadeur ? "🔥" : "✅"}</span>
-                  <h3 className="text-2xl font-black text-white mt-4 mb-2">
+                  <h3 className="text-2xl font-black mt-4 mb-2" style={{ color: "#1C0B62" }}>
                     {isAmbassadeur ? "Place Ambassadeur réservée !" : "Demande envoyée !"}
                   </h3>
-                  <p style={{ color: "#9B96DA" }}>
-                    {isAmbassadeur
+                  <p style={{ color: "#4b5563" }}>
                       ? "Votre place est réservée à 199€/mois à vie. Nous vous contactons dans les 24h pour finaliser."
                       : "Nous vous recontacterons dans les 24h pour planifier votre démo personnalisée."}
                   </p>
