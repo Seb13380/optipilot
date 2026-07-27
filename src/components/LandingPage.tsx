@@ -1351,6 +1351,7 @@ export default function LandingPage() {
                     {isAmbassadeur ? "Place Ambassadeur réservée !" : "Demande envoyée !"}
                   </h3>
                   <p style={{ color: "#4b5563" }}>
+                    {isAmbassadeur
                       ? "Votre place est réservée à 199€/mois à vie. Nous vous contactons dans les 24h pour finaliser."
                       : "Nous vous recontacterons dans les 24h pour planifier votre démo personnalisée."}
                   </p>
