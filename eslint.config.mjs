@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Extension Chrome — JS vanilla, pas de TypeScript
+    "extension/**",
   ]),
 ]);
 
