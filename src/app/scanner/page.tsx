@@ -157,23 +157,30 @@ export default function ScannerPage() {
   // Synchronise la ref (accessible dans les callbacks)
   useEffect(() => { videoRotationRef.current = videoRotation; }, [videoRotation]);
 
-  // Rotation : iOS livre toujours un flux paysage, on corrige via l'orientation de l'écran
+  // Rotation iOS : détecte le sens réel du flux après démarrage caméra
   useEffect(() => {
     if (!cameraStarted) return;
     const update = () => {
+      const video = videoRef.current;
       const isPortrait = window.innerWidth < window.innerHeight;
-      const rot = isPortrait ? 90 : 0;
-      setVideoRotation(rot);
-      videoRotationRef.current = rot;
+      if (!isPortrait) { setVideoRotation(0); videoRotationRef.current = 0; return; }
+      // En portrait : le flux est paysage → rotation nécessaire
+      // Détermine le sens via les dimensions réelles si disponibles
+      const streamW = video?.videoWidth ?? 0;
+      const streamH = video?.videoHeight ?? 0;
+      if (streamW > 0 && streamH > 0) {
+        // iOS rapporte parfois portrait (w<h) même si affiché paysage — on teste les deux
+        const rot = streamW >= streamH ? -90 : 0;
+        setVideoRotation(rot); videoRotationRef.current = rot;
+      } else {
+        // Fallback si dimensions non dispo : -90
+        setVideoRotation(-90); videoRotationRef.current = -90;
+      }
     };
-    const t = setTimeout(update, 300);
+    const t = setTimeout(update, 600);
     window.addEventListener("orientationchange", update);
     window.addEventListener("resize", update);
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener("orientationchange", update);
-      window.removeEventListener("resize", update);
-    };
+    return () => { clearTimeout(t); window.removeEventListener("orientationchange", update); window.removeEventListener("resize", update); };
   }, [cameraStarted]);
 
   // Calcul de la différence entre deux frames
