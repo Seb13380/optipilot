@@ -750,11 +750,15 @@ function DashboardPage() {
             return (
               <Rev key={item.id} delay={i * 0.1}>
                 <motion.button
+                  initial="rest"
+                  whileHover="hover"
                   whileTap={{ scale: 0.95 }}
-                  whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                  animate="rest"
                   onClick={() => router.push(item.href)}
-                  className="w-full rounded-3xl p-6 flex flex-col items-center gap-2"
+                  className="w-full rounded-3xl p-6 flex flex-col items-center gap-2 overflow-hidden relative"
                   style={{ background: item.gradient, minHeight: 140, boxShadow: `0 4px 20px ${item.shadow}` }}
+                  variants={{ rest: { y: 0 }, hover: { y: -6 } }}
+                  transition={{ duration: 0.2 }}
                 >
                   <div className="opacity-95">{item.icon}</div>
                   <span className="text-white text-lg font-bold text-center leading-snug" style={{ whiteSpace: "pre-line" }}>
@@ -763,6 +767,19 @@ function DashboardPage() {
                   <span className="text-white text-xs font-medium text-center" style={{ opacity: 0.65 }}>
                     {t[item.descKey]}
                   </span>
+                  {/* Ligne qui s'allonge au survol — effet cc-card-line */}
+                  <motion.div
+                    variants={{ rest: { scaleX: 0 }, hover: { scaleX: 1 } }}
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    style={{
+                      position: "absolute",
+                      bottom: 0, left: 0, right: 0,
+                      height: 3,
+                      background: "rgba(255,255,255,0.55)",
+                      transformOrigin: "left",
+                      borderRadius: "0 0 24px 24px",
+                    }}
+                  />
                 </motion.button>
               </Rev>
             );
