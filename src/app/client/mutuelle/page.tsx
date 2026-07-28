@@ -31,8 +31,9 @@ interface BridgeClient {
 
 type Step = "camera" | "preview" | "result" | "lookup" | "create";
 
-const STABILITY_THRESHOLD = 8;
-const STABLE_FRAMES_NEEDED = 10;
+const STABILITY_THRESHOLD = 28;
+const STABLE_FRAMES_NEEDED = 5;
+const AUTO_CAPTURE_TIMEOUT_MS = 6000;
 
 export default function ClientMutuellePage() {
   const router = useRouter();
@@ -192,7 +193,7 @@ export default function ClientMutuellePage() {
         video.srcObject = stream;
         video.play().catch(() => {});
         setCameraStarted(true);
-        setTimeout(startStabilityLoop, 800);
+        setTimeout(startStabilityLoop, 2500); // délai mise au point caméra
       };
       // videoRef est toujours monté (video toujours dans le DOM)
       if (videoRef.current) {
@@ -225,6 +226,14 @@ export default function ClientMutuellePage() {
     }
     startCamera();
   }, [startCamera, router]);
+
+  // Fallback : capture forcée après 6s si la stabilité n'est pas atteinte
+  useEffect(() => {
+    if (!cameraStarted) return;
+    const t = setTimeout(() => { if (step === "camera") captureFrame(); }, AUTO_CAPTURE_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraStarted]);
 
   useEffect(() => {
     return () => {
@@ -437,14 +446,14 @@ export default function ClientMutuellePage() {
                   transform: videoRotation !== 0 ? "rotate(90deg) scale(1.3)" : "none",
                 }}
               />
-              {/* Cadre carte portrait (carte tenue à la verticale) */}
+              {/* Cadre carte paysage (format carte bancaire/mutuelle) */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div
                   className="border-4 rounded-xl"
                   style={{
-                    width: "55%",
-                    maxWidth: 260,
-                    aspectRatio: "0.63",
+                    width: "85%",
+                    maxWidth: 340,
+                    aspectRatio: "1.59",
                     borderColor: autoCapturing ? "#22c55e" : `rgba(255,255,255,${0.4 + stableProgress * 0.006})`,
                     boxShadow: autoCapturing ? "0 0 24px rgba(34,197,94,0.6)" : "0 0 20px rgba(0,0,0,0.5)",
                     transition: "border-color 0.2s",
@@ -454,7 +463,7 @@ export default function ClientMutuellePage() {
               {/* Barre de stabilité */}
               <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-2 px-10">
                 <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.75)" }}>
-                  {autoCapturing ? "Capture en cours…" : stableProgress > 0 ? "Maintenez stable…" : "Tenez la carte à la verticale"}
+                  {autoCapturing ? "Capture en cours…" : stableProgress > 0 ? "Maintenez stable…" : "Posez la carte à l'horizontale"}
                 </p>
                 <div className="w-full max-w-xs rounded-full h-2" style={{ background: "rgba(255,255,255,0.15)" }}>
                   <motion.div
