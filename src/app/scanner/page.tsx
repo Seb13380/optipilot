@@ -512,24 +512,32 @@ export default function ScannerPage() {
                   margin: "0 auto",
                 }}
               >
-                <video
-                  ref={videoRef}
-                  playsInline
-                  muted
-                  style={videoRotation !== 0 ? {
-                    position: "absolute",
-                    top: "50%", left: "50%",
-                    width: "100vmax", height: "100vmax",
-                    transform: "translate(-50%, -50%) rotate(-90deg)",
-                    objectFit: "cover",
-                    display: cameraStarted ? "block" : "none",
-                  } : {
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: cameraStarted ? "block" : "none",
-                  }}
-                />
+                {/* DEBUG TEMPORAIRE — à supprimer */}
+                <div style={{ position: "absolute", top: 4, left: 4, zIndex: 200, background: "rgba(255,0,0,0.85)", color: "#fff", fontSize: 11, padding: "2px 6px", borderRadius: 4, fontFamily: "monospace" }}>
+                  rot={videoRotation} | {typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "?"}
+                </div>
+                {/* Wrapper div pour rotation — plus fiable que CSS direct sur <video> en iOS */}
+                <div style={videoRotation !== 0 ? {
+                  position: "absolute",
+                  top: "50%", left: "50%",
+                  width: "133%", height: "133%",
+                  transform: "translate(-50%, -50%) rotate(-90deg)",
+                  transformOrigin: "center center",
+                } : {
+                  position: "absolute", inset: 0,
+                }}>
+                  <video
+                    ref={videoRef}
+                    playsInline
+                    muted
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: cameraStarted ? "block" : "none",
+                    }}
+                  />
+                </div>
                 <canvas ref={canvasRef} className="hidden" />
 
                 {/* Cadre de guidage bien visible */}
