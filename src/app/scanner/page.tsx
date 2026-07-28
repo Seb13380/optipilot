@@ -232,25 +232,30 @@ export default function ScannerPage() {
     if (!video.videoWidth || video.videoWidth === 0) return;
     if (video.readyState < 4) return;
 
-    const w = video.videoWidth;
-    const h = video.videoHeight || 720;
-    const needsRotation = videoRotationRef.current !== 0;
+    const rawW = video.videoWidth;
+    const rawH = video.videoHeight || 720;
+    // iOS peut rapporter des dimensions portrait même si le flux physique est paysage.
+    // On utilise Math.max/min pour extraire les vraies dimensions du flux de façon robuste.
+    const isPortraitDevice = window.innerWidth < window.innerHeight;
+    const streamLong  = Math.max(rawW, rawH); // côté long  = largeur du flux physique paysage
+    const streamShort = Math.min(rawW, rawH); // côté court = hauteur du flux physique paysage
 
     let outW: number, outH: number;
-    if (needsRotation) {
-      outW = h; outH = w;
+    if (isPortraitDevice) {
+      // Flux paysage → sortie portrait
+      outW = streamShort; outH = streamLong;
       canvas.width = outW; canvas.height = outH;
       const ctx = canvas.getContext("2d")!;
       ctx.save();
       ctx.translate(outW / 2, outH / 2);
       ctx.rotate(-Math.PI / 2);
-      ctx.drawImage(video, -w / 2, -h / 2, w, h);
+      ctx.drawImage(video, -streamLong / 2, -streamShort / 2, streamLong, streamShort);
       ctx.restore();
     } else {
-      outW = w; outH = h;
+      outW = rawW; outH = rawH;
       canvas.width = outW; canvas.height = outH;
       const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(video, 0, 0, w, h);
+      ctx.drawImage(video, 0, 0, rawW, rawH);
     }
 
     // Vérifier que le contenu capturé n'est pas noir
