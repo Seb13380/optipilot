@@ -268,21 +268,19 @@ export default function ScannerPage() {
 
     const rawDataUrl = tmpCanvas.toDataURL("image/jpeg", 0.98);
 
-    // Rotation post-capture : si device en portrait, l'image brute est paysage → rotation -90° CCW
-    const isPortraitDevice = window.innerWidth < window.innerHeight;
-    if (isPortraitDevice && outW > outH) {
-      // Image paysage (outW > outH) → rotation CCW 90° → portrait
+    // Rotation post-capture : on utilise videoRotationRef (même état que la CSS du live feed)
+    // Si CSS appliquait rotate(-90deg), le canvas a capturé le flux brut → il faut la même rotation
+    if (videoRotationRef.current !== 0) {
       const rotCanvas = document.createElement("canvas");
-      rotCanvas.width = outH * scale;   // portrait : width = ancienne hauteur
-      rotCanvas.height = outW * scale;  // portrait : height = ancienne largeur
+      rotCanvas.width = outH * scale;
+      rotCanvas.height = outW * scale;
       const rCtx = rotCanvas.getContext("2d")!;
       rCtx.save();
-      rCtx.translate(0, outW * scale);  // translate au bas-gauche du nouveau canvas
-      rCtx.rotate(-Math.PI / 2);        // rotation -90° CCW
+      rCtx.translate(0, outW * scale);
+      rCtx.rotate(-Math.PI / 2);
       rCtx.drawImage(tmpCanvas, 0, 0);
       rCtx.restore();
-      const dataUrl = rotCanvas.toDataURL("image/jpeg", 0.98);
-      setImageDataUrl(dataUrl);
+      setImageDataUrl(rotCanvas.toDataURL("image/jpeg", 0.98));
     } else {
       setImageDataUrl(rawDataUrl);
     }
