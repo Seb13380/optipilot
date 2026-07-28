@@ -50,12 +50,22 @@ function classerPresbyti(add: number): null | "débutante" | "confirmée" | "ava
   return "avancée";
 }
 
-// Indice recommandé selon la correction maximale
-function indiceRecommande(maxSphereAbs: number, maxCylAbs: number): string {
-  const total = maxSphereAbs + maxCylAbs * 0.5;
-  if (total < 2) return "1.5 (standard)";
-  if (total < 4) return "1.6 (verres fins recommandés)";
-  if (total < 6) return "1.67 (verres ultra-fins fortement recommandés)";
+// Indice recommandé basé sur la puissance méridienne maximale : max(|S|, |S+C|) par oeil
+// C'est la puissance du méridien le plus fort qui conditionne l'épaisseur du verre.
+function indiceRecommande(maxSphereAbs: number, maxCylAbs: number, odSphere?: number, odCylindre?: number, ogSphere?: number, ogCylindre?: number): string {
+  // Si on a les valeurs signées, on calcule proprement ; sinon on utilise l'approximation
+  let puissanceMax: number;
+  if (odSphere !== undefined && odCylindre !== undefined && ogSphere !== undefined && ogCylindre !== undefined) {
+    const odMax = Math.max(Math.abs(odSphere), Math.abs(odSphere + odCylindre));
+    const ogMax = Math.max(Math.abs(ogSphere), Math.abs(ogSphere + ogCylindre));
+    puissanceMax = Math.max(odMax, ogMax);
+  } else {
+    // Approximation conservative si valeurs signées non disponibles
+    puissanceMax = maxSphereAbs + maxCylAbs;
+  }
+  if (puissanceMax <= 2) return "1.5 (standard)";
+  if (puissanceMax <= 4) return "1.6 (verres fins recommandés)";
+  if (puissanceMax <= 6) return "1.67 (verres ultra-fins fortement recommandés)";
   return "1.74 (verres ultra-fins obligatoires)";
 }
 
@@ -143,7 +153,7 @@ export function analyserOrdonnance(
   const typeVerre: "unifocal" | "progressif" = presbytie !== null ? "progressif" : "unifocal";
 
   // ─── Indice recommandé ─────────────────────────────────────────────────────
-  const indice = indiceRecommande(maxSphereAbs, maxCyl);
+  const indice = indiceRecommande(maxSphereAbs, maxCyl, odS, val(ordo.odCylindre), ogS, val(ordo.ogCylindre));
 
   // ─── Message naturel ───────────────────────────────────────────────────────
   const prenom = ordo.prenomPatient?.trim();

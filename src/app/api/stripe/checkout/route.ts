@@ -6,8 +6,9 @@ import prisma from "@/lib/prisma";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const PRICE_IDS: Record<string, string> = {
-  standard: process.env.STRIPE_PRICE_STANDARD!,
-  premium: process.env.STRIPE_PRICE_PREMIUM!,
+  standard:    process.env.STRIPE_PRICE_STANDARD!,
+  premium:     process.env.STRIPE_PRICE_PREMIUM!,
+  ambassadeur: process.env.STRIPE_PRICE_AMBASSADEUR!,
 };
 
 export async function POST(req: NextRequest) {
@@ -29,6 +30,18 @@ export async function POST(req: NextRequest) {
   const priceId = PRICE_IDS[plan];
   if (!priceId) {
     return NextResponse.json({ error: "Plan invalide" }, { status: 400 });
+  }
+
+  // ── Garde Ambassadeur : vérifier les places restantes ─────────────────────
+  if (plan === "ambassadeur") {
+    const config = await prisma.configGlobale.upsert({
+      where: { id: "global" },
+      update: {},
+      create: { id: "global", ambassadeursRestants: 10, ambassadeursTotal: 10 },
+    });
+    if (config.ambassadeursRestants <= 0) {
+      return NextResponse.json({ error: "Plus de places Ambassadeur disponibles" }, { status: 409 });
+    }
   }
 
   // ── Récupération du magasin ───────────────────────────────────────────────

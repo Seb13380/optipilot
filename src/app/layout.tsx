@@ -1,25 +1,29 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import OptiPilotFooter from "@/components/OptiPilotFooter";
+import { AppProvider } from "@/lib/AppContext";
 
 export const metadata: Metadata = {
-  title: "OptiPilot — Copilote IA Opticien",
-  description: "Logiciel IA complémentaire pour opticiens",
+  title: {
+    default: "OptiPilot — Le logiciel qui fait gagner 1 600€/mois aux opticiens indépendants",
+    template: "%s | OptiPilot",
+  },
+  description: "OptiPilot est le logiciel IA pour opticiens indépendants. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle, relances automatiques. Essai gratuit 30 jours.",
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/assets/images/logo-OptiPilot.png", type: "image/png" },
+      { url: "/assets/images/Logo-OptiPilot.png", type: "image/png" },
     ],
     apple: [
-      { url: "/assets/images/logo-OptiPilot.png", type: "image/png" },
+      { url: "/assets/images/Logo-OptiPilot.png", type: "image/png" },
     ],
-    shortcut: "/assets/images/logo-OptiPilot.png",
+    shortcut: "/assets/images/Logo-OptiPilot.png",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "OptiPilot",
-    startupImage: "/assets/images/logo-OptiPilot.png",
+    startupImage: "/assets/images/Logo-OptiPilot.png",
   },
 };
 
@@ -43,8 +47,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="antialiased page-bg">
-        {children}
-        <OptiPilotFooter />
+        <AppProvider>
+          {children}
+          <OptiPilotFooter />
+        </AppProvider>
       </body>
     </html>
   );

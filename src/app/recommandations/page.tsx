@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
+import { useApp } from "@/lib/AppContext";
 import type { OffreVerre, RecommandationResult } from "@/lib/recommandation";
 import { calculerRecommandations, getCategorieCorrection } from "@/lib/recommandation";
-import { repondreQuestion, questionsSuggerees, type ContexteClient, type ReponseConseiller } from "@/lib/conseillerOpticien";
+import { repondreQuestion, questionsSuggerees, objectionsSuggerees, type ContexteClient, type ReponseConseiller } from "@/lib/conseillerOpticien";
 import { analyserOrdonnance } from "@/lib/analyseOrdonnance";
 
 // Correspondance réseau opticien → réseau mutuelle (doit rester coté opticien — jamais exposé au client)
@@ -28,8 +30,44 @@ function estDansReseau(nomMutuelle: string): boolean {
   );
 }
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
+// Gammes par verrier, tier et type de verre
+function getGammeVerrier(verrier: string, tier: "Essentiel" | "Confort" | "Premium", typeVerre: string): string {
+  const prog = typeVerre === "Progressif" || typeVerre === "Profondeur de champ";
+  const MAP: Record<string, Record<"Essentiel" | "Confort" | "Premium", string>> = {
+    "Essilor": {
+      Essentiel: prog ? "Varilux Liberty 3.0"  : "Crizal Easy 1.5",
+      Confort:   prog ? "Varilux Comfort Max"   : "Eyezen+ 1.6",
+      Premium:   prog ? "Varilux Physio 3.0"    : "Crizal Sapphire",
+    },
+    "Hoya": {
+      Essentiel: prog ? "Summit CD"             : "Hilux 1.5",
+      Confort:   prog ? "Hoyalux GP Wide"       : "Hilux 1.6",
+      Premium:   prog ? "Hoyalux iD MySelf"     : "Nulux EP 1.67",
+    },
+    "Zeiss": {
+      Essentiel: prog ? "Progressive Precision" : "EnergizeMe 1.5",
+      Confort:   prog ? "Progressive Plus 2"    : "Single Vision ClearView",
+      Premium:   prog ? "Individual 2"          : "Individual",
+    },
+    "Nikon": {
+      Essentiel: prog ? "Presio S"              : "See Max 1.5",
+      Confort:   prog ? "Presio Power"          : "See Max Life",
+      Premium:   prog ? "Presio ClearMax"       : "See Max Life Pro",
+    },
+    "BBGR": {
+      Essentiel: prog ? "Novitex 1.5"           : "Orma 1.5",
+      Confort:   prog ? "Novitex 1.6"           : "Confort Digital 1.6",
+      Premium:   prog ? "Novitex Expert"        : "Confort Digital Pro",
+    },
+  };
+  return MAP[verrier]?.[tier] ?? "";
+}
+
 export default function RecommandationsPage() {
   const router = useRouter();
+  const { t } = useApp();
   const [result, setResult] = useState<RecommandationResult | null>(null);
   const [selected, setSelected] = useState<"Essentiel" | "Confort" | "Premium" | null>("Confort");
   const [loading, setLoading] = useState(true);
@@ -41,6 +79,7 @@ export default function RecommandationsPage() {
   const [chatMessages, setChatMessages] = useState<{ from: "user" | "bot"; texte: string; conseils?: string[]; attention?: string }[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
+  const [verrierFiltre, setVerrierFiltre] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,6 +132,8 @@ export default function RecommandationsPage() {
         ogCylindre: parseFloat(ordo.ogCylindre) || 0,
         odAddition: parseFloat(ordo.odAddition) || 0,
         ogAddition: parseFloat(ordo.ogAddition) || 0,
+        deuxPaires: ordo.deuxPaires === "true" || ordo.deuxPaires === true,
+        intoleranceProgressifs: ordo.intoleranceProgressifs === "true" || ordo.intoleranceProgressifs === true,
       };
 
       // Catégorie de correction pour choisir le bon tarif SS et mutuelle
@@ -105,7 +146,7 @@ export default function RecommandationsPage() {
         const niveau = client.niveauGarantie || quest.niveauGarantie;
         if (nomMutuelle && niveau) {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/mutuelles/${encodeURIComponent(nomMutuelle)}/${encodeURIComponent(niveau)}`
+            `${BACKEND}/api/mutuelles/${encodeURIComponent(nomMutuelle)}/${encodeURIComponent(niveau)}`
           );
           if (res.ok) {
             const data = await res.json();
@@ -169,7 +210,7 @@ export default function RecommandationsPage() {
         const confort = offres.find((o) => o.nom === "Confort");
         const premium = offres.find((o) => o.nom === "Premium");
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis`, {
+        const res = await fetch(`${BACKEND}/api/devis`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -202,21 +243,22 @@ export default function RecommandationsPage() {
   }
 
   const PROFILS: Record<string, string> = {
-  Essentiel: "100% Santé · budget maîtrisé · correction simple",
-  Confort:   "Quotidien · écrans · conduite · meilleur rapport qualité/prix",
-  Premium:   "Forte correction · exigence visuelle maximale · précision",
+  Essentiel: t.profileEssentiel,
+  Confort:   t.profileConfort,
+  Premium:   t.profilePremium,
 };
 
 const COULEURS: Record<string, { bg: string; border: string; badge: string; text: string }> = {
-    Essentiel: { bg: "#071a0e", border: "#22c55e", badge: "#22c55e", text: "#22c55e" },
+    Essentiel: { bg: "#0e0b2c", border: "#e879f9", badge: "#a855f7", text: "#e879f9" },
     Confort:   { bg: "#0e0b2c", border: "#7c5fec", badge: "#5331D0", text: "#a89cf7" },
     Premium:   { bg: "#0e0b2c", border: "#9c5ff7", badge: "#5331D0", text: "#c084fc" },
   };
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
-        title="Recommandations OptiPilot"
+        title={`${t.recommendations} OptiPilot`}
         showBack
         onBack={() => router.push("/questionnaire")}
       />
@@ -233,7 +275,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
               </svg>
             </div>
             <p className="text-2xl font-bold" style={{ color: "#FDFDFE" }}>
-              Calcul des recommandations...
+              {t.calculating}
             </p>
           </div>
         ) : result ? (
@@ -246,15 +288,15 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   initial={{ opacity: 0, y: -12 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="mb-5 p-4 rounded-2xl flex items-center gap-4"
-                  style={{ background: "rgba(83,49,208,0.18)", border: "1.5px solid rgba(124,95,236,0.45)" }}
+                  style={{ background: "rgba(15,5,65,0.92)", border: "1.5px solid rgba(124,95,236,0.7)" }}
                 >
                   <div className="shrink-0 w-14 h-14 rounded-xl overflow-hidden" style={{ border: "1.5px solid rgba(124,95,236,0.4)" }}>
                     <Image src="/assets/images/IA_Optipilot.png" alt="OptiPilot IA" width={56} height={56} className="w-full h-full object-cover" />
                   </div>
                   <p className="text-base font-semibold leading-snug" style={{ color: "#a89cf7" }}>
-                    OptiPilot estime que l&apos;offre{" "}
+                    {t.optiPilotEstimates}{" "}
                     <span className="font-black" style={{ color: "#FDFDFE" }}>{offreRecommandee.nom}</span>{" "}
-                    vous apportera le meilleur rapport qualité / prix pour votre profil.
+                    {t.bestForProfile}
                   </p>
                 </motion.div>
               ) : null;
@@ -266,14 +308,13 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6 p-5 rounded-2xl"
-                style={{ background: "rgba(83,49,208,0.30)", border: "1.5px solid rgba(155,150,218,0.6)" }}
+                style={{ background: "rgba(15,5,65,0.92)", border: "1.5px solid rgba(155,150,218,0.7)" }}
               >
                 {/* Intro personnalisée */}
                 <p className="text-xl font-bold mb-5" style={{ color: "#FDFDFE" }}>
                   {clientCivilite && clientNom
-                    ? <>{clientCivilite} <span style={{ color: "#a89cf7" }}>{clientNom}</span>, d&apos;après </>
-                    : "D'après "}
-                  l&apos;analyse de votre correction et vos réponses au questionnaire, nous vous recommandons&nbsp;:
+                    ? <>{clientCivilite} <span style={{ color: "#a89cf7" }}>{clientNom}</span>{t.analysisPrefix}</>
+                    : t.analysisTitle}
                 </p>
                 {/* Liste des conseils */}
                 <ul className="flex flex-col gap-4">
@@ -287,14 +328,38 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   ))}
                 </ul>
                 <p className="text-base mt-4 font-medium" style={{ color: "rgba(155,150,218,0.6)" }}>
-                  Demandez à votre opticien{magasinNom ? <> <span className="font-bold" style={{ color: "#a89cf7" }}>{magasinNom}</span></> : ""} pour plus d&apos;informations.
+                  {t.askOptician}{magasinNom ? <> <span className="font-bold" style={{ color: "#a89cf7" }}>{magasinNom}</span></> : ""} {t.forMoreInfo}
                 </p>
               </motion.div>
             )}
 
             {/* Cartes des 3 offres */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {result.offres.map((offre, i) => {
+            {/* Filtre verrier */}
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold shrink-0" style={{ color: "rgba(155,150,218,0.7)" }}>Verrier :</p>
+              {["Essilor", "Hoya", "Zeiss", "Nikon", "BBGR"].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setVerrierFiltre(verrierFiltre === v ? "" : v)}
+                  className="px-3 py-1.5 rounded-full text-sm font-semibold transition-all"
+                  style={{
+                    background: verrierFiltre === v ? "rgba(83,49,208,0.5)" : "rgba(83,49,208,0.12)",
+                    color: verrierFiltre === v ? "#FDFDFE" : "#9B96DA",
+                    border: `1.5px solid ${verrierFiltre === v ? "rgba(139,92,246,0.7)" : "rgba(83,49,208,0.3)"}`,
+                  }}
+                >
+                  {v}
+                </button>
+              ))}
+              {verrierFiltre && (
+                <button onClick={() => setVerrierFiltre("")} className="text-xs px-2 py-1 rounded-full" style={{ color: "rgba(155,150,218,0.55)" }}>✕ Réinitialiser</button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 gap-6 lg:flex lg:flex-nowrap lg:overflow-x-auto lg:snap-x lg:snap-mandatory lg:pb-4 lg:-mx-6 lg:px-6">
+              {(verrierFiltre
+                ? result.offres.map((o) => ({ ...o, verrier: verrierFiltre, gamme: getGammeVerrier(verrierFiltre, o.nom, result.typeVerre) }))
+                : result.offres
+              ).map((offre, i) => {
                 const couleur = COULEURS[offre.nom];
                 const isSelected = selected === offre.nom;
 
@@ -305,7 +370,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.12 }}
                     onClick={() => setSelected(offre.nom)}
-                    className="rounded-3xl p-7 cursor-pointer transition-all overflow-hidden"
+                    className="rounded-3xl p-7 cursor-pointer transition-all overflow-hidden lg:shrink-0 lg:w-95 lg:snap-start"
                     style={{
                       background: isSelected ? couleur.bg : "#0A0338",
                       border: `2px solid ${isSelected ? couleur.border : "rgba(83,49,208,0.35)"}`,
@@ -319,7 +384,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                           className="px-3.5 py-1.5 rounded-full text-base font-bold text-white"
                           style={{ background: couleur.badge }}
                         >
-                          ★ {offre.badge}
+                          ★ {t.recommendedBadge}
                         </span>
                       </div>
                     )}
@@ -361,6 +426,24 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                       ))}
                     </div>
 
+                    {/* Alerte amincis — uniquement sur Essentiel si correction lé nécessite un indice supérieur */}
+                    {offre.nom === "Essentiel" && result.alerteAmincis && (
+                      <div
+                        className="mb-4 p-3 rounded-xl"
+                        style={{ background: "rgba(192,132,252,0.1)", border: "1.5px solid rgba(192,132,252,0.5)" }}
+                      >
+                        <p className="text-sm font-bold mb-1" style={{ color: "#c084fc" }}>
+                          ! {result.alerteAmincis.titre}
+                        </p>
+                        <p className="text-sm leading-snug" style={{ color: "rgba(192,132,252,0.9)" }}>
+                          {result.alerteAmincis.message}
+                        </p>
+                        <p className="text-xs mt-1.5 font-medium" style={{ color: "rgba(192,132,252,0.6)" }}>
+                          Vous pouvez tout de même choisir cette offre — c'est votre décision.
+                        </p>
+                      </div>
+                    )}
+
                     {/* Prix */}
                     <div
                       className="flex items-center justify-between p-4 rounded-2xl"
@@ -368,7 +451,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     >
                       <div>
                         <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
-                          Prix verres
+                          {t.lensPrice}
                         </p>
                         <p className="text-xl font-bold" style={{ color: "#FDFDFE" }}>
                           {offre.prixVerres}€
@@ -376,7 +459,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                       </div>
                       <div className="text-center">
                         <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
-                          Remboursement
+                          {t.reimbursement}
                         </p>
                         <p className="text-xl font-bold text-green-400">
                           {offre.remboursementSecu + offre.remboursementMutuelle}€
@@ -384,7 +467,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                       </div>
                       <div className="text-right">
                         <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>
-                          Reste à charge
+                          {t.outOfPocket}
                         </p>
                         <p className="text-3xl font-black" style={{ color: couleur.text }}>
                           {Math.round(offre.resteACharge)}€
@@ -407,7 +490,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                           className="w-full py-5 rounded-2xl text-white font-bold text-xl mt-4"
                           style={{ background: `linear-gradient(135deg, ${couleur.border}, ${couleur.badge})` }}
                         >
-                          Choisir cette offre →
+                          {t.chooseOffer}
                         </motion.button>
                       )}
                     </AnimatePresence>
@@ -415,6 +498,81 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 );
               })}
             </div>
+
+            {/* Conseils spécifiques à la monture (percée, nylor, verres positifs) */}
+            {result.conseilsMonture && result.conseilsMonture.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.38 }}
+                className="mt-4 p-5 rounded-2xl"
+                style={{ background: "rgba(30,10,80,0.92)", border: "2px solid rgba(192,132,252,0.9)" }}
+              >
+                <p className="text-lg font-bold mb-3" style={{ color: "#e9d5ff" }}>
+                  {t.frameAdviceTitle}
+                </p>
+                <ul className="flex flex-col gap-3">
+                  {result.conseilsMonture.map((conseil, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span
+                        className="shrink-0 mt-0.5 w-6 h-6 rounded-full flex items-center justify-center text-sm font-black"
+                        style={{ background: "rgba(192,132,252,0.35)", color: "#f3e8ff" }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="text-base leading-relaxed" style={{ color: "#f3e8ff" }}>
+                        {conseil}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
+
+            {/* Bloc info opticien : puissances méridionales + transpositions cyl+ */}
+            {result.transpositions && result.puissancesMax && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.41 }}
+                className="mt-4 p-5 rounded-2xl"
+                style={{ background: "rgba(15,5,65,0.93)", border: "2px solid rgba(124,58,237,0.9)" }}
+              >
+                <p className="text-base font-bold mb-3 uppercase tracking-widest" style={{ color: "#c4b5fd" }}>
+                  {t.opticianData}
+                </p>
+                <div className="flex flex-col gap-2 text-base" style={{ color: "#ddd6fe", fontFamily: "monospace" }}>
+                  <div className="flex gap-2 items-start">
+                    <span className="shrink-0 font-bold" style={{ color: "#c084fc" }}>OD</span>
+                    <span>
+                      {t.maxPower} : <strong>{result.puissancesMax.od.toFixed(2)} D</strong>
+                      {" · "}cyl+ : {result.transpositions.od.sphere >= 0 ? "+" : ""}{result.transpositions.od.sphere.toFixed(2)}
+                      {" ("}
+                      {result.transpositions.od.cylindre >= 0 ? "+" : ""}{result.transpositions.od.cylindre.toFixed(2)}
+                      {") "}
+                      {result.transpositions.od.axe}°
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <span className="shrink-0 font-bold" style={{ color: "#c084fc" }}>OG</span>
+                    <span>
+                      {t.maxPower} : <strong>{result.puissancesMax.og.toFixed(2)} D</strong>
+                      {" · "}cyl+ : {result.transpositions.og.sphere >= 0 ? "+" : ""}{result.transpositions.og.sphere.toFixed(2)}
+                      {" ("}
+                      {result.transpositions.og.cylindre >= 0 ? "+" : ""}{result.transpositions.og.cylindre.toFixed(2)}
+                      {") "}
+                      {result.transpositions.og.axe}°
+                    </span>
+                  </div>
+                  <div className="mt-1 pt-2" style={{ borderTop: "1px solid rgba(124,58,237,0.3)" }}>
+                    <span style={{ color: "#9B96DA" }}>
+                      {t.powerForIndex} : <strong style={{ color: "#a78bfa" }}>{result.puissancesMax.max.toFixed(2)} D</strong>
+                      {" → "}{t.recommendedIndex.toLowerCase()} : <strong style={{ color: "#e879f9" }}>{result.indiceMin}</strong>
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* Bouton comparateur */}
             <motion.button
@@ -424,13 +582,13 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
               whileTap={{ scale: 0.98 }}
               onClick={() => router.push("/comparateur")}
               className="w-full py-5 rounded-2xl flex items-center justify-center gap-3 mt-2"
-              style={{ background: "rgba(83,49,208,0.35)", border: "2px solid rgba(155,150,218,0.6)" }}
+              style={{ background: "rgba(20,8,72,0.90)", border: "2px solid rgba(155,150,218,0.6)" }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <rect x="3" y="3" width="8" height="18" rx="2" stroke="#FDFDFE" strokeWidth="2"/>
                 <rect x="13" y="7" width="8" height="14" rx="2" stroke="#FDFDFE" strokeWidth="2"/>
               </svg>
-              <span className="text-xl font-bold" style={{ color: "#FDFDFE" }}>Comparer visuellement les verres →</span>
+              <span className="text-xl font-bold" style={{ color: "#FDFDFE" }}>{t.compareVisually}</span>
             </motion.button>
 
             {/* ─── Conseiller OptiPilot — Chat Expert ─── */}
@@ -439,7 +597,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
               className="mt-4 rounded-2xl overflow-hidden"
-              style={{ border: "1.5px solid rgba(83,49,208,0.45)", background: "rgba(10,3,56,0.7)" }}
+              style={{ border: "1.5px solid rgba(83,49,208,0.7)", background: "rgba(10,3,56,0.95)" }}
             >
               {/* En-tête cliquable */}
               <button
@@ -450,8 +608,8 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   <Image src="/assets/images/IA_Optipilot.png" alt="Conseiller" width={48} height={48} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-base font-black" style={{ color: "#FDFDFE" }}>Conseiller OptiPilot</p>
-                  <p className="text-sm" style={{ color: "#9B96DA" }}>Posez vos questions — je connais votre ordonnance et vos besoins</p>
+                  <p className="text-base font-black" style={{ color: "#FDFDFE" }}>{t.advisorTitle}</p>
+                  <p className="text-sm" style={{ color: "#9B96DA" }}>{t.advisorSub}</p>
                 </div>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0 transition-transform" style={{ transform: chatOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
                   <path d="M6 9l6 6 6-6" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -469,7 +627,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     {/* Questions suggérées */}
                     {chatMessages.length === 0 && (
                       <div className="mb-4">
-                        <p className="text-sm font-semibold mb-3" style={{ color: "rgba(155,150,218,0.7)" }}>Questions fréquentes pour votre profil :</p>
+                        <p className="text-sm font-semibold mb-3" style={{ color: "rgba(155,150,218,0.7)" }}>{t.frequentQuestions}</p>
                         <div className="flex flex-wrap gap-2">
                           {questionsSuggerees(contexteConseiller).map((q, i) => (
                             <button
@@ -477,6 +635,21 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                               onClick={() => envoyerQuestion(q)}
                               className="text-sm px-3 py-2 rounded-xl font-medium transition-all"
                               style={{ background: "rgba(83,49,208,0.2)", color: "#a89cf7", border: "1px solid rgba(83,49,208,0.4)" }}
+                            >
+                              {q}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Objections commerciales */}
+                        <p className="text-sm font-semibold mt-4 mb-2" style={{ color: "rgba(236,72,153,0.7)" }}>Le client hésite ?</p>
+                        <div className="flex flex-wrap gap-2">
+                          {objectionsSuggerees().map((q, i) => (
+                            <button
+                              key={i}
+                              onClick={() => envoyerQuestion(q)}
+                              className="text-sm px-3 py-2 rounded-xl font-medium transition-all"
+                              style={{ background: "rgba(236,72,153,0.12)", color: "#f472b6", border: "1px solid rgba(236,72,153,0.35)" }}
                             >
                               {q}
                             </button>
@@ -526,7 +699,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") envoyerQuestion(chatInput); }}
-                        placeholder="Posez votre question…"
+                        placeholder={t.askQuestion}
                         className="flex-1 px-4 py-3 rounded-xl text-base outline-none"
                         style={{ background: "rgba(83,49,208,0.12)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.35)" }}
                       />
@@ -558,7 +731,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                     )}
 
                     <p className="text-xs mt-3 text-center" style={{ color: "rgba(155,150,218,0.4)" }}>
-                      Conseils généraux uniquement — votre opticien est votre référence pour les décisions finales.
+                      {t.advisorDisclaimer}
                     </p>
                   </motion.div>
                 )}
@@ -572,7 +745,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 className="mt-6 rounded-2xl p-6"
-                style={{ background: "rgba(10,3,56,0.75)", border: "1.5px solid rgba(236,72,153,0.4)" }}
+                style={{ background: "rgba(20,5,80,0.95)", border: "2px solid rgba(236,72,153,0.9)" }}
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div
@@ -586,7 +759,7 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider mb-0.5" style={{ color: "#f472b6" }}>
-                      Équipement complémentaire recommandé
+                      {t.supplementaryEquip}
                     </p>
                     <p className="text-lg font-black" style={{ color: "#FDFDFE" }}>
                       {result.secondePaire.titre}
@@ -598,9 +771,9 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
                 </p>
                 <div
                   className="p-4 rounded-xl"
-                  style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.25)" }}
+                  style={{ background: "rgba(236,72,153,0.18)", border: "1px solid rgba(236,72,153,0.6)" }}
                 >
-                  <p className="text-sm font-bold mb-1" style={{ color: "#f472b6" }}>Conseil opticien</p>
+                  <p className="text-base font-bold mb-1" style={{ color: "#f9a8d4" }}>{t.opticianAdvice}</p>
                   <p className="text-base" style={{ color: "#FDFDFE" }}>
                     {result.secondePaire.conseil}
                   </p>
@@ -611,5 +784,6 @@ const COULEURS: Record<string, { bg: string; border: string; badge: string; text
         ) : null}
       </main>
     </div>
+    </OpticianGuard>
   );
 }

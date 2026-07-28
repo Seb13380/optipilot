@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -72,6 +72,21 @@ export default function QuestionnairePage() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<QuestionnaireData>({});
 
+  // Pré-remplir mutuelle + niveau depuis le scan de carte
+  useEffect(() => {
+    try {
+      const clientRaw = localStorage.getItem("optipilot_client");
+      if (clientRaw) {
+        const c = JSON.parse(clientRaw);
+        setData((prev) => ({
+          ...prev,
+          ...(c.mutuelle        ? { mutuelle: c.mutuelle }              : {}),
+          ...(c.niveauGarantie  ? { niveauGarantie: c.niveauGarantie } : {}),
+        }));
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   function next() {
     if (step < TOTAL_STEPS) setStep((s) => s + 1);
     else submitQuestionnaire();
@@ -79,7 +94,7 @@ export default function QuestionnairePage() {
 
   function back() {
     if (step > 1) setStep((s) => s - 1);
-    else router.back();
+    else router.replace("/scanner");
   }
 
   async function submitQuestionnaire() {
@@ -113,7 +128,7 @@ export default function QuestionnairePage() {
       // Continue sans backend
     }
 
-    router.push("/recommandations");
+    router.push("/monture-choix");
   }
 
   function update(patch: Partial<QuestionnaireData>) {
@@ -130,14 +145,14 @@ export default function QuestionnairePage() {
           whileTap={{ scale: 0.9 }}
           onClick={back}
           className="flex items-center gap-2 font-semibold text-xl"
-          style={{ color: "#9B96DA" }}
+          style={{ color: "#5331D0" }}
         >
           <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-            <path d="M15 19l-7-7 7-7" stroke="#9B96DA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M15 19l-7-7 7-7" stroke="#5331D0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Retour
         </motion.button>
-        <span className="text-lg font-medium" style={{ color: "rgba(155,150,218,0.55)" }}>
+        <span className="text-lg font-medium" style={{ color: "#6b7280" }}>
           {step} / {TOTAL_STEPS}
         </span>
       </div>
@@ -149,9 +164,10 @@ export default function QuestionnairePage() {
         className="flex justify-center mb-6"
       >
         <img
-          src="/assets/images/logo-OptiPilot.png"
+          src="/assets/images/Logo-OptiPilot.png"
           alt="OptiPilot"
-          className="h-16 w-auto object-contain drop-shadow-2xl"
+          className="h-16 w-auto object-contain"
+          style={{ filter: "drop-shadow(0 0 20px rgba(124,58,237,0.6)) drop-shadow(0 0 40px rgba(124,58,237,0.35))" }}
         />
       </motion.div>
 
@@ -159,7 +175,7 @@ export default function QuestionnairePage() {
       <div className="px-6 mb-8">
         <div
           className="w-full h-1 rounded-full overflow-hidden"
-          style={{ background: "rgba(83,49,208,0.25)" }}
+          style={{ background: "rgba(124,58,237,0.15)" }}
         >
           <motion.div
             className="h-full rounded-full"

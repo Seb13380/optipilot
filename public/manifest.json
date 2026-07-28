@@ -9,7 +9,7 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/assets/images/logo-OptiPilot.png",
+      "src": "/assets/images/Logo-OptiPilot.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any maskable"

@@ -24,14 +24,21 @@ model Magasin {
   trialEndsAt      DateTime?
   stripeCustomerId String?
   stripeSubId      String?
+  // Catalogue verriers personnalisé (JSON array de TarifVerrier)
+  verriersConfig   Json?
+  // Personnalisation visuelle
+  logoUrl          String?  // base64 ou URL
+  couleurPrimaire  String?  // ex: "#5331D0"
   // Setup
   onboardingDone   Boolean  @default(false)
   createdAt        DateTime @default(now())
 
-  utilisateurs Utilisateur[]
-  clients      Client[]
-  devis        Devis[]
-  configTarifs ConfigTarif[]
+  utilisateurs   Utilisateur[]
+  clients        Client[]
+  devis          Devis[]
+  devisPending   DevisPending[]
+  clientPending  ClientPending[]
+  configTarifs   ConfigTarif[]
 
   @@map("magasins")
 }
@@ -46,6 +53,7 @@ model Utilisateur {
   createdAt  DateTime @default(now())
 
   magasin Magasin @relation(fields: [magasinId], references: [id])
+  devis   Devis[]
 
   @@map("utilisateurs")
 }
@@ -169,12 +177,14 @@ model Devis {
   montantRecuMutuelle     Decimal?
   datePaiementMutuelle    DateTime?
   motifRejetMutuelle      String?
+  createdByUserId String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  client     Client      @relation(fields: [clientId], references: [id])
-  magasin    Magasin     @relation(fields: [magasinId], references: [id])
-  ordonnance Ordonnance? @relation(fields: [ordonnanceId], references: [id])
+  client     Client        @relation(fields: [clientId], references: [id])
+  magasin    Magasin       @relation(fields: [magasinId], references: [id])
+  ordonnance Ordonnance?   @relation(fields: [ordonnanceId], references: [id])
+  createdBy  Utilisateur?  @relation(fields: [createdByUserId], references: [id])
 
   @@map("devis")
 }
@@ -195,4 +205,43 @@ model Questionnaire {
   client Client @relation(fields: [clientId], references: [id])
 
   @@map("questionnaires")
+}
+
+// ─── Devis en attente de transfert vers Optimum Live ───────────────
+// Permet à l'iPad d'envoyer un devis finalisé que le bridge PC va récupérer
+model DevisPending {
+  id          String   @id @default(uuid())
+  magasinId   String
+  payload     Json     // toutes les données du devis (client, ordo, offre, prix...)
+  statut      String   @default("pending") // pending | processing | done | error
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  magasin Magasin @relation(fields: [magasinId], references: [id])
+
+  @@map("devis_pending")
+}
+
+// ─── Client en attente de transfert vers l'iPad ────────────────────
+// Permet à l'extension PC d'envoyer un client qu'OptiPilot iPad va récupérer
+model ClientPending {
+  id          String   @id @default(uuid())
+  magasinId   String
+  payload     Json     // nom, prenom, ddn, telephone, email, mutuelle, numAdherent...
+  statut      String   @default("pending") // pending | done
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  magasin Magasin @relation(fields: [magasinId], references: [id])
+
+  @@map("client_pending")
+}
+
+// ─── Configuration globale (singleton) ─────────────────────────────
+model ConfigGlobale {
+  id                   String @id @default("global")
+  ambassadeursRestants Int    @default(10)
+  ambassadeursTotal    Int    @default(10)
+
+  @@map("config_globale")
 }

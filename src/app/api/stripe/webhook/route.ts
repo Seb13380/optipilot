@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const magasinId = session.metadata?.magasinId;
+        const plan = session.metadata?.plan;
         if (!magasinId) break;
 
         await prisma.magasin.update({
@@ -39,6 +40,17 @@ export async function POST(req: NextRequest) {
             stripeCustomerId: session.customer as string,
           },
         });
+
+        // Décrémenter le compteur Ambassadeur si c'est ce plan
+        if (plan === "ambassadeur") {
+          await prisma.configGlobale.upsert({
+            where: { id: "global" },
+            update: { ambassadeursRestants: { decrement: 1 } },
+            create: { id: "global", ambassadeursRestants: 9, ambassadeursTotal: 10 },
+          });
+          console.log(`🤝 Slot Ambassadeur décrémenté pour magasin ${magasinId}`);
+        }
+
         console.log(`✅ Magasin ${magasinId} passé en Pro`);
         break;
       }

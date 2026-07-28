@@ -10,16 +10,30 @@ const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://optipilot.vercel.app",
+  "https://optipilot.fr",
+  "https://www.optipilot.fr",
+  ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
+];
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
 app.use(cors({
-  origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: "10mb" }));
@@ -32,6 +46,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   // Routes publiques — pas de JWT
   if (
     req.path === "/health" ||
+    req.path === "/api/health" ||
     req.path.startsWith("/api/auth/") ||
     (req.method === "POST" && req.path === "/api/noemie/push")
   ) return next();
@@ -50,8 +65,46 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 app.use(requireAuth);
 
-// ─── Health Check ─────────────────────────────────────────
+// ─── Middleware vérification expiration essai ─────────────
+// Bloque l'accès si le plan "trial" est expiré
+// Exceptions : routes de paiement/abonnement + stats (pour afficher la bannière)
+const TRIAL_EXEMPT_PATHS = [
+  "/api/auth/",
+  "/api/stripe/",
+  "/api/abonnement",
+  "/api/stats/",
+  "/api/magasin/",
+  "/health",
+  "/api/health",
+];
+app.use(async (req, res, next) => {
+  const user = (req as AuthRequest).user;
+  if (!user?.magasinId) return next();
+  if (TRIAL_EXEMPT_PATHS.some((p) => req.path.startsWith(p))) return next();
+
+  try {
+    const magasin = await prisma.magasin.findUnique({
+      where: { id: user.magasinId },
+      select: { plan: true, trialEndsAt: true },
+    });
+    if (
+      magasin?.plan === "trial" &&
+      magasin?.trialEndsAt &&
+      new Date(magasin.trialEndsAt) < new Date()
+    ) {
+      return res.status(402).json({
+        error: "Essai expiré",
+        code: "TRIAL_EXPIRED",
+        message: "Votre période d'essai de 30 jours est terminée. Abonnez-vous pour continuer.",
+      });
+    }
+  } catch { /* en cas d'erreur DB, on laisse passer */ }
+  next();
+});
 app.get("/health", (_req, res) => {
+  res.json({ status: "ok", service: "OptiPilot Backend" });
+});
+app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "OptiPilot Backend" });
 });
 
@@ -61,6 +114,30 @@ app.post("/api/auth/login", async (req, res) => {
     const { email, motDePasse } = req.body;
     if (!email || !motDePasse) {
       return res.status(400).json({ error: "Email et mot de passe requis" });
+    }
+
+    // ── Compte démo intégré (toujours disponible) ──────────────────────────
+    if (email === "demo@optipilot.fr" && motDePasse === "demo1234") {
+      const demoToken = signToken({
+        userId: "demo-user",
+        magasinId: "demo-magasin",
+        role: "admin",
+        email: "demo@optipilot.fr",
+      });
+      return res.json({
+        token: demoToken,
+        user: {
+          id: "demo-user",
+          nom: "Dr. Martin",
+          email: "demo@optipilot.fr",
+          role: "admin",
+          magasinId: "demo-magasin",
+          magasinNom: "Optique Lumière (Démo)",
+          onboardingDone: true,
+          plan: "premium",
+          trialEndsAt: null,
+        },
+      });
     }
 
     const user = await prisma.utilisateur.findUnique({
@@ -120,7 +197,7 @@ app.post("/api/auth/register", async (req, res) => {
     }
 
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
 
     // Créer le magasin puis l'utilisateur (transaction interactive non supportée par proxy Prisma)
     const magasin = await prisma.magasin.create({
@@ -300,7 +377,12 @@ app.get("/api/devis/:magasinId", async (req, res) => {
 
 app.post("/api/devis", async (req, res) => {
   try {
-    const devis = await prisma.devis.create({ data: req.body });
+    const authUser = (req as AuthRequest).user;
+    // Extraire createdByUserId du body s'il y était (évite override client)
+    const { createdByUserId: _ignored, ...bodyData } = req.body;
+    const devis = await prisma.devis.create({
+      data: { ...bodyData, createdByUserId: authUser?.userId ?? null },
+    });
     io.to(req.body.magasinId).emit("nouveau_devis", devis);
     res.json(devis);
   } catch (err) {
@@ -341,10 +423,163 @@ app.patch("/api/devis/:id", async (req, res) => {
   }
 });
 
+// ─── Envoi devis par email ────────────────────────────────
+app.post("/api/devis/:id/email", async (req, res) => {
+  try {
+    const devis = await (prisma.devis as any).findUnique({
+      where: { id: req.params.id },
+      include: { client: true },
+    });
+    if (!devis) return res.status(404).json({ error: "Devis non trouvé" });
+
+    const emailTo: string = devis.client?.email ?? req.body.email ?? "";
+    if (!emailTo) return res.status(400).json({ error: "Aucun email pour ce client" });
+
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      // SMTP non configuré — on logue mais on ne bloque pas
+      console.log(`[EMAIL non configuré] Devis ${req.params.id} → ${emailTo}`);
+      return res.json({ ok: true, warn: "SMTP non configuré" });
+    }
+
+    const nodemailer = await import("nodemailer");
+    const transporter = nodemailer.default.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+
+    const offre = (devis.offreChoisie ?? "").replace(/^\w/, (c: string) => c.toUpperCase());
+    const total = Number(devis.totalConfort ?? 0);
+    const rac = Number(devis.racConfort ?? 0);
+    const remSS = Number(devis.remboursementSS ?? 0);
+    const remMut = Number(devis.remboursementMutuelle ?? 0);
+    const prenom = devis.client?.prenom ?? "";
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || "noreply@optipilot.fr",
+      to: emailTo,
+      subject: `Votre devis OptiPilot — Offre ${offre}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:auto;background:#0A0338;color:#FDFDFE;border-radius:16px;padding:32px">
+          <h2 style="color:#9B96DA;margin-top:0">Votre devis OptiPilot</h2>
+          <p>Bonjour ${prenom},</p>
+          <p>Votre opticien vous envoie votre devis <strong>${offre}</strong>.</p>
+          <table style="width:100%;border-collapse:collapse;margin:24px 0">
+            <tr><td style="padding:8px 0;color:#9B96DA">Total</td><td style="text-align:right;font-weight:bold">${total}€</td></tr>
+            <tr><td style="padding:8px 0;color:#9B96DA">Remb. Sécu</td><td style="text-align:right;color:#a78bfa">–${remSS}€</td></tr>
+            <tr><td style="padding:8px 0;color:#9B96DA">Remb. Mutuelle</td><td style="text-align:right;color:#a78bfa">–${remMut}€</td></tr>
+            <tr style="border-top:1px solid rgba(83,49,208,0.4)">
+              <td style="padding:12px 0;font-weight:bold;font-size:18px">Reste à charge</td>
+              <td style="text-align:right;font-weight:900;font-size:24px;color:#a78bfa">${rac}€</td>
+            </tr>
+          </table>
+          <p style="color:rgba(155,150,218,0.6);font-size:12px">Ce devis est valable 30 jours. Les remboursements mutuelles sont donnés à titre indicatif.</p>
+        </div>`,
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[EMAIL]", err);
+    res.status(500).json({ error: "Erreur envoi email" });
+  }
+});
+
+// ─── Stats Équipe (responsable + premium) ────────────────
+app.get("/api/stats/team/:magasinId", async (req, res) => {
+  const authUser = (req as AuthRequest).user;
+  const { magasinId } = req.params;
+  if (authUser?.magasinId !== magasinId || !(authUser?.role === "admin" || authUser?.role === "responsable")) {
+    return res.status(403).json({ error: "Accès refusé" });
+  }
+  try {
+    const magasin = await prisma.magasin.findUnique({ where: { id: magasinId }, select: { plan: true } });
+    if (!magasin || !(magasin.plan === "premium" || magasin.plan === "pro")) {
+      return res.status(403).json({ error: "Fonctionnalité Premium uniquement" });
+    }
+    const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
+    const users = await prisma.utilisateur.findMany({
+      where: { magasinId },
+      select: { id: true, nom: true, role: true },
+      orderBy: { nom: "asc" },
+    });
+    const members = await Promise.all(users.map(async (u) => {
+      const [devisMois, ventesMois, panierData] = await Promise.all([
+        prisma.devis.count({ where: { magasinId, createdByUserId: u.id, createdAt: { gte: monthAgo } } }),
+        prisma.devis.count({ where: { magasinId, createdByUserId: u.id, statut: "accepté", createdAt: { gte: monthAgo } } }),
+        prisma.devis.findMany({
+          where: { magasinId, createdByUserId: u.id, statut: "accepté", createdAt: { gte: monthAgo } },
+          select: { totalConfort: true, totalEssentiel: true },
+        }),
+      ]);
+      const panierValues = panierData.map(d => Number(d.totalConfort ?? d.totalEssentiel ?? 0)).filter(v => v > 0);
+      const panierMoyen = panierValues.length > 0 ? Math.round(panierValues.reduce((a, b) => a + b, 0) / panierValues.length) : 0;
+      return {
+        userId: u.id, nom: u.nom, role: u.role,
+        devisMois, ventesMois,
+        tauxConversion: devisMois > 0 ? Math.round((ventesMois / devisMois) * 100) : 0,
+        panierMoyen,
+      };
+    }));
+    res.json({ members });
+  } catch (err) {
+    console.error("Team stats error:", err);
+    res.status(500).json({ error: "Erreur stats équipe" });
+  }
+});
+
+// ─── Gestion équipe ───────────────────────────────────────
+app.get("/api/utilisateurs/:magasinId", async (req, res) => {
+  const authUser = (req as AuthRequest).user;
+  if (authUser?.magasinId !== req.params.magasinId || !(authUser?.role === "admin" || authUser?.role === "responsable")) {
+    return res.status(403).json({ error: "Accès refusé" });
+  }
+  try {
+    const users = await prisma.utilisateur.findMany({
+      where: { magasinId: req.params.magasinId },
+      select: { id: true, nom: true, email: true, role: true, createdAt: true },
+      orderBy: { nom: "asc" },
+    });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur liste utilisateurs" });
+  }
+});
+
+app.post("/api/utilisateurs", async (req, res) => {
+  const authUser = (req as AuthRequest).user;
+  if (!authUser || !(authUser.role === "admin" || authUser.role === "responsable")) {
+    return res.status(403).json({ error: "Accès refusé" });
+  }
+  const { nom, email, motDePasse, role } = req.body as { nom?: string; email?: string; motDePasse?: string; role?: string };
+  if (!nom?.trim() || !email?.trim() || !motDePasse) {
+    return res.status(400).json({ error: "nom, email et motDePasse requis" });
+  }
+  if (motDePasse.length < 6) {
+    return res.status(400).json({ error: "Mot de passe trop court (6 caractères min)" });
+  }
+  const safeRole = ["opticien", "vendeur", "responsable", "admin"].includes(role ?? "") ? role! : "opticien";
+  try {
+    const existing = await prisma.utilisateur.findUnique({ where: { email: email.trim() } });
+    if (existing) return res.status(409).json({ error: "Un compte existe déjà avec cet email" });
+    const hash = await hashPassword(motDePasse);
+    const user = await prisma.utilisateur.create({
+      data: { magasinId: authUser.magasinId, nom: nom.trim(), email: email.trim(), motDePasse: hash, role: safeRole },
+      select: { id: true, nom: true, email: true, role: true },
+    });
+    res.status(201).json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur création utilisateur" });
+  }
+});
+
 // ─── Stats Dashboard ──────────────────────────────────────
 app.get("/api/stats/:magasinId", async (req, res) => {
   try {
     const { magasinId } = req.params;
+    const userId = req.query.userId ? String(req.query.userId) : null;
+    const uf = userId ? { createdByUserId: userId } : {};
     const now = new Date();
     const today = new Date(now); today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
@@ -365,15 +600,15 @@ app.get("/api/stats/:magasinId", async (req, res) => {
       magasin,
     ] = await Promise.all([
       // Devis créés aujourd'hui
-      prisma.devis.count({ where: { magasinId, createdAt: { gte: today, lt: tomorrow } } }),
+      prisma.devis.count({ where: { magasinId, ...uf, createdAt: { gte: today, lt: tomorrow } } }),
       // Devis acceptés aujourd'hui
-      prisma.devis.count({ where: { magasinId, statut: "accepté", createdAt: { gte: today, lt: tomorrow } } }),
+      prisma.devis.count({ where: { magasinId, statut: "accepté", ...uf, createdAt: { gte: today, lt: tomorrow } } }),
       // Devis cette semaine
-      prisma.devis.count({ where: { magasinId, createdAt: { gte: weekAgo } } }),
+      prisma.devis.count({ where: { magasinId, ...uf, createdAt: { gte: weekAgo } } }),
       // Ventes cette semaine
-      prisma.devis.count({ where: { magasinId, statut: "accepté", createdAt: { gte: weekAgo } } }),
+      prisma.devis.count({ where: { magasinId, statut: "accepté", ...uf, createdAt: { gte: weekAgo } } }),
       // Devis ce mois
-      prisma.devis.count({ where: { magasinId, createdAt: { gte: monthAgo } } }),
+      prisma.devis.count({ where: { magasinId, ...uf, createdAt: { gte: monthAgo } } }),
       // Total clients
       prisma.client.count({ where: { magasinId } }),
       // Nouveaux clients cette semaine
@@ -382,12 +617,12 @@ app.get("/api/stats/:magasinId", async (req, res) => {
       prisma.client.count({ where: { magasinId, createdAt: { gte: monthAgo } } }),
       // Panier moyen (devis acceptés, total confort en priorité sinon essentiel)
       prisma.devis.findMany({
-        where: { magasinId, statut: "accepté", createdAt: { gte: monthAgo } },
+        where: { magasinId, statut: "accepté", ...uf, createdAt: { gte: monthAgo } },
         select: { totalConfort: true, totalEssentiel: true, racConfirme: true, racReel: true },
       }),
       // 5 derniers devis avec client
       prisma.devis.findMany({
-        where: { magasinId },
+        where: { magasinId, ...uf },
         orderBy: { createdAt: "desc" },
         take: 5,
         include: { client: { select: { nom: true, prenom: true } } },
@@ -484,7 +719,7 @@ app.put("/api/magasin/:id", async (req, res) => {
     const {
       nom, siret, adresse, ville, codePostal,
       email, telephone, reseauMutuelle, loginMutuelle, mdpMutuelle,
-      onboardingDone,
+      onboardingDone, logoUrl, couleurPrimaire, verriersConfig,
     } = req.body;
 
     // Vérifier si le siret est déjà utilisé par UN AUTRE magasin
@@ -511,6 +746,9 @@ app.put("/api/magasin/:id", async (req, res) => {
         ...(loginMutuelle !== undefined && { loginMutuelle }),
         ...(mdpMutuelle !== undefined && { mdpMutuelle }),
         ...(onboardingDone !== undefined && { onboardingDone }),
+        ...(logoUrl !== undefined && { logoUrl }),
+        ...(couleurPrimaire !== undefined && { couleurPrimaire }),
+        ...(verriersConfig !== undefined && { verriersConfig }),
       },
     });
     res.json(magasin);
@@ -955,7 +1193,9 @@ app.post("/api/rapprochements/confirmer-releve", async (req, res) => {
 app.get("/api/rapprochements/:magasinId", async (req, res) => {
   try {
     const { magasinId } = req.params;
-    const { filtre } = req.query as { filtre?: string };
+    const { filtre, mois } = req.query as { filtre?: string; mois?: string };
+    const dateLimit = mois ? (() => { const d = new Date(); d.setMonth(d.getMonth() - parseInt(mois, 10)); return d; })() : null;
+    const dateWhere = dateLimit ? { updatedAt: { gte: dateLimit } } : {};
 
     // Conditions de filtre sur les statuts TP
     let statutsWhere = {};
@@ -1009,6 +1249,7 @@ app.get("/api/rapprochements/:magasinId", async (req, res) => {
           { statutPaiementMutuelle: { not: null } },
         ],
         ...statutsWhere,
+        ...dateWhere,
       },
       include: {
         client: { select: { nom: true, prenom: true, mutuelle: true } },
@@ -1026,6 +1267,7 @@ app.get("/api/rapprochements/:magasinId", async (req, res) => {
           { statutPaiementSS: { not: null } },
           { statutPaiementMutuelle: { not: null } },
         ],
+        ...dateWhere,
       },
       select: {
         statutPaiementSS: true,
@@ -1177,6 +1419,75 @@ app.get("/api/rapprochements/devis-acceptes/:magasinId", async (req, res) => {
   }
 });
 
+// ─── Équipe opticiens (routes consolidées — pas de doublon) ──────────────────
+
+// Créer un opticien dans le même magasin (admin/responsable uniquement)
+app.post("/api/utilisateur", async (req, res) => {
+  try {
+    const requester = (req as AuthRequest).user;
+    if (!requester || !(["admin", "responsable"].includes(requester.role))) {
+      return res.status(403).json({ error: "Réservé aux administrateurs et responsables" });
+    }
+    const { nom, email, motDePasse, role = "opticien" } = req.body as {
+      nom: string; email: string; motDePasse: string; role?: string;
+    };
+    if (!nom?.trim() || !email?.trim() || !motDePasse) {
+      return res.status(400).json({ error: "Nom, email et mot de passe requis" });
+    }
+    if (motDePasse.length < 8) {
+      return res.status(400).json({ error: "Le mot de passe doit faire au moins 8 caractères" });
+    }
+    // Un responsable ne peut pas créer un admin
+    const safeRole = ["opticien", "vendeur", "responsable", "admin"].includes(role) ? role : "opticien";
+    const finalRole = (requester.role === "responsable" && safeRole === "admin") ? "responsable" : safeRole;
+    const existing = await prisma.utilisateur.findUnique({ where: { email: email.trim() } });
+    if (existing) {
+      return res.status(409).json({ error: "Un compte existe déjà avec cet email" });
+    }
+    const hash = await hashPassword(motDePasse);
+    const user = await prisma.utilisateur.create({
+      data: {
+        magasinId: requester.magasinId,
+        nom: nom.trim(),
+        email: email.trim(),
+        motDePasse: hash,
+        role: finalRole,
+      },
+      select: { id: true, nom: true, email: true, role: true, createdAt: true },
+    });
+    res.status(201).json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur création opticien" });
+  }
+});
+
+// Supprimer un opticien (admin/responsable, impossible de se supprimer soi-même)
+app.delete("/api/utilisateur/:id", async (req, res) => {
+  try {
+    const requester = (req as AuthRequest).user;
+    if (!requester || !(["admin", "responsable"].includes(requester.role))) {
+      return res.status(403).json({ error: "Réservé aux administrateurs et responsables" });
+    }
+    if (requester.userId === req.params.id) {
+      return res.status(400).json({ error: "Impossible de supprimer son propre compte" });
+    }
+    const target = await prisma.utilisateur.findUnique({ where: { id: req.params.id } });
+    if (!target) return res.status(404).json({ error: "Utilisateur introuvable" });
+    if (target.magasinId !== requester.magasinId) {
+      return res.status(403).json({ error: "Accès refusé" });
+    }
+    // Un responsable ne peut pas supprimer un admin
+    if (requester.role === "responsable" && target.role === "admin") {
+      return res.status(403).json({ error: "Un responsable ne peut pas supprimer un administrateur" });
+    }
+    await prisma.utilisateur.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur suppression opticien" });
+  }
+});
+
 // ─── Socket.io ────────────────────────────────────────────
 io.on("connection", (socket) => {
   console.log("Client connecté:", socket.id);
@@ -1209,6 +1520,178 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Client déconnecté:", socket.id);
   });
+});
+
+// ─── Offre Ambassadeur ───────────────────────────────────
+// GET  /api/ambassadeur         → { restants, total }
+// POST /api/ambassadeur/reserver → décrémente d'1, retourne nouveau { restants, total }
+// POST /api/ambassadeur/reset    → (admin) remet à N
+
+app.get("/api/ambassadeur", async (_req, res) => {
+  try {
+    const cfg = await prisma.configGlobale.upsert({
+      where: { id: "global" },
+      create: { id: "global", ambassadeursRestants: 10, ambassadeursTotal: 10 },
+      update: {},
+    });
+    res.json({ restants: cfg.ambassadeursRestants, total: cfg.ambassadeursTotal });
+  } catch (err) {
+    console.error("GET /api/ambassadeur error:", err);
+    res.status(500).json({ error: "Erreur lecture config ambassadeur" });
+  }
+});
+
+app.post("/api/ambassadeur/reserver", async (req, res) => {
+  try {
+    // Lecture atomique pour éviter les race conditions
+    const cfg = await prisma.configGlobale.upsert({
+      where: { id: "global" },
+      create: { id: "global", ambassadeursRestants: 10, ambassadeursTotal: 10 },
+      update: {},
+    });
+    if (cfg.ambassadeursRestants <= 0) {
+      return res.status(409).json({ error: "Toutes les places ont été réservées.", restants: 0 });
+    }
+    const updated = await prisma.configGlobale.update({
+      where: { id: "global" },
+      data: { ambassadeursRestants: { decrement: 1 } },
+    });
+    res.json({ restants: updated.ambassadeursRestants, total: updated.ambassadeursTotal });
+  } catch (err) {
+    console.error("POST /api/ambassadeur/reserver error:", err);
+    res.status(500).json({ error: "Erreur réservation ambassadeur" });
+  }
+});
+
+app.post("/api/ambassadeur/reset", async (req, res) => {
+  // Protégé par token admin simple
+  const adminKey = process.env.ADMIN_SECRET_KEY || "optipilot-admin";
+  const { secretKey, restants } = req.body as { secretKey?: string; restants?: number };
+  if (secretKey !== adminKey) {
+    return res.status(403).json({ error: "Non autorisé" });
+  }
+  try {
+    const newVal = typeof restants === "number" ? restants : 10;
+    const updated = await prisma.configGlobale.upsert({
+      where: { id: "global" },
+      create: { id: "global", ambassadeursRestants: newVal, ambassadeursTotal: 10 },
+      update: { ambassadeursRestants: newVal },
+    });
+    res.json({ restants: updated.ambassadeursRestants, total: updated.ambassadeursTotal });
+  } catch (err) {
+    console.error("POST /api/ambassadeur/reset error:", err);
+    res.status(500).json({ error: "Erreur reset ambassadeur" });
+  }
+});
+
+// ─── Relais iPad → PC (DevisPending) ─────────────────────────────────────────
+// POST /api/bridge/devis-push  → iPad envoie un devis finalisé
+// GET  /api/bridge/devis-pull  → bridge PC récupère les devis en attente
+// POST /api/bridge/devis-ack   → bridge PC acquitte un devis traité
+
+app.post("/api/bridge/devis-push", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.user?.magasinId!;
+    const payload = req.body;
+    if (!payload || Object.keys(payload).length === 0) {
+      return res.status(400).json({ error: "Payload vide" });
+    }
+    const pending = await prisma.devisPending.create({
+      data: { magasinId, payload, statut: "pending" },
+    });
+    console.log(`📤 DevisPending créé ${pending.id} pour magasin ${magasinId}`);
+    res.json({ id: pending.id });
+  } catch (err) {
+    console.error("POST /api/bridge/devis-push error:", err);
+    res.status(500).json({ error: "Erreur push devis" });
+  }
+});
+
+app.get("/api/bridge/devis-pull", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.user?.magasinId!;
+    const pending = await prisma.devisPending.findMany({
+      where: { magasinId, statut: "pending" },
+      orderBy: { createdAt: "asc" },
+    });
+    // Passer en "processing" pour éviter les doubles traitements
+    if (pending.length > 0) {
+      await prisma.devisPending.updateMany({
+        where: { id: { in: pending.map((d) => d.id) } },
+        data: { statut: "processing" },
+      });
+    }
+    res.json(pending);
+  } catch (err) {
+    console.error("GET /api/bridge/devis-pull error:", err);
+    res.status(500).json({ error: "Erreur pull devis" });
+  }
+});
+
+app.post("/api/bridge/devis-ack", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { id, statut } = req.body as { id: string; statut?: string };
+    if (!id) return res.status(400).json({ error: "id requis" });
+    await prisma.devisPending.update({
+      where: { id },
+      data: { statut: statut || "done" },
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("POST /api/bridge/devis-ack error:", err);
+    res.status(500).json({ error: "Erreur ack devis" });
+  }
+});
+
+// ─── Relais PC → iPad (ClientPending) ────────────────────────────────────────
+// POST /api/bridge/client-push  → extension PC envoie un client importé depuis Optimum
+// GET  /api/bridge/client-pull  → iPad récupère le client en attente
+// POST /api/bridge/client-ack   → iPad acquitte la réception
+
+app.post("/api/bridge/client-push", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.user?.magasinId!;
+    const payload = req.body;
+    if (!payload || Object.keys(payload).length === 0) {
+      return res.status(400).json({ error: "Payload vide" });
+    }
+    // Remplacer tout client pending existant (1 seul à la fois)
+    await prisma.clientPending.deleteMany({ where: { magasinId, statut: "pending" } });
+    const pending = await prisma.clientPending.create({
+      data: { magasinId, payload, statut: "pending" },
+    });
+    console.log(`👤 ClientPending créé ${pending.id} pour magasin ${magasinId}`);
+    res.json({ id: pending.id });
+  } catch (err) {
+    console.error("POST /api/bridge/client-push error:", err);
+    res.status(500).json({ error: "Erreur push client" });
+  }
+});
+
+app.get("/api/bridge/client-pull", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.user?.magasinId!;
+    const pending = await prisma.clientPending.findFirst({
+      where: { magasinId, statut: "pending" },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(pending ?? null);
+  } catch (err) {
+    console.error("GET /api/bridge/client-pull error:", err);
+    res.status(500).json({ error: "Erreur pull client" });
+  }
+});
+
+app.post("/api/bridge/client-ack", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.body as { id: string };
+    if (!id) return res.status(400).json({ error: "id requis" });
+    await prisma.clientPending.update({ where: { id }, data: { statut: "done" } });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("POST /api/bridge/client-ack error:", err);
+    res.status(500).json({ error: "Erreur ack client" });
+  }
 });
 
 // ─── Start ────────────────────────────────────────────────

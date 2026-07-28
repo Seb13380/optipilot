@@ -1,19 +1,36 @@
 @import "tailwindcss";
 
+html {
+  /* Base rem = 18px → tous les utilitaires Tailwind (text-xs, text-sm…) grossissent proportionnellement */
+  font-size: 18px;
+}
+
 :root {
-  --background: #020017;
-  --foreground: #FDFDFE;
-  --card: #0A0338;
-  --card-alt: #0F0545;
-  --primary: #5331D0;
-  --primary-light: #9B96DA;
-  --primary-dark: #1C0B62;
-  --accent: #9B96DA;
+  --background: #f0f0fa;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-alt: #f4f4fb;
+
+  /* ── Palette marque OptiPilot ──────────────────────────── */
+  --violet:       #5331D0;  /* Violet principal — CTAs, badges, cartes */
+  --violet-light: #7B5CE5;  /* Violet clair — hover, gradients */
+  --rose:         #ec4899;  /* Rose — accent secondaire, alertes douces */
+  --rose-light:   #f472b6;  /* Rose clair */
+  --bleu:         #1C0B62;  /* Bleu nuit — textes titres, dark bg */
+  --bleu-deep:    #0a0318;  /* Bleu très profond — cartes dark */
+  --gris:         #9B96DA;  /* Gris lavande — textes secondaires, icônes */
+  --gris-dark:    #6b7280;  /* Gris neutre — corps de texte */
+  /* ───────────────────────────────────────────────── */
+
+  --primary:      var(--violet);
+  --primary-light: var(--gris);
+  --primary-dark:  var(--bleu);
+  --accent:       var(--gris);
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --text-muted: #9B96DA;
-  --border: rgba(83,49,208,0.35);
+  --text-muted: var(--gris-dark);
+  --border: rgba(83,49,208,0.25);
 }
 
 @theme inline {
@@ -57,10 +74,34 @@ a {
   border-radius: 2px;
 }
 
+/* ── Dark mode variables ── */
+html.dark {
+  --background: #0a0318;
+  --foreground: #FDFDFE;
+  --card: #0d0530;
+  --card-alt: #110640;
+  --text-muted: #9B96DA;
+  --border: rgba(83,49,208,0.35);
+}
+
+html.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
 /* Background principal des pages */
 .page-bg {
   background:
-    url('/assets/images/BackGround-OptiPilot.png') center / cover no-repeat fixed;
+    radial-gradient(circle at 15% 20%, rgba(124,58,237,0.35), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(236,72,153,0.28), transparent 45%),
+    linear-gradient(180deg, #f0f0fa 0%, #e8e8f5 100%);
+}
+
+html.dark .page-bg {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(124,58,237,0.4), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(236,72,153,0.3), transparent 45%),
+    linear-gradient(180deg, #0a0318 0%, #0f052a 100%);
 }
 
 /* Card base */
@@ -90,6 +131,17 @@ a {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Clignotement border — signale un champ à renseigner */
+@keyframes pulseBorder {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(155,150,218,0);   border-color: rgba(83,49,208,0.25); }
+  50%       { box-shadow: 0 0 0 5px rgba(155,150,218,0.18); border-color: rgba(155,150,218,0.7); }
+}
+.pulse-border {
+  animation: pulseBorder 2s ease-in-out infinite;
+  border: 1px solid rgba(83,49,208,0.25);
+  border-radius: 10px;
 }
 
 /* Bounce léger pour les press */

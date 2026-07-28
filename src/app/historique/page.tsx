@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 
 interface DevisItem {
   id: string;
@@ -31,6 +32,8 @@ const OFFRE_COLORS: Record<string, string> = {
   premium: "#5331D0",
 };
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 export default function HistoriquePage() {
   const router = useRouter();
   const [devis, setDevis] = useState<DevisItem[]>([]);
@@ -43,7 +46,7 @@ export default function HistoriquePage() {
     const userData = JSON.parse(user);
     const token = localStorage.getItem("optipilot_token") || "";
 
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${userData.magasinId}`, {
+    fetch(`${BACKEND}/api/devis/${userData.magasinId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -74,6 +77,7 @@ export default function HistoriquePage() {
   };
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         title="Historique"
@@ -232,5 +236,6 @@ export default function HistoriquePage() {
         </div>
       </main>
     </div>
+    </OpticianGuard>
   );
 }

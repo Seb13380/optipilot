@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 
 interface User {
   nom: string;
@@ -33,11 +34,20 @@ const FEATURES_PREMIUM = [
   "📄 Rapport mensuel IA (analyse ventes & opportunités)",
 ];
 
+const FEATURES_AMBASSADEUR = [
+  "⭐ Tout inclus dans Premium",
+  "🤝 Onboarding personnalisé avec l'équipe OptiPilot",
+  "📣 Statut Ambassadeur officiel (badge + page partenaire)",
+  "💸 Commission sur chaque opticien recommandé",
+  "📞 Support prioritaire & accès direct fondateurs",
+  "🔔 Accès anticipé aux nouvelles fonctionnalités",
+];
+
 const PLANS = [
   {
     id: "standard",
     label: "Standard",
-    price: 199,
+    price: 249,
     unit: "/ mois",
     badge: null,
     sub: null,
@@ -46,24 +56,38 @@ const PLANS = [
   {
     id: "premium",
     label: "Premium",
-    price: 249,
+    price: 299,
     unit: "/ mois",
     badge: "Recommandé",
     sub: "Accès complet + bridge Optimum",
     features: FEATURES_PREMIUM,
+  },
+  {
+    id: "ambassadeur",
+    label: "Ambassadeur",
+    price: 199,
+    unit: "/ mois",
+    badge: "Partenaire",
+    sub: "Premium + commission prescripteur",
+    features: FEATURES_AMBASSADEUR,
   },
 ];
 
 export default function AbonnementPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<"standard" | "premium">("premium");
+  const [selectedPlan, setSelectedPlan] = useState<"standard" | "premium" | "ambassadeur">("premium");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [slots, setSlots] = useState<{ restants: number; total: number } | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("optipilot_user");
     if (stored) setUser(JSON.parse(stored));
+    fetch("/api/ambassadeur")
+      .then((r) => r.json())
+      .then(setSlots)
+      .catch(() => setSlots({ restants: 0, total: 10 }));
   }, []);
 
   async function handleUpgrade() {
@@ -80,6 +104,12 @@ export default function AbonnementPage() {
       });
 
       const data = await res.json();
+      if (res.status === 409) {
+        setSending(false);
+        alert("Désolé, toutes les places Ambassadeur sont prises !");
+        setSlots({ restants: 0, total: 10 });
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Erreur serveur");
 
       // Redirection vers Stripe Checkout
@@ -92,6 +122,7 @@ export default function AbonnementPage() {
   }
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         showBack
@@ -128,41 +159,65 @@ export default function AbonnementPage() {
           transition={{ delay: 0.1 }}
           className="flex gap-3 mb-6"
         >
-          {PLANS.map((plan) => (
-            <button
-              key={plan.id}
-              onClick={() => setSelectedPlan(plan.id as "standard" | "premium")}
-              className="flex-1 rounded-2xl p-4 relative transition-all"
-              style={{
-                background:
-                  selectedPlan === plan.id
-                    ? "linear-gradient(135deg, #5331D0, #7B5CE5)"
+          {PLANS.map((plan) => {
+            const isAmbassadeur = plan.id === "ambassadeur";
+            const isFull = isAmbassadeur && slots !== null && slots.restants <= 0;
+            const isSelected = selectedPlan === plan.id;
+            return (
+              <button
+                key={plan.id}
+                onClick={() => !isFull && setSelectedPlan(plan.id as "standard" | "premium" | "ambassadeur")}
+                disabled={isFull}
+                className="flex-1 rounded-2xl p-4 relative transition-all"
+                style={{
+                  background: isFull
+                    ? "rgba(10,3,56,0.4)"
+                    : isSelected
+                    ? isAmbassadeur
+                      ? "linear-gradient(135deg, #92400e, #b45309)"
+                      : "linear-gradient(135deg, #5331D0, #7B5CE5)"
                     : "rgba(10,3,56,0.85)",
-                border: `2px solid ${selectedPlan === plan.id ? "#7B5CE5" : "rgba(83,49,208,0.3)"}`,
-              }}
-            >
-              {plan.badge && (
-                <span
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full"
-                  style={{ background: "#22c55e", color: "#fff" }}
-                >
-                  {plan.badge}
-                </span>
-              )}
-              <p className="text-lg font-bold mb-1" style={{ color: "#FDFDFE" }}>
-                {plan.label}
-              </p>
-              <p className="text-3xl font-black" style={{ color: selectedPlan === plan.id ? "#fff" : "#9B96DA" }}>
-                {plan.price}€
-                <span className="text-base font-normal ml-1">{plan.unit}</span>
-              </p>
-              {plan.sub && (
-                <p className="text-sm mt-1" style={{ color: selectedPlan === plan.id ? "rgba(255,255,255,0.7)" : "#9B96DA" }}>
-                  {plan.sub}
+                  border: `2px solid ${isFull ? "rgba(75,85,99,0.3)" : isSelected ? (isAmbassadeur ? "#fbbf24" : "#7B5CE5") : "rgba(83,49,208,0.3)"}`,
+                  opacity: isFull ? 0.6 : 1,
+                  cursor: isFull ? "not-allowed" : "pointer",
+                }}
+              >
+                {plan.badge && !isFull && (
+                  <span
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full"
+                    style={{ background: isAmbassadeur ? "#fbbf24" : "#22c55e", color: isAmbassadeur ? "#000" : "#fff" }}
+                  >
+                    {plan.badge}
+                  </span>
+                )}
+                {isFull && (
+                  <span
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full"
+                    style={{ background: "#4b5563", color: "#fff" }}
+                  >
+                    Complet
+                  </span>
+                )}
+                <p className="text-lg font-bold mb-1" style={{ color: "#FDFDFE" }}>
+                  {plan.label}
                 </p>
-              )}
-            </button>
-          ))}
+                <p className="text-3xl font-black" style={{ color: isSelected ? "#fff" : "#9B96DA" }}>
+                  {plan.price}€
+                  <span className="text-base font-normal ml-1">{plan.unit}</span>
+                </p>
+                {isAmbassadeur && slots !== null && !isFull && (
+                  <p className="text-xs font-semibold mt-1" style={{ color: isSelected ? "#fde68a" : "#fbbf24" }}>
+                    🔥 {slots.restants} place{slots.restants > 1 ? "s" : ""} restante{slots.restants > 1 ? "s" : ""} / {slots.total}
+                  </p>
+                )}
+                {!isAmbassadeur && plan.sub && (
+                  <p className="text-sm mt-1" style={{ color: isSelected ? "rgba(255,255,255,0.7)" : "#9B96DA" }}>
+                    {plan.sub}
+                  </p>
+                )}
+              </button>
+            );
+          })}
         </motion.div>
 
         {/* Comparaison */}
@@ -170,22 +225,22 @@ export default function AbonnementPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18 }}
-          className="grid grid-cols-2 gap-4 mb-6"
+          className="grid grid-cols-3 gap-3 mb-6"
         >
           {/* Standard */}
           <div
-            className="rounded-2xl p-5"
+            className="rounded-2xl p-4"
             style={{
               background: selectedPlan === "standard" ? "linear-gradient(135deg, rgba(83,49,208,0.18), rgba(83,49,208,0.08))" : "rgba(10,3,56,0.85)",
               border: `1px solid ${selectedPlan === "standard" ? "rgba(83,49,208,0.5)" : "rgba(83,49,208,0.25)"}`,
             }}
           >
-            <p className="text-base font-bold mb-3" style={{ color: selectedPlan === "standard" ? "#a78bfa" : "#9B96DA" }}>
-              Standard — 199€/mois
+            <p className="text-sm font-bold mb-3" style={{ color: selectedPlan === "standard" ? "#a78bfa" : "#9B96DA" }}>
+              Standard — 249€/mois
             </p>
             <div className="flex flex-col gap-2">
               {FEATURES_STANDARD.map((f) => (
-                <p key={f} className="text-sm flex items-start gap-2" style={{ color: "#FDFDFE" }}>
+                <p key={f} className="text-xs flex items-start gap-1.5" style={{ color: "#FDFDFE" }}>
                   <span style={{ color: "#22c55e" }}>✓</span>
                   {f}
                 </p>
@@ -195,19 +250,40 @@ export default function AbonnementPage() {
 
           {/* Premium */}
           <div
-            className="rounded-2xl p-5"
+            className="rounded-2xl p-4"
             style={{
               background: selectedPlan === "premium" ? "linear-gradient(135deg, rgba(83,49,208,0.25), rgba(123,92,229,0.15))" : "rgba(10,3,56,0.85)",
               border: `2px solid ${selectedPlan === "premium" ? "rgba(123,92,229,0.7)" : "rgba(83,49,208,0.25)"}`,
             }}
           >
-            <p className="text-base font-bold mb-3" style={{ color: "#a78bfa" }}>
-              ⚡ Premium — 249€/mois
+            <p className="text-sm font-bold mb-3" style={{ color: "#a78bfa" }}>
+              ⚡ Premium — 299€/mois
             </p>
             <div className="flex flex-col gap-2">
               {FEATURES_PREMIUM.map((f) => (
-                <p key={f} className="text-sm flex items-start gap-2" style={{ color: "#FDFDFE" }}>
+                <p key={f} className="text-xs flex items-start gap-1.5" style={{ color: "#FDFDFE" }}>
                   <span style={{ color: "#22c55e" }}>✓</span>
+                  {f}
+                </p>
+              ))}
+            </div>
+          </div>
+
+          {/* Ambassadeur */}
+          <div
+            className="rounded-2xl p-4"
+            style={{
+              background: selectedPlan === "ambassadeur" ? "linear-gradient(135deg, rgba(234,179,8,0.2), rgba(234,179,8,0.08))" : "rgba(10,3,56,0.85)",
+              border: `2px solid ${selectedPlan === "ambassadeur" ? "rgba(234,179,8,0.7)" : "rgba(83,49,208,0.25)"}`,
+            }}
+          >
+            <p className="text-sm font-bold mb-3" style={{ color: selectedPlan === "ambassadeur" ? "#fbbf24" : "#9B96DA" }}>
+              🤝 Ambassadeur — 199€/mois
+            </p>
+            <div className="flex flex-col gap-2">
+              {FEATURES_AMBASSADEUR.map((f) => (
+                <p key={f} className="text-xs flex items-start gap-1.5" style={{ color: "#FDFDFE" }}>
+                  <span style={{ color: "#fbbf24" }}>✓</span>
                   {f}
                 </p>
               ))}
@@ -229,24 +305,30 @@ export default function AbonnementPage() {
                 <th className="text-left px-4 py-3 font-semibold" style={{ color: "#9B96DA" }}>Fonctionnalité</th>
                 <th className="text-center px-3 py-3 font-semibold" style={{ color: "#9B96DA" }}>Standard</th>
                 <th className="text-center px-3 py-3 font-semibold" style={{ color: "#a78bfa" }}>⭐ Premium</th>
+                <th className="text-center px-3 py-3 font-semibold" style={{ color: "#fbbf24" }}>🤝 Ambassadeur</th>
               </tr>
             </thead>
             <tbody>
               {[
-                ["Scan ordonnance IA", true, true],
-                ["Génération 3 devis automatiques", true, true],
-                ["Copilote IA vendeur", true, true],
-                ["Export PDF & dossier client", true, true],
-                ["Analyse business magasin", false, true],
-                ["Optimisation panier moyen", false, true],
-                ["Statistiques vente vendeurs", false, true],
-                ["Coach vendeur IA temps réel", false, true],
-                ["Rapport mensuel IA", false, true],
-              ].map(([label, std, prem], i) => (
+                ["Scan ordonnance IA", true, true, true],
+                ["Génération 3 devis automatiques", true, true, true],
+                ["Copilote IA vendeur", true, true, true],
+                ["Export PDF & dossier client", true, true, true],
+                ["Analyse business magasin", false, true, true],
+                ["Optimisation panier moyen", false, true, true],
+                ["Statistiques vente vendeurs", false, true, true],
+                ["Coach vendeur IA temps réel", false, true, true],
+                ["Rapport mensuel IA", false, true, true],
+                ["Onboarding personnalisé", false, false, true],
+                ["Statut & badge Ambassadeur", false, false, true],
+                ["Commission prescripteur", false, false, true],
+                ["Support prioritaire fondateurs", false, false, true],
+              ].map(([label, std, prem, amb], i) => (
                 <tr key={i as number} style={{ background: i % 2 === 0 ? "rgba(10,3,56,0.6)" : "rgba(10,3,56,0.85)" }}>
                   <td className="px-4 py-2.5" style={{ color: "#FDFDFE" }}>{label as string}</td>
                   <td className="text-center px-3 py-2.5" style={{ color: std ? "#22c55e" : "#4b5563" }}>{std ? "✓" : "—"}</td>
                   <td className="text-center px-3 py-2.5" style={{ color: prem ? "#22c55e" : "#4b5563" }}>{prem ? "✓" : "—"}</td>
+                  <td className="text-center px-3 py-2.5" style={{ color: amb ? "#fbbf24" : "#4b5563" }}>{amb ? "✓" : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -262,7 +344,9 @@ export default function AbonnementPage() {
           style={{ background: "rgba(83,49,208,0.12)", border: "1px solid rgba(83,49,208,0.3)" }}
         >
           <p className="text-sm font-medium" style={{ color: "#a78bfa" }}>
-            💡 Une seule vente premium supplémentaire par mois couvre l'écart de 50€ entre les deux plans.
+            {selectedPlan === "ambassadeur"
+              ? "🤝 En tant qu'Ambassadeur, vous bénéficiez de Premium à tarif réduit + une commission sur chaque opticien que vous nous recommandez."
+              : "💡 Une seule vente premium supplémentaire par mois couvre l'écart de 50€ entre les deux plans."}
           </p>
         </motion.div>
 
@@ -317,5 +401,6 @@ export default function AbonnementPage() {
 
       </main>
     </div>
+    </OpticianGuard>
   );
 }

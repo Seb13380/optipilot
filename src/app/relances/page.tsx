@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 
 interface Relance {
   id: string;
@@ -100,6 +101,8 @@ const STATUT_CONFIG = {
   perdu: { label: "Perdu", color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
 };
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 export default function RelancesPage() {
   const router = useRouter();
   const [relances, setRelances] = useState<Relance[]>([]);
@@ -114,7 +117,7 @@ export default function RelancesPage() {
     const userData = JSON.parse(user);
     const token = localStorage.getItem("optipilot_token") || "";
 
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/relances/${userData.magasinId}`, {
+    fetch(`${BACKEND}/api/relances/${userData.magasinId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -138,7 +141,7 @@ export default function RelancesPage() {
     // Si c'est une donnée démo, on ne fait pas de requête
     if (id.startsWith("demo-")) return;
     const token = localStorage.getItem("optipilot_token") || "";
-    await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${id}`, {
+    await fetch(`${BACKEND}/api/devis/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ statut }),
@@ -171,6 +174,7 @@ export default function RelancesPage() {
   const selectedRelance = relances.find((r) => r.id === selected);
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader title="Relances" showBack onBack={() => router.push("/dashboard")} />
 
@@ -396,5 +400,6 @@ export default function RelancesPage() {
         )}
       </AnimatePresence>
     </div>
+    </OpticianGuard>
   );
 }
