@@ -50,22 +50,6 @@ interface TeamStats {
 
 const MENU_ITEMS = [
   {
-    id: "scanner",
-    labelKey: "scanPrescriptionTitle",
-    descKey: "scanDescription",
-    icon: (
-      <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
-        <rect x="3" y="3" width="7" height="7" rx="1" stroke="white" strokeWidth="2" />
-        <rect x="14" y="3" width="7" height="7" rx="1" stroke="white" strokeWidth="2" />
-        <rect x="3" y="14" width="7" height="7" rx="1" stroke="white" strokeWidth="2" />
-        <path d="M18 14v2m0 4v0m-4-3h2m4 0h0" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    ),
-    gradient: "linear-gradient(135deg, #5331D0 0%, #7B5CE5 100%)",
-    shadow: "rgba(83,49,208,0.45)",
-    href: "/scanner",
-  },
-  {
     id: "nouveau-client",
     labelKey: "newClientTitle",
     descKey: "newClientDescription",
