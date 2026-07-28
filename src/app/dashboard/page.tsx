@@ -542,10 +542,8 @@ function DashboardPage() {
           )}
         </AnimatePresence>
 
-        {false && /* ROI bloc masqué — remplacé par stats compactes */  null}
-
         {/* ══════════ CTA PRINCIPAL — UN DEVIS EN 2 SCANS ══════════ */}
-        <motion.div
+        {false && <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
@@ -650,9 +648,9 @@ function DashboardPage() {
               <p className="text-xs mt-1" style={{ color: "rgba(232,121,249,0.3)" }}>{t.basedOnActivity}</p>
             </div>
           )}
-        </motion.div>
+        </motion.div>}
 
-        {/* ══════════ CTA PRINCIPAL — UN DEVIS EN 2 SCANS ══════════ */}
+        {/* ══════════ CTA PRINCIPAL ══════════ */}
         <motion.button
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
