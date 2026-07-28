@@ -204,7 +204,7 @@ export default function ScannerPage() {
       const ctx = canvas.getContext("2d")!;
       ctx.save();
       ctx.translate(outW / 2, outH / 2);
-      ctx.rotate(Math.PI / 2);
+      ctx.rotate(-Math.PI / 2);
       ctx.drawImage(video, -w / 2, -h / 2, w, h);
       ctx.restore();
     } else {
@@ -441,14 +441,16 @@ export default function ScannerPage() {
                 </div>
               </div>
 
-              {/* Viewfinder — toujours portrait (ratio 3/4) */}
+              {/* Viewfinder — toujours portrait (ratio 3/4), largeur limitée en paysage */}
               <div
                 className="rounded-2xl overflow-hidden relative shadow-lg"
                 style={{
                   background: "#000",
                   width: "100%",
+                  maxWidth: "min(100%, calc(58vh * 0.75))",
                   aspectRatio: "3/4",
-                  maxHeight: "60vh",
+                  maxHeight: "58vh",
+                  margin: "0 auto",
                 }}
               >
                 <video
@@ -461,7 +463,7 @@ export default function ScannerPage() {
                     left: "50%",
                     width: "75vw",
                     height: "100vw",
-                    transform: "translate(-50%, -50%) rotate(90deg)",
+                    transform: "translate(-50%, -50%) rotate(-90deg)",
                     objectFit: "cover",
                     display: cameraStarted ? "block" : "none",
                   } : {
