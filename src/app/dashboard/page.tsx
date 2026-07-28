@@ -752,7 +752,7 @@ function DashboardPage() {
                 <motion.button
                   initial="rest"
                   whileHover="hover"
-                  whileTap={{ scale: 0.95 }}
+                  whileTap="hover"
                   animate="rest"
                   onClick={() => router.push(item.href)}
                   className="w-full rounded-3xl p-6 flex flex-col items-center gap-2 overflow-hidden relative"
