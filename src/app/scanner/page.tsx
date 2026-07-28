@@ -516,11 +516,12 @@ export default function ScannerPage() {
                 <div style={{ position: "absolute", top: 4, left: 4, zIndex: 200, background: "rgba(255,0,0,0.85)", color: "#fff", fontSize: 11, padding: "2px 6px", borderRadius: 4, fontFamily: "monospace" }}>
                   rot={videoRotation} | {typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "?"}
                 </div>
-                {/* Wrapper div pour rotation — plus fiable que CSS direct sur <video> en iOS */}
+                {/* Wrapper div pour rotation — vmax pour éviter height:0 sur enfant absolu */}
                 <div style={videoRotation !== 0 ? {
                   position: "absolute",
                   top: "50%", left: "50%",
-                  width: "133%", height: "133%",
+                  width: "100vmax",
+                  height: "100vmax",
                   transform: "translate(-50%, -50%) rotate(90deg)",
                   transformOrigin: "center center",
                 } : {
