@@ -185,7 +185,7 @@ export default function ClientMutuellePage() {
     try {
       // "ideal" = essaie caméra arrière, se rabat sur n'importe quelle caméra sans erreur
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       streamRef.current = stream;
       // Attacher au <video> dès qu'il est disponible
