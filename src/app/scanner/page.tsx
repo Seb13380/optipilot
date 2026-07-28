@@ -96,6 +96,46 @@ function warpPerspective(imageSrc: string, corners: [number,number][]): Promise<
   });
 }
 
+// ─── Auto-détection des bords du document ─────────────────────────────────────
+/** Détecte automatiquement les coins du document (fond sombre, document blanc). */
+function autoDetectCorners(imageSrc: string): Promise<[number,number][]> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 480 / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+      const { data } = ctx.getImageData(0, 0, w, h);
+      const lum = (x: number, y: number) => {
+        const i = (y * w + x) * 4;
+        return 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+      };
+      const THRESH = 145;
+      const rowFrac  = (y: number, x0: number, x1: number) => { let n=0; for(let x=x0;x<x1;x++) if(lum(x,y)>THRESH) n++; return n/(x1-x0); };
+      const colFrac  = (x: number, y0: number, y1: number) => { let n=0; for(let y=y0;y<y1;y++) if(lum(x,y)>THRESH) n++; return n/(y1-y0); };
+      const mx1 = Math.floor(w*0.15), mx2 = Math.ceil(w*0.85);
+      const my1 = Math.floor(h*0.15), my2 = Math.ceil(h*0.85);
+      let top=0.03, bottom=0.97, left=0.03, right=0.97;
+      for(let y=0;y<h;y++)        { if(rowFrac(y,mx1,mx2)>0.55){ top=y/h; break; } }
+      for(let y=h-1;y>=0;y--)    { if(rowFrac(y,mx1,mx2)>0.55){ bottom=y/h; break; } }
+      for(let x=0;x<w;x++)        { if(colFrac(x,my1,my2)>0.45){ left=x/w; break; } }
+      for(let x=w-1;x>=0;x--)    { if(colFrac(x,my1,my2)>0.45){ right=x/w; break; } }
+      const valid = (right-left)>0.3 && (bottom-top)>0.3;
+      const m = 0.01;
+      resolve(valid ? [
+        [Math.max(0.01,left-m), Math.max(0.01,top-m)],
+        [Math.min(0.99,right+m), Math.max(0.01,top-m)],
+        [Math.min(0.99,right+m), Math.min(0.99,bottom+m)],
+        [Math.max(0.01,left-m), Math.min(0.99,bottom+m)],
+      ] : [[0.04,0.04],[0.96,0.04],[0.96,0.96],[0.04,0.96]]);
+    };
+    img.src = imageSrc;
+  });
+}
+
 interface OrdonnanceData {
   civilite?: string;
   nomPatient?: string;
@@ -115,9 +155,10 @@ interface OrdonnanceData {
 
 type Step = "camera" | "preview" | "result";
 
-// Seuil de stabilité : différence moyenne de pixels entre 2 frames
-const STABILITY_THRESHOLD = 8;
-const STABLE_FRAMES_NEEDED = 12; // ~1.2s à 10fps
+// Seuil de stabilité assoupli — moins strict pour personnes âgées / cartes
+const STABILITY_THRESHOLD = 28; // était 8
+const STABLE_FRAMES_NEEDED = 5;  // était 12 (~0.5s à 10fps)
+const AUTO_CAPTURE_TIMEOUT_MS = 6000; // capture forcée après 6s si pas stable
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
 
@@ -319,6 +360,22 @@ export default function ScannerPage() {
 
   // Auto-démarrage caméra
   useEffect(() => { startCamera(); }, [startCamera]);
+
+  // Fallback : capture forcée après AUTO_CAPTURE_TIMEOUT_MS si la stabilité n'est pas atteinte
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!cameraStarted) return;
+    fallbackTimerRef.current = setTimeout(() => {
+      if (step === "camera") captureAndAnalyse(true);
+    }, AUTO_CAPTURE_TIMEOUT_MS);
+    return () => { if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current); };
+  }, [cameraStarted, captureAndAnalyse, step]);
+
+  // Auto-détection des bords dès qu'une image est capturée
+  useEffect(() => {
+    if (step !== "preview" || !imageDataUrl) return;
+    autoDetectCorners(imageDataUrl).then((detected) => setCorners(detected));
+  }, [step, imageDataUrl]);
 
   // Nettoyage à la sortie de la page
   useEffect(() => {
@@ -556,7 +613,7 @@ export default function ScannerPage() {
             <motion.div key="preview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
               <div>
                 <p className="text-center font-bold text-xl mb-1" style={{ color: "#111827" }}>Cadrez l'ordonnance</p>
-                <p className="text-center text-sm" style={{ color: "#6b7280" }}>Déplacez les 4 coins pour recadrer précisément</p>
+                <p className="text-center text-sm" style={{ color: "#6b7280" }}>Document détecté · ajustez les coins si besoin</p>
               </div>
               {/* Conteneur image + overlay SVG */}
               <div
