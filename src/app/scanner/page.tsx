@@ -6,6 +6,96 @@ import OptiPilotHeader from "@/components/OptiPilotHeader";
 import { analyserOrdonnance } from "@/lib/analyseOrdonnance";
 import { useApp } from "@/lib/AppContext";
 
+// ─── Utilitaires transformation de perspective ────────────────────────────────
+
+function gaussElim(A: number[][], b: number[]): number[] {
+  const n = A.length;
+  const M = A.map((row, i) => [...row, b[i]]);
+  for (let col = 0; col < n; col++) {
+    let max = col;
+    for (let r = col + 1; r < n; r++) if (Math.abs(M[r][col]) > Math.abs(M[max][col])) max = r;
+    [M[col], M[max]] = [M[max], M[col]];
+    for (let r = col + 1; r < n; r++) {
+      const f = M[r][col] / M[col][col];
+      for (let j = col; j <= n; j++) M[r][j] -= f * M[col][j];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n - 1; i >= 0; i--) {
+    x[i] = M[i][n] / M[i][i];
+    for (let j = i + 1; j < n; j++) x[i] -= M[i][j] * x[j] / M[i][i];
+  }
+  return x;
+}
+
+function computeH(src: [number,number][], dst: [number,number][]): number[] {
+  const A: number[][] = [];
+  const b: number[] = [];
+  for (let i = 0; i < 4; i++) {
+    const [sx, sy] = src[i], [dx, dy] = dst[i];
+    A.push([sx,sy,1,0,0,0,-dx*sx,-dx*sy]); b.push(dx);
+    A.push([0,0,0,sx,sy,1,-dy*sx,-dy*sy]); b.push(dy);
+  }
+  const h = gaussElim(A, b);
+  return [...h, 1];
+}
+
+function applyH(H: number[], x: number, y: number): [number,number] {
+  const w = H[6]*x + H[7]*y + H[8];
+  return [(H[0]*x + H[1]*y + H[2])/w, (H[3]*x + H[4]*y + H[5])/w];
+}
+
+function ptDist(a: [number,number], b: [number,number]) { return Math.hypot(a[0]-b[0], a[1]-b[1]); }
+
+/** Applique la correction de perspective et retourne une data URL JPEG. */
+function warpPerspective(imageSrc: string, corners: [number,number][]): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      // Réduire à 1400px max pour performance
+      const scale = Math.min(1, 1400 / Math.max(img.width, img.height));
+      const iw = Math.round(img.width * scale), ih = Math.round(img.height * scale);
+      const scaledCorners = corners.map(([x,y]) => [x*scale, y*scale] as [number,number]);
+      const [tl, tr, br, bl] = scaledCorners;
+      const outW = Math.round(Math.max(ptDist(tl,tr), ptDist(bl,br)));
+      const outH = Math.round(Math.max(ptDist(tl,bl), ptDist(tr,br)));
+      const dstC: [number,number][] = [[0,0],[outW,0],[outW,outH],[0,outH]];
+      const H = computeH(dstC, scaledCorners); // inverse mapping
+
+      const srcC = document.createElement("canvas");
+      srcC.width = iw; srcC.height = ih;
+      srcC.getContext("2d")!.drawImage(img, 0, 0, iw, ih);
+      const srcD = srcC.getContext("2d")!.getImageData(0, 0, iw, ih).data;
+
+      const outC = document.createElement("canvas");
+      outC.width = outW; outC.height = outH;
+      const outCtx = outC.getContext("2d")!;
+      const outImg = outCtx.createImageData(outW, outH);
+
+      for (let y = 0; y < outH; y++) {
+        for (let x = 0; x < outW; x++) {
+          const [sx, sy] = applyH(H, x, y);
+          const x0 = Math.floor(sx), y0 = Math.floor(sy);
+          const dx = sx-x0, dy = sy-y0;
+          const px = (xx: number, yy: number, c: number) =>
+            (xx>=0&&xx<iw&&yy>=0&&yy<ih) ? srcD[(yy*iw+xx)*4+c] : 0;
+          const oi = (y*outW+x)*4;
+          for (let c=0;c<3;c++) {
+            outImg.data[oi+c] = Math.round(
+              px(x0,y0,c)*(1-dx)*(1-dy) + px(x0+1,y0,c)*dx*(1-dy) +
+              px(x0,y0+1,c)*(1-dx)*dy   + px(x0+1,y0+1,c)*dx*dy
+            );
+          }
+          outImg.data[oi+3] = 255;
+        }
+      }
+      outCtx.putImageData(outImg, 0, 0);
+      resolve(outC.toDataURL("image/jpeg", 0.93));
+    };
+    img.src = imageSrc;
+  });
+}
+
 interface OrdonnanceData {
   civilite?: string;
   nomPatient?: string;
@@ -54,6 +144,10 @@ export default function ScannerPage() {
   const [editMode, setEditMode] = useState(false);
   const [magasinNom, setMagasinNom] = useState("");
   const [champsIncertains, setChampsIncertains] = useState<string[]>([]);
+  // Coins de recadrage (fraction 0-1 de l'image affichée) : TL, TR, BR, BL
+  const [corners, setCorners] = useState<[number,number][]>([[0.04,0.04],[0.96,0.04],[0.96,0.96],[0.04,0.96]]);
+  const [draggingIdx, setDraggingIdx] = useState<number|null>(null);
+  const previewImgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("optipilot_user") || "{}");
@@ -228,10 +322,25 @@ export default function ScannerPage() {
     setScanError("");
     setStep("result");
     try {
+      // Appliquer la correction de perspective avant envoi
+      const img = previewImgRef.current;
+      let imageToSend = imageDataUrl;
+      if (img && imageDataUrl) {
+        const natW = img.naturalWidth || img.width;
+        const natH = img.naturalHeight || img.height;
+        const displayW = img.clientWidth || img.offsetWidth;
+        const displayH = img.clientHeight || img.offsetHeight;
+        if (natW > 0 && displayW > 0) {
+          const scaleX = natW / displayW;
+          const scaleY = natH / displayH;
+          const pixelCorners = corners.map(([fx, fy]) => [fx * displayW * scaleX, fy * displayH * scaleY] as [number,number]);
+          imageToSend = await warpPerspective(imageDataUrl, pixelCorners);
+        }
+      }
       const res = await fetch("/api/scan-ordonnance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: imageDataUrl }),
+        body: JSON.stringify({ image: imageToSend }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -291,6 +400,8 @@ export default function ScannerPage() {
     setStableProgress(0);
     stableCountRef.current = 0;
     prevFrameRef.current = null;
+    setCorners([[0.04,0.04],[0.96,0.04],[0.96,0.96],[0.04,0.96]]);
+    setDraggingIdx(null);
   }
 
   function normaliseCivilite(c?: string): string {
@@ -427,27 +538,108 @@ export default function ScannerPage() {
             </motion.div>
           )}
 
-          {/* ── ÉTAPE 2 : APERÇU ── */}
+          {/* ── ÉTAPE 2 : APERÇU + RECADRAGE ── */}
           {step === "preview" && (
-            <motion.div key="preview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
-              <p className="text-center font-bold text-xl" style={{ color: "#111827" }}>{t.checkPhoto}</p>
-              <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: "#f3f4f6", minHeight: 280, border: "1.5px solid #e5e7eb" }}>
-                {imageDataUrl ? (
-                  <img src={imageDataUrl} alt="Ordonnance" className="w-full object-contain" style={{ maxHeight: 400 }} />
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-10 gap-3" style={{ minHeight: 280 }}>
-                    <svg width="48" height="48" fill="none" viewBox="0 0 24 24" style={{ color: "#9ca3af" }}>
-                      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-                      <path d="M3 9h18" stroke="currentColor" strokeWidth="2"/>
-                      <circle cx="8" cy="14" r="1.5" fill="currentColor"/>
-                    </svg>
-                    <p className="font-bold text-base" style={{ color: "#9ca3af" }}>{t.noCapture}</p>
-                  </div>
-                )}
+            <motion.div key="preview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
+              <div>
+                <p className="text-center font-bold text-xl mb-1" style={{ color: "#111827" }}>Cadrez l'ordonnance</p>
+                <p className="text-center text-sm" style={{ color: "#6b7280" }}>Déplacez les 4 coins pour recadrer précisément</p>
               </div>
+              {/* Conteneur image + overlay SVG */}
+              <div
+                className="rounded-2xl overflow-hidden shadow-md relative"
+                style={{ background: "#000", touchAction: "none", userSelect: "none" }}
+                onPointerMove={(e) => {
+                  if (draggingIdx === null) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = Math.max(0.01, Math.min(0.99, (e.clientX - rect.left) / rect.width));
+                  const y = Math.max(0.01, Math.min(0.99, (e.clientY - rect.top) / rect.height));
+                  setCorners(prev => prev.map((c, i) => i === draggingIdx ? [x, y] : c) as [number,number][]);
+                }}
+                onPointerUp={() => setDraggingIdx(null)}
+                onPointerLeave={() => setDraggingIdx(null)}
+              >
+                {imageDataUrl && (
+                  <img
+                    ref={previewImgRef}
+                    src={imageDataUrl}
+                    alt="Ordonnance"
+                    style={{ width: "100%", display: "block", maxHeight: "60vh", objectFit: "contain" }}
+                  />
+                )}
+                {/* Overlay SVG avec coins déplaçables */}
+                <svg
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible" }}
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  {/* Zone sombre hors recadrage */}
+                  <defs>
+                    <mask id="cropMask">
+                      <rect width="100" height="100" fill="white" />
+                      <polygon
+                        points={corners.map(([x,y]) => `${x*100},${y*100}`).join(" ")}
+                        fill="black"
+                      />
+                    </mask>
+                  </defs>
+                  <rect width="100" height="100" fill="rgba(0,0,0,0.5)" mask="url(#cropMask)" />
+                  {/* Contour du quadrilatère */}
+                  <polygon
+                    points={corners.map(([x,y]) => `${x*100},${y*100}`).join(" ")}
+                    fill="none"
+                    stroke="#5331D0"
+                    strokeWidth="0.6"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+                {/* Poignées de coin (DOM, pas SVG, pour pointer events fiables) */}
+                {corners.map(([x, y], i) => (
+                  <div
+                    key={i}
+                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setDraggingIdx(i); }}
+                    style={{
+                      position: "absolute",
+                      left: `${x * 100}%`,
+                      top: `${y * 100}%`,
+                      transform: "translate(-50%, -50%)",
+                      width: 36, height: 36,
+                      borderRadius: "50%",
+                      background: "#fff",
+                      border: "3px solid #5331D0",
+                      boxShadow: "0 2px 8px rgba(83,49,208,0.4)",
+                      cursor: "grab",
+                      touchAction: "none",
+                      zIndex: 10,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#5331D0" }} />
+                  </div>
+                ))}
+              </div>
+              {/* Bouton reset coins */}
+              <button
+                onClick={() => setCorners([[0.04,0.04],[0.96,0.04],[0.96,0.96],[0.04,0.96]])}
+                className="text-sm text-center"
+                style={{ color: "#9ca3af" }}
+              >
+                ↺ Réinitialiser le cadrage
+              </button>
               <div className="flex gap-3">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                   className="flex-1 py-5 rounded-2xl font-bold text-lg"
+                  style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}>
+                  {t.retake}
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={analyseOrdonnance}
+                  className="flex-1 py-5 rounded-2xl text-white font-bold text-lg"
+                  style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
+                  {t.analyze}
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
                   style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}>
                   {t.retake}
                 </motion.button>
