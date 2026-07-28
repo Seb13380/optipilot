@@ -157,19 +157,23 @@ export default function ScannerPage() {
   // Synchronise la ref (accessible dans les callbacks)
   useEffect(() => { videoRotationRef.current = videoRotation; }, [videoRotation]);
 
-  // Détection rotation iOS : flux paysage reçu malgré contraintes portrait
+  // Rotation : iOS livre toujours un flux paysage, on corrige via l'orientation de l'écran
   useEffect(() => {
     if (!cameraStarted) return;
-    const timer = setTimeout(() => {
-      const video = videoRef.current;
-      if (!video || video.videoWidth === 0) return;
-      // Ne corriger QUE si le flux est réellement paysage (w > h)
-      const isLandscapeStream = video.videoWidth > video.videoHeight * 1.2;
-      const rot = isLandscapeStream ? 90 : 0;
+    const update = () => {
+      const isPortrait = window.innerWidth < window.innerHeight;
+      const rot = isPortrait ? 90 : 0;
       setVideoRotation(rot);
       videoRotationRef.current = rot;
-    }, 800);
-    return () => clearTimeout(timer);
+    };
+    const t = setTimeout(update, 300);
+    window.addEventListener("orientationchange", update);
+    window.addEventListener("resize", update);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("orientationchange", update);
+      window.removeEventListener("resize", update);
+    };
   }, [cameraStarted]);
 
   // Calcul de la différence entre deux frames
