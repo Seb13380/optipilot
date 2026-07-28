@@ -234,29 +234,12 @@ export default function ScannerPage() {
 
     const rawW = video.videoWidth;
     const rawH = video.videoHeight || 720;
-    // iOS peut rapporter des dimensions portrait même si le flux physique est paysage.
-    // On utilise Math.max/min pour extraire les vraies dimensions du flux de façon robuste.
-    const isPortraitDevice = window.innerWidth < window.innerHeight;
-    const streamLong  = Math.max(rawW, rawH); // côté long  = largeur du flux physique paysage
-    const streamShort = Math.min(rawW, rawH); // côté court = hauteur du flux physique paysage
 
-    let outW: number, outH: number;
-    if (isPortraitDevice) {
-      // Flux paysage → sortie portrait
-      outW = streamShort; outH = streamLong;
-      canvas.width = outW; canvas.height = outH;
-      const ctx = canvas.getContext("2d")!;
-      ctx.save();
-      ctx.translate(outW / 2, outH / 2);
-      ctx.rotate(-Math.PI / 2);
-      ctx.drawImage(video, -streamLong / 2, -streamShort / 2, streamLong, streamShort);
-      ctx.restore();
-    } else {
-      outW = rawW; outH = rawH;
-      canvas.width = outW; canvas.height = outH;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(video, 0, 0, rawW, rawH);
-    }
+    // Capture brute : drawImage direct, sans rotation canvas (évite les bugs iOS)
+    canvas.width = rawW; canvas.height = rawH;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(video, 0, 0, rawW, rawH);
+    const outW = rawW, outH = rawH;
 
     // Vérifier que le contenu capturé n'est pas noir
     if (!force) {
@@ -283,8 +266,26 @@ export default function ScannerPage() {
     tmpCtx.drawImage(canvas, 0, 0, outW * scale, outH * scale);
     tmpCtx.filter = "none";
 
-    const dataUrl = tmpCanvas.toDataURL("image/jpeg", 0.98);
-    setImageDataUrl(dataUrl);
+    const rawDataUrl = tmpCanvas.toDataURL("image/jpeg", 0.98);
+
+    // Rotation post-capture : si device en portrait, l'image brute est paysage → rotation -90° CCW
+    const isPortraitDevice = window.innerWidth < window.innerHeight;
+    if (isPortraitDevice && outW > outH) {
+      // Image paysage (outW > outH) → rotation CCW 90° → portrait
+      const rotCanvas = document.createElement("canvas");
+      rotCanvas.width = outH * scale;   // portrait : width = ancienne hauteur
+      rotCanvas.height = outW * scale;  // portrait : height = ancienne largeur
+      const rCtx = rotCanvas.getContext("2d")!;
+      rCtx.save();
+      rCtx.translate(0, outW * scale);  // translate au bas-gauche du nouveau canvas
+      rCtx.rotate(-Math.PI / 2);        // rotation -90° CCW
+      rCtx.drawImage(tmpCanvas, 0, 0);
+      rCtx.restore();
+      const dataUrl = rotCanvas.toDataURL("image/jpeg", 0.98);
+      setImageDataUrl(dataUrl);
+    } else {
+      setImageDataUrl(rawDataUrl);
+    }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (autoScanTimerRef.current) clearInterval(autoScanTimerRef.current);
     setStep("preview");
@@ -342,7 +343,7 @@ export default function ScannerPage() {
         video.srcObject = stream;
         video.play().catch(() => {});
         setCameraStarted(true);
-        setTimeout(startStabilityLoop, 800);
+        setTimeout(startStabilityLoop, 2500); // délai mise au point caméra iOS
       };
       if (videoRef.current) {
         attach(videoRef.current);
