@@ -493,7 +493,7 @@ export default function ScannerPage() {
                   <path d="M12 8v4M12 16h.01" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
                 <div>
-                  <p className="text-sm font-bold" style={{ color: "#5331D0" }}>{t.scanTips}</p>
+                  <p className="text-sm font-bold" style={{ color: "#5331D0" }}>{t.scanTips} — v28/07 14h</p>
                   <p className="text-sm mt-1 leading-relaxed" style={{ color: "#6b7280" }}>
                     {t.scanTipsBody}
                   </p>
