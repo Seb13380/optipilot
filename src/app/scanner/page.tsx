@@ -63,18 +63,18 @@ export default function ScannerPage() {
   // Synchronise la ref (accessible dans les callbacks)
   useEffect(() => { videoRotationRef.current = videoRotation; }, [videoRotation]);
 
-  // Détection rotation iOS : flux paysage sur écran portrait
+  // Détection rotation iOS : flux paysage reçu malgré contraintes portrait
   useEffect(() => {
     if (!cameraStarted) return;
     const timer = setTimeout(() => {
       const video = videoRef.current;
       if (!video || video.videoWidth === 0) return;
-      const isLandscapeStream = video.videoWidth > video.videoHeight * 1.3;
-      const isPortraitDevice = window.innerWidth < window.innerHeight;
-      const rot = isLandscapeStream && isPortraitDevice ? 90 : 0;
+      // Ne corriger QUE si le flux est réellement paysage (w > h)
+      const isLandscapeStream = video.videoWidth > video.videoHeight * 1.2;
+      const rot = isLandscapeStream ? 90 : 0;
       setVideoRotation(rot);
       videoRotationRef.current = rot;
-    }, 600);
+    }, 800);
     return () => clearTimeout(timer);
   }, [cameraStarted]);
 
@@ -192,7 +192,8 @@ export default function ScannerPage() {
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        // Contraintes portrait — ordonnances toujours en format portrait
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1080 }, height: { ideal: 1920 } },
       });
       streamRef.current = stream;
       const attach = (video: HTMLVideoElement) => {
@@ -325,14 +326,14 @@ export default function ScannerPage() {
                 </div>
               </div>
 
-              {/* Viewfinder */}
+              {/* Viewfinder — toujours portrait (ratio 3/4) */}
               <div
                 className="rounded-2xl overflow-hidden relative shadow-lg"
                 style={{
                   background: "#000",
-                  minHeight: videoRotation !== 0 ? "75vw" : 280,
-                  height: videoRotation !== 0 ? "75vw" : "48vh",
-                  maxHeight: videoRotation !== 0 ? "75vw" : "52vh",
+                  width: "100%",
+                  aspectRatio: "3/4",
+                  maxHeight: "60vh",
                 }}
               >
                 <video
