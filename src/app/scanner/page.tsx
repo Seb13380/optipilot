@@ -202,7 +202,7 @@ export default function ScannerPage() {
   useEffect(() => {
     if (!cameraStarted) return;
     const apply = () => {
-      const rot = window.innerWidth < window.innerHeight ? -90 : 0;
+      const rot = window.innerWidth < window.innerHeight ? 90 : 0;
       setVideoRotation(rot);
       videoRotationRef.current = rot;
     };
@@ -276,8 +276,8 @@ export default function ScannerPage() {
       rotCanvas.height = outW * scale;
       const rCtx = rotCanvas.getContext("2d")!;
       rCtx.save();
-      rCtx.translate(0, outW * scale);
-      rCtx.rotate(-Math.PI / 2);
+      rCtx.translate(rotCanvas.width, 0);
+      rCtx.rotate(Math.PI / 2);
       rCtx.drawImage(tmpCanvas, 0, 0);
       rCtx.restore();
       setImageDataUrl(rotCanvas.toDataURL("image/jpeg", 0.98));
@@ -521,7 +521,7 @@ export default function ScannerPage() {
                   position: "absolute",
                   top: "50%", left: "50%",
                   width: "133%", height: "133%",
-                  transform: "translate(-50%, -50%) rotate(-90deg)",
+                  transform: "translate(-50%, -50%) rotate(90deg)",
                   transformOrigin: "center center",
                 } : {
                   position: "absolute", inset: 0,
