@@ -640,17 +640,6 @@ export default function ScannerPage() {
               </div>
             </motion.div>
           )}
-                  style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}>
-                  {t.retake}
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={analyseOrdonnance}
-                  className="flex-1 py-5 rounded-2xl text-white font-bold text-lg"
-                  style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                  {t.analyze}
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
 
           {/* ── ÉTAPE 3 : RÉSULTAT ── */}
           {step === "result" && (
