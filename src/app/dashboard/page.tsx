@@ -6,13 +6,43 @@ import OpticianGuard from "@/components/OpticianGuard";
 import { lockSession, clearClientSession } from "@/lib/opticianAuth";
 import { useApp } from "@/lib/AppContext";
 
-// Révélation au scroll
+// Révélation au scroll — fade up
 function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <motion.div ref={ref} initial={{ opacity: 0, y: 24 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay, ease: "easeOut" }}>
+    <motion.div ref={ref}
+      initial={{ opacity: 0, y: 48 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] }}>
+      {children}
+    </motion.div>
+  );
+}
+
+// Révélation depuis la gauche
+function RevealLeft({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <motion.div ref={ref}
+      initial={{ opacity: 0, x: -48 }}
+      animate={inView ? { opacity: 1, x: 0 } : {}}
+      transition={{ duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] }}>
+      {children}
+    </motion.div>
+  );
+}
+
+// Révélation depuis la droite
+function RevealRight({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <motion.div ref={ref}
+      initial={{ opacity: 0, x: 48 }}
+      animate={inView ? { opacity: 1, x: 0 } : {}}
+      transition={{ duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] }}>
       {children}
     </motion.div>
   );
@@ -689,48 +719,55 @@ function DashboardPage() {
           </div>
         </motion.button>
 
-        {/* ══════════ STATS COMPACTES ══════════ */}
-        <Reveal>
-          <div className="grid grid-cols-3 gap-3 mb-5">
-            {[
-              { label: "⏱ Temps libéré", value: loading ? "…" : (tempsLabel ?? "0 min"), sub: nbDevis > 0 ? "aujourd'hui" : "estimation" },
-              { label: "💰 CA généré", value: loading ? "…" : (caGenere > 0 ? `+${caGenere.toLocaleString("fr-FR")}€` : "~+190€"), sub: nbDevis > 0 ? `${s?.ventesJour ?? 0} ventes` : "estimation" },
-              { label: "📈 Opportunités", value: loading ? "…" : String(nbDevis > 0 ? opportunites : 3), sub: nbDevis > 0 ? "devis en cours" : "estimation" },
-            ].map((m, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.07 }}
+        {/* ══════════ STATS COMPACTES — entrée échelonnée ══════════ */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          {[
+            { label: "⏱ Temps libéré", value: loading ? "…" : (tempsLabel ?? "0 min"), sub: nbDevis > 0 ? "aujourd'hui" : "estimation" },
+            { label: "💰 CA généré", value: loading ? "…" : (caGenere > 0 ? `+${caGenere.toLocaleString("fr-FR")}€` : "~+190€"), sub: nbDevis > 0 ? `${s?.ventesJour ?? 0} ventes` : "estimation" },
+            { label: "📈 Opportunités", value: loading ? "…" : String(nbDevis > 0 ? opportunites : 3), sub: nbDevis > 0 ? "devis en cours" : "estimation" },
+          ].map((m, i) => {
+            const ref = useRef<HTMLDivElement>(null);
+            const inView = useInView(ref, { once: true, margin: "-60px" });
+            return (
+              <motion.div key={i} ref={ref}
+                initial={{ opacity: 0, y: 36, scale: 0.95 }}
+                animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                transition={{ duration: 0.55, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
                 className="rounded-2xl p-3 text-center"
                 style={{ background: "rgba(83,49,208,0.08)", border: "1px solid rgba(83,49,208,0.12)" }}>
                 <p className="text-xs font-semibold mb-1" style={{ color: "#9B96DA" }}>{m.label}</p>
                 <p className="text-lg font-black" style={{ color: "#1C0B62" }}>{m.value}</p>
                 <p className="text-xs" style={{ color: "#9ca3af" }}>{m.sub}</p>
               </motion.div>
-            ))}
-          </div>
-        </Reveal>
+            );
+          })}
+        </div>
 
-        {/* ══════════ TUILES SECONDAIRES ══════════ */}
-        <Reveal delay={0.05}>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            {MENU_ITEMS.map((item, i) => (
-              <motion.button
-                key={item.id}
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                onClick={() => router.push(item.href)}
-                className="rounded-3xl p-6 flex flex-col items-center gap-2"
-                style={{ background: item.gradient, minHeight: 140, boxShadow: `0 4px 20px ${item.shadow}` }}
-              >
-                <div className="opacity-95">{item.icon}</div>
-                <span className="text-white text-lg font-bold text-center leading-snug" style={{ whiteSpace: "pre-line" }}>
-                  {t[item.labelKey]}
-                </span>
-                <span className="text-white text-xs font-medium text-center" style={{ opacity: 0.65 }}>
-                  {t[item.descKey]}
-                </span>
-              </motion.button>
-            ))}
-          </div>
-        </Reveal>
+        {/* ══════════ TUILES SECONDAIRES — alternance gauche/droite ══════════ */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {MENU_ITEMS.map((item, i) => {
+            const Rev = i % 2 === 0 ? RevealLeft : RevealRight;
+            return (
+              <Rev key={item.id} delay={i * 0.1}>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                  onClick={() => router.push(item.href)}
+                  className="w-full rounded-3xl p-6 flex flex-col items-center gap-2"
+                  style={{ background: item.gradient, minHeight: 140, boxShadow: `0 4px 20px ${item.shadow}` }}
+                >
+                  <div className="opacity-95">{item.icon}</div>
+                  <span className="text-white text-lg font-bold text-center leading-snug" style={{ whiteSpace: "pre-line" }}>
+                    {t[item.labelKey]}
+                  </span>
+                  <span className="text-white text-xs font-medium text-center" style={{ opacity: 0.65 }}>
+                    {t[item.descKey]}
+                  </span>
+                </motion.button>
+              </Rev>
+            );
+          })}
+        </div>
 
         {/* ══════════ RELANCES URGENTES ══════════ */}
         {!loading && relancesCount > 0 && potentielRelances > 0 && (
