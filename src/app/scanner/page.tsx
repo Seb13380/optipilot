@@ -202,9 +202,9 @@ export default function ScannerPage() {
   useEffect(() => {
     if (!cameraStarted) return;
     const apply = () => {
-      const rot = window.innerWidth < window.innerHeight ? 90 : 0;
-      setVideoRotation(rot);
-      videoRotationRef.current = rot;
+      // Le flux iOS est déjà correctement orienté — pas de rotation nécessaire
+      setVideoRotation(0);
+      videoRotationRef.current = 0;
     };
     apply();
     window.addEventListener("orientationchange", apply);
@@ -268,22 +268,8 @@ export default function ScannerPage() {
 
     const rawDataUrl = tmpCanvas.toDataURL("image/jpeg", 0.98);
 
-    // Rotation post-capture : on utilise videoRotationRef (même état que la CSS du live feed)
-    // Si CSS appliquait rotate(-90deg), le canvas a capturé le flux brut → il faut la même rotation
-    if (videoRotationRef.current !== 0) {
-      const rotCanvas = document.createElement("canvas");
-      rotCanvas.width = outH * scale;
-      rotCanvas.height = outW * scale;
-      const rCtx = rotCanvas.getContext("2d")!;
-      rCtx.save();
-      rCtx.translate(rotCanvas.width, 0);
-      rCtx.rotate(Math.PI / 2);
-      rCtx.drawImage(tmpCanvas, 0, 0);
-      rCtx.restore();
-      setImageDataUrl(rotCanvas.toDataURL("image/jpeg", 0.98));
-    } else {
-      setImageDataUrl(rawDataUrl);
-    }
+    // Pas de rotation post-capture : le flux iOS est déjà portrait
+    setImageDataUrl(rawDataUrl);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (autoScanTimerRef.current) clearInterval(autoScanTimerRef.current);
     setStep("preview");
