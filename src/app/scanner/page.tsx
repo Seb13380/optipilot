@@ -319,8 +319,7 @@ export default function ScannerPage() {
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        // Contraintes portrait — ordonnances toujours en format portrait
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1080 }, height: { ideal: 1920 } },
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       streamRef.current = stream;
       const attach = (video: HTMLVideoElement) => {
@@ -479,7 +478,7 @@ export default function ScannerPage() {
                   <path d="M12 8v4M12 16h.01" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
                 <div>
-                  <p className="text-sm font-bold" style={{ color: "#5331D0" }}>{t.scanTips} — v28/07 15h</p>
+                  <p className="text-sm font-bold" style={{ color: "#5331D0" }}>{t.scanTips}</p>
                   <p className="text-sm mt-1 leading-relaxed" style={{ color: "#6b7280" }}>
                     {t.scanTipsBody}
                   </p>
@@ -498,11 +497,7 @@ export default function ScannerPage() {
                   margin: "0 auto",
                 }}
               >
-                {/* DEBUG TEMPORAIRE — à supprimer */}
-                <div style={{ position: "absolute", top: 4, left: 4, zIndex: 200, background: "rgba(255,0,0,0.85)", color: "#fff", fontSize: 11, padding: "2px 6px", borderRadius: 4, fontFamily: "monospace" }}>
-                  rot={videoRotation} | {typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "?"}
-                </div>
-                {/* Wrapper div pour rotation — vmax pour éviter height:0 sur enfant absolu */}
+                {/* Wrapper div pour rotation */}
                 <div style={videoRotation !== 0 ? {
                   position: "absolute",
                   top: "50%", left: "50%",
