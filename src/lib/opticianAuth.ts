@@ -24,6 +24,26 @@ export function isSessionLocked(): boolean {
   return sessionStorage.getItem(LOCK_KEY) === "1";
 }
 
+/** Clés localStorage liées à une session client — à vider à chaque nouveau client */
+const CLIENT_SESSION_KEYS = [
+  "optipilot_client",
+  "optipilot_client_id",
+  "optipilot_ordonnance",
+  "optipilot_ordonnance_db",
+  "optipilot_offre_selectionnee",
+  "optipilot_offre_nom",
+  "optipilot_offres_complementaires",
+  "optipilot_questionnaire",
+  "optipilot_mutuelle",
+  "optipilot_devis_payload",
+];
+
+/** Efface toutes les données de la session client en cours */
+export function clearClientSession(): void {
+  if (typeof window === "undefined") return;
+  CLIENT_SESSION_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
 /** Verrouille la session (opticien passe la tablette au client) */
 export function lockSession(): void {
   if (typeof window !== "undefined") {

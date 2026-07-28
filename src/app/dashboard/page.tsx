@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OpticianGuard from "@/components/OpticianGuard";
-import { lockSession } from "@/lib/opticianAuth";
+import { lockSession, clearClientSession } from "@/lib/opticianAuth";
 import { useApp } from "@/lib/AppContext";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
@@ -692,7 +692,7 @@ function DashboardPage() {
           transition={{ delay: 0.28 }}
           whileTap={{ scale: 0.98 }}
           whileHover={{ y: -3 }}
-          onClick={() => { lockSession(); router.push("/client"); }}
+          onClick={() => { clearClientSession(); lockSession(); router.push("/client"); }}
           className="w-full rounded-3xl px-6 py-6 flex items-center justify-between mb-5"
           style={{
             background: "linear-gradient(135deg, #3b1fa8 0%, #5331D0 55%, #7B5CE5 100%)",
