@@ -1,10 +1,22 @@
 "use client";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import OpticianGuard from "@/components/OpticianGuard";
 import { lockSession, clearClientSession } from "@/lib/opticianAuth";
 import { useApp } from "@/lib/AppContext";
+
+// Révélation au scroll
+function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  return (
+    <motion.div ref={ref} initial={{ opacity: 0, y: 24 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay, ease: "easeOut" }}>
+      {children}
+    </motion.div>
+  );
+}
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
 
@@ -530,8 +542,9 @@ function DashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* Bloc ROI — valeur visible */}
-        {/* ── Bloc ROI Impact ─────────────────────────────────── */}
+        {false && /* ROI bloc masqué — remplacé par stats compactes */  null}
+
+        {/* ══════════ CTA PRINCIPAL — UN DEVIS EN 2 SCANS ══════════ */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -627,8 +640,8 @@ function DashboardPage() {
             </div>
           )}
 
-          {/* Journée vide — estimation mise en valeur */}
-          {!loading && nbDevis === 0 && (
+          {/* Journée vide — on cache l'estimation mensuelle (trop de bruit) */}
+          {false && !loading && nbDevis === 0 && (
             <div className="rounded-2xl px-4 py-4 text-center" style={{ background: "rgba(232,121,249,0.08)", border: "1px solid rgba(232,121,249,0.25)" }}>
               <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: "rgba(232,121,249,0.65)" }}>💰 {t.monthlyEstimate}</p>
               <p className="text-2xl font-black" style={{ color: "#e879f9" }}>≈ +900€ à +1 800€</p>
@@ -639,83 +652,89 @@ function DashboardPage() {
           )}
         </motion.div>
 
-        {/* Boutons d'action */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          {MENU_ITEMS.map((item, i) => (
-            <motion.button
-              key={item.id}
-              initial={{ opacity: 0, y: 28, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: i * 0.09, type: "spring", stiffness: 300, damping: 26 }}
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ y: -6, scale: 1.025, transition: { duration: 0.22, ease: "easeOut" } }}
-              onClick={() => router.push(item.href)}
-              className="rounded-3xl p-6 flex flex-col items-center gap-2"
-              style={{
-                background: item.gradient,
-                minHeight: 155,
-                boxShadow: `0 4px 20px ${item.shadow}`,
-                transition: "box-shadow 0.25s ease",
-              }}
-            >
-              <div className="opacity-95">{item.icon}</div>
-              <span className="text-white text-xl font-bold text-center leading-snug" style={{ whiteSpace: "pre-line" }}>
-                {t[item.labelKey]}
-              </span>
-              <span className="text-white text-sm font-medium text-center" style={{ opacity: 0.65 }}>
-                {t[item.descKey]}
-              </span>
-            </motion.button>
-          ))}
-        </div>
-
-        {/* Passer la tablette au client — CTA principal */}
+        {/* ══════════ CTA PRINCIPAL — UN DEVIS EN 2 SCANS ══════════ */}
         <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.28 }}
-          whileTap={{ scale: 0.98 }}
-          whileHover={{ y: -3 }}
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.05, type: "spring", stiffness: 300, damping: 28 }}
+          whileTap={{ scale: 0.97 }}
+          whileHover={{ y: -4, boxShadow: "0 16px 48px rgba(83,49,208,0.55)" }}
           onClick={() => { clearClientSession(); lockSession(); router.push("/client"); }}
-          className="w-full rounded-3xl px-6 py-6 flex items-center justify-between mb-5"
+          className="w-full rounded-3xl px-6 py-7 flex items-center justify-between mb-6"
           style={{
             background: "linear-gradient(135deg, #3b1fa8 0%, #5331D0 55%, #7B5CE5 100%)",
             border: "1.5px solid rgba(255,255,255,0.18)",
-            boxShadow: "0 8px 36px rgba(83,49,208,0.45), 0 0 0 1px rgba(83,49,208,0.2)",
-            transition: "box-shadow 0.25s ease",
+            boxShadow: "0 8px 36px rgba(83,49,208,0.45)",
           }}
         >
           <div className="flex items-center gap-5">
-            <div
-              className="rounded-2xl flex items-center justify-center"
-              style={{ width: 56, height: 56, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", flexShrink: 0 }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <rect x="5" y="2" width="14" height="20" rx="2" stroke="white" strokeWidth="2" />
-                <circle cx="12" cy="18" r="1.5" fill="white" />
-                <path d="M9 6h6M9 9.5h4" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+            <div className="rounded-2xl flex items-center justify-center shrink-0"
+              style={{ width: 60, height: 60, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)" }}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="2" width="14" height="20" rx="2" stroke="white" strokeWidth="2"/>
+                <circle cx="12" cy="18" r="1.5" fill="white"/>
+                <path d="M9 6h6M9 9.5h4" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
               </svg>
             </div>
             <div className="text-left">
-              <p className="text-xl font-black leading-tight" style={{ color: "#FFFFFF" }}>
-                {t.launchClient}
-              </p>
+              <p className="text-2xl font-black leading-tight text-white">Un devis en 2 scans</p>
               <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
-                {t.launchClientSub}
+                Ordonnance + mutuelle → devis prêt en 3 minutes
               </p>
             </div>
           </div>
-          <div
-            className="rounded-xl flex items-center justify-center"
-            style={{ width: 40, height: 40, background: "rgba(255,255,255,0.15)", flexShrink: 0 }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M9 18l6-6-6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <div className="rounded-xl flex items-center justify-center shrink-0"
+            style={{ width: 44, height: 44, background: "rgba(255,255,255,0.15)" }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
         </motion.button>
 
-        {/* WAOUH relances */}
+        {/* ══════════ STATS COMPACTES ══════════ */}
+        <Reveal>
+          <div className="grid grid-cols-3 gap-3 mb-5">
+            {[
+              { label: "⏱ Temps libéré", value: loading ? "…" : (tempsLabel ?? "0 min"), sub: nbDevis > 0 ? "aujourd'hui" : "estimation" },
+              { label: "💰 CA généré", value: loading ? "…" : (caGenere > 0 ? `+${caGenere.toLocaleString("fr-FR")}€` : "~+190€"), sub: nbDevis > 0 ? `${s?.ventesJour ?? 0} ventes` : "estimation" },
+              { label: "📈 Opportunités", value: loading ? "…" : String(nbDevis > 0 ? opportunites : 3), sub: nbDevis > 0 ? "devis en cours" : "estimation" },
+            ].map((m, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.07 }}
+                className="rounded-2xl p-3 text-center"
+                style={{ background: "rgba(83,49,208,0.08)", border: "1px solid rgba(83,49,208,0.12)" }}>
+                <p className="text-xs font-semibold mb-1" style={{ color: "#9B96DA" }}>{m.label}</p>
+                <p className="text-lg font-black" style={{ color: "#1C0B62" }}>{m.value}</p>
+                <p className="text-xs" style={{ color: "#9ca3af" }}>{m.sub}</p>
+              </motion.div>
+            ))}
+          </div>
+        </Reveal>
+
+        {/* ══════════ TUILES SECONDAIRES ══════════ */}
+        <Reveal delay={0.05}>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            {MENU_ITEMS.map((item, i) => (
+              <motion.button
+                key={item.id}
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                onClick={() => router.push(item.href)}
+                className="rounded-3xl p-6 flex flex-col items-center gap-2"
+                style={{ background: item.gradient, minHeight: 140, boxShadow: `0 4px 20px ${item.shadow}` }}
+              >
+                <div className="opacity-95">{item.icon}</div>
+                <span className="text-white text-lg font-bold text-center leading-snug" style={{ whiteSpace: "pre-line" }}>
+                  {t[item.labelKey]}
+                </span>
+                <span className="text-white text-xs font-medium text-center" style={{ opacity: 0.65 }}>
+                  {t[item.descKey]}
+                </span>
+              </motion.button>
+            ))}
+          </div>
+        </Reveal>
+
+        {/* ══════════ RELANCES URGENTES ══════════ */}
         {!loading && relancesCount > 0 && potentielRelances > 0 && (
           <motion.button
             initial={{ opacity: 0, scale: 0.97 }}
@@ -832,15 +851,11 @@ function DashboardPage() {
         )}
 
         {/* Stats du jour — 4 tuiles */}
+        <Reveal>
         <div className="mb-4">
-          <motion.h2
-            initial={{ opacity: 0, x: -14 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.24, duration: 0.4 }}
-            className="text-xl font-bold mb-3" style={{ color: "#374151" }}
-          >
+          <h2 className="text-xl font-bold mb-3" style={{ color: "#374151" }}>
             {t.todayTitle}
-          </motion.h2>
+          </h2>
           <div className="grid grid-cols-4 gap-3">
             <StatTile value={loading ? "…" : s?.devisJour ?? 0} label={t.quotesEstablished} accent="#5331D0" delay={0.28} />
             <StatTile value={loading ? "…" : s?.ventesJour ?? 0} label={t.salesTitle} accent="#ec4899" delay={0.35} />
@@ -848,15 +863,14 @@ function DashboardPage() {
             <StatTile value={loading ? "…" : `${s?.panierMoyen ?? 0}€`} label={t.avgCart} accent="#3b82f6" delay={0.49} />
           </div>
         </div>
+        </Reveal>
 
         {/* Semaine + Clients + Devis récents */}
+        <Reveal delay={0.1}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* Semaine */}
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.32 }}
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="rounded-2xl p-5"
             style={{ background: "rgba(8,2,40,0.96)", border: "1px solid rgba(83,49,208,0.55)" }}
@@ -940,6 +954,7 @@ function DashboardPage() {
             </motion.button>
           </motion.div>
         </div>
+        </Reveal>
 
         {/* Opportunités détectées */}
         <OpportunitesSansStats stats={s} loading={loading} onNavigate={router.push.bind(router)} />
