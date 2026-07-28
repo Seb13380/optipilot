@@ -198,31 +198,20 @@ export default function ScannerPage() {
   // Synchronise la ref (accessible dans les callbacks)
   useEffect(() => { videoRotationRef.current = videoRotation; }, [videoRotation]);
 
-  // Rotation iOS : détecte le sens réel du flux après démarrage caméra
+  // Rotation iOS : le flux physique est TOUJOURS paysage — rotation selon orientation écran
   useEffect(() => {
     if (!cameraStarted) return;
-    const video = videoRef.current;
-    if (!video) return;
-
-    const applyRotation = () => {
-      const sw = video.videoWidth, sh = video.videoHeight;
-      if (sw === 0 || sh === 0) return; // dimensions pas encore prêtes — on attend l'événement
-      const isPortrait = window.innerWidth < window.innerHeight;
-      // Rotation UNIQUEMENT si le flux est paysage (sw > sh) ET que l'écran est en portrait
-      const rot = (sw > sh * 1.1 && isPortrait) ? -90 : 0;
+    const apply = () => {
+      const rot = window.innerWidth < window.innerHeight ? -90 : 0;
       setVideoRotation(rot);
       videoRotationRef.current = rot;
     };
-
-    // Événement fiable : déclenché dès que les dimensions sont connues
-    video.addEventListener("loadedmetadata", applyRotation);
-    // Fallback après 1.5s (au cas où loadedmetadata déjà passé)
-    const t = setTimeout(applyRotation, 1500);
-    window.addEventListener("orientationchange", applyRotation);
+    apply();
+    window.addEventListener("orientationchange", apply);
+    window.addEventListener("resize", apply);
     return () => {
-      video.removeEventListener("loadedmetadata", applyRotation);
-      clearTimeout(t);
-      window.removeEventListener("orientationchange", applyRotation);
+      window.removeEventListener("orientationchange", apply);
+      window.removeEventListener("resize", apply);
     };
   }, [cameraStarted]);
 
@@ -525,10 +514,8 @@ export default function ScannerPage() {
                   muted
                   style={videoRotation !== 0 ? {
                     position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    width: "75vw",
-                    height: "100vw",
+                    top: "50%", left: "50%",
+                    width: "100vmax", height: "100vmax",
                     transform: "translate(-50%, -50%) rotate(-90deg)",
                     objectFit: "cover",
                     display: cameraStarted ? "block" : "none",
