@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Playfair_Display } from "next/font/google";
 import "./globals.css";
 import OptiPilotFooter from "@/components/OptiPilotFooter";
 import { AppProvider } from "@/lib/AppContext";
+
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-serif-chic", display: "swap" });
 
 export const metadata: Metadata = {
   title: {
@@ -46,7 +49,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
-      <body className="antialiased page-bg">
+      <body className={`antialiased page-bg ${playfair.variable}`}>
         <AppProvider>
           {children}
           <OptiPilotFooter />
