@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence, useInView, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useInView, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -179,6 +179,103 @@ function InteractiveLens() {
         />
       </motion.div>
     </motion.div>
+  );
+}
+
+// ─── Scroll Storytelling — ordonnance → IA → 3 offres ──────────────
+// Section haute (300vh) avec viewport sticky : 3 étapes qui se
+// fondent l'une dans l'autre au fil du scroll. Pur Framer Motion.
+function ScrollStory() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
+
+  const stage1Opacity = useTransform(scrollYProgress, [0, 0.08, 0.28, 0.36], [0, 1, 1, 0]);
+  const stage1Y = useTransform(scrollYProgress, [0, 0.36], [0, -40]);
+
+  const stage2Opacity = useTransform(scrollYProgress, [0.3, 0.38, 0.62, 0.7], [0, 1, 1, 0]);
+  const stage2Scale = useTransform(scrollYProgress, [0.3, 0.5, 0.7], [0.9, 1, 0.9]);
+
+  const stage3Opacity = useTransform(scrollYProgress, [0.64, 0.74, 1], [0, 1, 1]);
+  const stage3Y = useTransform(scrollYProgress, [0.64, 0.85], [40, 0]);
+
+  const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+
+  const orbitData = ["Correction", "Âge", "Écrans", "Conduite", "Sport", "Budget", "Mutuelle"];
+  const offers = [
+    { name: "ESSENTIEL", color: "#5b7cff" },
+    { name: "CONFORT", color: "#4fe8ff" },
+    { name: "PREMIUM", color: "#9b6bff" },
+  ];
+
+  return (
+    <section ref={containerRef} className="relative" style={{ height: "300vh" }}>
+      <div className="op-bg-hero sticky top-0 h-screen flex items-center justify-center overflow-hidden">
+        {/* Indicateur de progression */}
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
+          <p className="text-xs font-black uppercase tracking-widest" style={{ color: "#4fe8ff" }}>De l&apos;ordonnance à la vente</p>
+          <div className="w-40 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.12)" }}>
+            <motion.div style={{ width: progressWidth, height: "100%", background: "linear-gradient(90deg,#4fe8ff,#9b6bff)" }} />
+          </div>
+        </div>
+
+        {/* Étape 01 — SCAN */}
+        <motion.div style={{ opacity: stage1Opacity, y: stage1Y }} className="absolute inset-0 flex flex-col items-center justify-center px-6">
+          <span className="text-xs font-black tracking-widest mb-5" style={{ color: "#4fe8ff" }}>01 — SCAN</span>
+          <div className="op-glass rounded-3xl p-8 flex flex-col gap-4 w-full max-w-sm">
+            {[["OD", "+1.50"], ["OG", "−0.75"], ["ADD", "+2.00"], ["AXE", "85°"]].map(([label, val]) => (
+              <div key={label} className="flex items-center justify-between">
+                <span className="text-sm font-semibold" style={{ color: "#99a3c9" }}>{label}</span>
+                <span className="text-lg font-black op-gradient-text">{val}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-base text-center" style={{ color: "#c3cbea" }}>
+            Ordonnance comprise en <strong style={{ color: "#4fe8ff" }}>8,4 s</strong> ✓
+          </p>
+        </motion.div>
+
+        {/* Étape 02 — OPTIPILOT AI */}
+        <motion.div style={{ opacity: stage2Opacity, scale: stage2Scale }} className="absolute inset-0 flex flex-col items-center justify-center px-6">
+          <span className="text-xs font-black tracking-widest mb-5" style={{ color: "#4fe8ff" }}>02 — ANALYSE</span>
+          <div className="relative w-full max-w-md" style={{ height: 320 }}>
+            {orbitData.map((label, i) => {
+              const angle = (i / orbitData.length) * 2 * Math.PI;
+              const radius = 130;
+              const x = Math.cos(angle) * radius;
+              const y = Math.sin(angle) * radius;
+              return (
+                <span
+                  key={label}
+                  className="op-glass absolute px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                  style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`, transform: "translate(-50%, -50%)", color: "#c3cbea" }}
+                >
+                  {label}
+                </span>
+              );
+            })}
+            <div className="op-glass op-glow rounded-full absolute" style={{ width: 120, height: 120, left: "50%", top: "50%", transform: "translate(-50%, -50%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span className="text-xs font-black op-gradient-text leading-tight text-center">OPTIPILOT<br />AI</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Étape 03 — 3 OFFRES */}
+        <motion.div style={{ opacity: stage3Opacity, y: stage3Y }} className="absolute inset-0 flex flex-col items-center justify-center px-6">
+          <span className="text-xs font-black tracking-widest mb-6" style={{ color: "#4fe8ff" }}>03 — 3 RECOMMANDATIONS</span>
+          <div className="flex flex-col sm:flex-row gap-5 w-full max-w-3xl justify-center">
+            {offers.map((offer) => (
+              <div key={offer.name} className="op-glass rounded-2xl p-6 flex-1 text-center">
+                <div className="w-10 h-10 rounded-full mx-auto mb-3" style={{ background: `${offer.color}30`, border: `1.5px solid ${offer.color}` }} />
+                <p className="text-sm font-black tracking-widest" style={{ color: offer.color }}>{offer.name}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-base mt-6 max-w-md" style={{ color: "#c3cbea" }}>
+            3 recommandations personnalisées, argumentées et prêtes à présenter.
+          </p>
+        </motion.div>
+      </div>
+    </section>
   );
 }
 
@@ -469,7 +566,7 @@ export default function LandingPage() {
         }}
       />
 
-      <div id="op-landing" style={{ overflowX: "hidden" }}>
+      <div id="op-landing">
 
         {/* ══════════════════════════ NAVBAR ══════════════════════════ */}
         <motion.nav
@@ -661,6 +758,9 @@ export default function LandingPage() {
             </motion.div>
           </div>
         </section>
+
+        {/* ══════════════════════════ SCROLL STORYTELLING ══════════════════════════ */}
+        <ScrollStory />
 
         {/* ══════════════════════════ BANNIÈRE OFFRE FONDATEUR ══════════════════════════ */}
         <FounderBanner restants={ambassadeurRestants} onClaim={() => scrollToDemo(true)} />
