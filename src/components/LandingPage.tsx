@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence, useInView } from "framer-motion";
+import { motion, AnimatePresence, useInView, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -111,6 +111,73 @@ function RevealCard({ children, delay = 0 }: { children: React.ReactNode; delay?
       transition={{ duration: 0.55, delay, ease: "easeOut" }}
     >
       {children}
+    </motion.div>
+  );
+}
+
+// ─── Lentille optique interactive (suit la souris, tilt 3D + reflet) ──
+// Pur CSS/Framer Motion — aucune lib 3D. Respecte prefers-reduced-motion.
+function InteractiveLens() {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduceMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const rawX = useMotionValue(0);
+  const rawY = useMotionValue(0);
+  const springX = useSpring(rawX, { stiffness: 60, damping: 15, mass: 0.6 });
+  const springY = useSpring(rawY, { stiffness: 60, damping: 15, mass: 0.6 });
+
+  const rotateY = useTransform(springX, [-0.5, 0.5], [-16, 16]);
+  const rotateX = useTransform(springY, [-0.5, 0.5], [14, -14]);
+  const glareX = useTransform(springX, [-0.5, 0.5], ["20%", "80%"]);
+  const glareY = useTransform(springY, [-0.5, 0.5], ["20%", "80%"]);
+  const glareBackground = useTransform([glareX, glareY], ([gx, gy]) => `radial-gradient(circle at ${gx} ${gy}, rgba(255,255,255,0.55) 0%, transparent 35%)`);
+
+  // Écoute le mouvement de la souris sur toute la section hero (pas seulement
+  // sur la lentille) pour une réaction plus naturelle, sans intercepter les clics.
+  useEffect(() => {
+    if (reduceMotion) return;
+    const heroEl = ref.current?.closest("#hero") as HTMLElement | null;
+    if (!heroEl) return;
+    const handleMove = (e: MouseEvent) => {
+      const rect = heroEl.getBoundingClientRect();
+      rawX.set((e.clientX - rect.left) / rect.width - 0.5);
+      rawY.set((e.clientY - rect.top) / rect.height - 0.5);
+    };
+    const handleLeave = () => { rawX.set(0); rawY.set(0); };
+    heroEl.addEventListener("mousemove", handleMove);
+    heroEl.addEventListener("mouseleave", handleLeave);
+    return () => {
+      heroEl.removeEventListener("mousemove", handleMove);
+      heroEl.removeEventListener("mouseleave", handleLeave);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduceMotion]);
+
+  return (
+    <motion.div
+      ref={ref}
+      className="hidden lg:block"
+      aria-hidden
+      style={{ position: "absolute", top: "8%", right: "-6%", width: 520, height: 520, pointerEvents: "none", perspective: 900 }}
+      animate={reduceMotion ? undefined : { y: [0, -18, 0] }}
+      transition={reduceMotion ? undefined : { duration: 7, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <motion.div
+        className="op-lens"
+        style={{ width: "100%", height: "100%", opacity: 0.6, rotateX, rotateY, transformStyle: "preserve-3d" }}
+      >
+        {/* Reflet lumineux qui suit le curseur */}
+        <motion.div
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            background: glareBackground,
+            mixBlendMode: "screen",
+            pointerEvents: "none",
+          }}
+        />
+      </motion.div>
     </motion.div>
   );
 }
@@ -450,12 +517,8 @@ export default function LandingPage() {
           id="hero"
           className="op-bg-hero min-h-screen flex flex-col justify-center px-6 pt-28 pb-16 relative overflow-hidden"
         >
-          {/* Lentille optique décorative (pur CSS, pas de lib 3D) */}
-          <div
-            className="op-lens hidden lg:block"
-            aria-hidden
-            style={{ position: "absolute", top: "8%", right: "-6%", width: 520, height: 520, opacity: 0.55, pointerEvents: "none" }}
-          />
+          {/* Lentille optique interactive (pur CSS/Framer Motion, pas de lib 3D) */}
+          <InteractiveLens />
           <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* ── Colonne gauche ── */}
             <motion.div
