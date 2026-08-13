@@ -1694,6 +1694,75 @@ app.post("/api/bridge/client-ack", requireAuth, async (req: AuthRequest, res) =>
   }
 });
 
+// ─── Relais recherche client Optimum Live (iPad → extension PC) ─────────────
+// POST /api/bridge/search-push       → iPad crée une demande de recherche
+// GET  /api/bridge/search-pull       → extension PC récupère les demandes en attente
+// POST /api/bridge/search-result     → extension PC poste le résultat
+// GET  /api/bridge/search-result/:id → iPad récupère le résultat (poll)
+
+app.post("/api/bridge/search-push", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.user?.magasinId!;
+    const { query } = req.body as { query?: string };
+    if (!query || !query.trim()) return res.status(400).json({ error: "query requis" });
+    const request = await prisma.clientSearchRequest.create({
+      data: { magasinId, query: query.trim(), statut: "pending" },
+    });
+    res.json({ id: request.id });
+  } catch (err) {
+    console.error("POST /api/bridge/search-push error:", err);
+    res.status(500).json({ error: "Erreur création recherche" });
+  }
+});
+
+app.get("/api/bridge/search-pull", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const magasinId = req.user?.magasinId!;
+    const pending = await prisma.clientSearchRequest.findMany({
+      where: { magasinId, statut: "pending" },
+      orderBy: { createdAt: "asc" },
+    });
+    if (pending.length > 0) {
+      await prisma.clientSearchRequest.updateMany({
+        where: { id: { in: pending.map((p) => p.id) } },
+        data: { statut: "processing" },
+      });
+    }
+    res.json(pending);
+  } catch (err) {
+    console.error("GET /api/bridge/search-pull error:", err);
+    res.status(500).json({ error: "Erreur pull recherche" });
+  }
+});
+
+app.post("/api/bridge/search-result", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { id, results, error } = req.body as { id: string; results?: unknown; error?: string };
+    if (!id) return res.status(400).json({ error: "id requis" });
+    await prisma.clientSearchRequest.update({
+      where: { id },
+      data: error
+        ? { statut: "error", results: { error } }
+        : { statut: "done", results: (results ?? []) as object },
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("POST /api/bridge/search-result error:", err);
+    res.status(500).json({ error: "Erreur résultat recherche" });
+  }
+});
+
+app.get("/api/bridge/search-result/:id", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const request = await prisma.clientSearchRequest.findUnique({ where: { id: String(req.params.id) } });
+    if (!request) return res.status(404).json({ error: "Recherche introuvable" });
+    res.json(request);
+  } catch (err) {
+    console.error("GET /api/bridge/search-result error:", err);
+    res.status(500).json({ error: "Erreur lecture résultat" });
+  }
+});
+
 // ─── Start ────────────────────────────────────────────────
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 4000;
 httpServer.listen(PORT, () => {

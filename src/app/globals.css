@@ -229,3 +229,91 @@ html.dark .page-bg {
   transform: scale(0.97);
 }
 
+/* ==============================================
+   OPTICAL GLASS — Design system landing v2 (futuriste, verre optique)
+   Scopé sous .op-* / à l'intérieur de #op-landing pour ne rien casser
+   ailleurs dans l'app (dashboard, tablette, etc.)
+   ============================================== */
+#op-landing {
+  --op-bg: #05040f;
+  --op-bg-2: #090717;
+  --op-cyan: #4fe8ff;
+  --op-electric: #5b7cff;
+  --op-iris: #9b6bff;
+  --op-glass: rgba(255,255,255,0.055);
+  --op-glass-strong: rgba(255,255,255,0.09);
+  --op-glass-border: rgba(255,255,255,0.14);
+  --op-text: #f1f4ff;
+  --op-text-dim: #99a3c9;
+  background: var(--op-bg);
+  color: var(--op-text);
+}
+
+/* Fond profond avec halos lumineux façon lentille optique */
+.op-bg-hero {
+  background:
+    radial-gradient(ellipse 60% 50% at 78% 18%, rgba(79,232,255,0.16), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 15% 75%, rgba(91,124,255,0.14), transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(155,107,255,0.12), transparent 65%),
+    var(--op-bg);
+}
+
+/* Carte en verre — translucide, flou, léger relief */
+.op-glass {
+  background: linear-gradient(180deg, var(--op-glass-strong) 0%, var(--op-glass) 100%);
+  border: 1px solid var(--op-glass-border);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09);
+}
+
+/* Texte en dégradé cyan → électrique → violet irisé */
+.op-gradient-text {
+  background: linear-gradient(120deg, var(--op-cyan) 0%, var(--op-electric) 55%, var(--op-iris) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Halo lumineux discret */
+.op-glow {
+  box-shadow: 0 0 50px rgba(79,232,255,0.22);
+}
+
+/* Bouton primaire — verre + lueur cyan/électrique */
+.op-btn-primary {
+  background: linear-gradient(135deg, var(--op-cyan) 0%, var(--op-electric) 100%);
+  color: #04030d;
+  box-shadow: 0 10px 34px rgba(79,232,255,0.32), 0 4px 14px rgba(91,124,255,0.28);
+}
+
+/* Bouton secondaire — contour verre */
+.op-btn-secondary {
+  background: var(--op-glass);
+  border: 1.5px solid var(--op-glass-border);
+  color: var(--op-text);
+}
+
+/* Forme "lentille optique" décorative en pur CSS (aucune lib 3D) */
+.op-lens {
+  position: relative;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 210deg at 50% 50%,
+      rgba(79,232,255,0.55), rgba(91,124,255,0.35),
+      rgba(155,107,255,0.45), rgba(79,232,255,0.55));
+  filter: blur(0.3px);
+  box-shadow:
+    inset 0 0 60px rgba(255,255,255,0.18),
+    inset 0 0 120px rgba(79,232,255,0.25),
+    0 0 90px rgba(91,124,255,0.35);
+}
+.op-lens::after {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.35), transparent 55%);
+  mix-blend-mode: screen;
+}
+

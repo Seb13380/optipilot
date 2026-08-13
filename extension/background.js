@@ -80,9 +80,84 @@ async function injecterDevisDansOptimum(devis) {
 
 // Démarrer le polling toutes les 15s
 chrome.alarms.create("pollDevis", { periodInMinutes: 0.25 }); // ~15s
+chrome.alarms.create("pollSearch", { periodInMinutes: 0.083 }); // ~5s — recherche client plus réactive
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "pollDevis") pollDevisPending();
+  if (alarm.name === "pollSearch") pollSearchRequests();
 });
+
+// ── Recherche client Optimum Live sur demande de l'iPad (sans bridge SQL) ────
+// Poll search-pull → appelle directement l'API Optimum Live avec le cookie
+// ci_sessions → poste le résultat via search-result.
+async function pollSearchRequests() {
+  try {
+    const token = await getStoredToken();
+    if (!token) return;
+
+    const res = await fetch(`${BACKEND_URL}/api/bridge/search-pull`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+
+    const requests = await res.json();
+    if (!requests || requests.length === 0) return;
+
+    for (const request of requests) {
+      await handleSearchRequest(request, token);
+    }
+  } catch {
+    // Silencieux — backend peut être en cold start
+  }
+}
+
+async function handleSearchRequest(request, token) {
+  try {
+    const cookie = await chrome.cookies.get({ url: OPTIMUM_URL, name: "ci_sessions" });
+    if (!cookie) {
+      await postSearchResult(request.id, token, { error: "Session Optimum Live introuvable — ouvrez un onglet livebyoptimum.com" });
+      return;
+    }
+
+    const url = `${OPTIMUM_URL}/ref/get4json_clients_par_debut_nom?debut_nom=${encodeURIComponent(request.query)}&option_creer=true`;
+    const resp = await fetch(url, {
+      headers: {
+        Cookie: `ci_sessions=${cookie.value}; language=fr; secteur_activite_type=1`,
+        "X-Requested-With": "XMLHttpRequest",
+        "X-Xhr-Referer": `${OPTIMUM_URL}/accueil`,
+        Accept: "application/json, text/javascript, */*; q=0.01",
+      },
+    });
+    if (!resp.ok) {
+      await postSearchResult(request.id, token, { error: `Optimum Live a répondu ${resp.status}` });
+      return;
+    }
+    const data = await resp.json();
+    const results = Array.isArray(data)
+      ? data.map((c) => ({
+          id: c.id_client || null,
+          nom: c.nom || "",
+          prenom: c.prenom || "",
+          dateNaissance: c.date_naissance || "",
+          source: "optimum-live",
+        }))
+      : [];
+    await postSearchResult(request.id, token, { results });
+  } catch (err) {
+    await postSearchResult(request.id, token, { error: String(err) });
+  }
+}
+
+async function postSearchResult(id, token, { results, error }) {
+  try {
+    await fetch(`${BACKEND_URL}/api/bridge/search-result`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id, results, error }),
+    });
+  } catch {
+    // Silencieux
+  }
+}
 
 // Réception du message CLIENT_PUSH depuis content.js
 chrome.runtime.onMessage.addListener((message) => {
@@ -110,6 +185,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url?.includes("livebyoptimum.com")) {
     pushSessionToBridge();
     pollDevisPending(); // vérifier immédiatement à chaque ouverture Optimum
+    pollSearchRequests();
   }
 });
 

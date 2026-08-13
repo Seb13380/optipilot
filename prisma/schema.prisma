@@ -38,6 +38,7 @@ model Magasin {
   devis          Devis[]
   devisPending   DevisPending[]
   clientPending  ClientPending[]
+  clientSearchRequests ClientSearchRequest[]
   configTarifs   ConfigTarif[]
 
   @@map("magasins")
@@ -235,6 +236,24 @@ model ClientPending {
   magasin Magasin @relation(fields: [magasinId], references: [id])
 
   @@map("client_pending")
+}
+
+// ─── Recherche client Optimum Live (relais iPad → extension PC) ────
+// L'iPad crée une demande ; l'extension PC (background.js) la récupère,
+// interroge l'API Optimum Live via le cookie ci_sessions, puis poste le
+// résultat. Plus besoin du bridge SQL local pour cette recherche.
+model ClientSearchRequest {
+  id          String   @id @default(uuid())
+  magasinId   String
+  query       String
+  statut      String   @default("pending") // pending | processing | done | error
+  results     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  magasin Magasin @relation(fields: [magasinId], references: [id])
+
+  @@map("client_search_requests")
 }
 
 // ─── Configuration globale (singleton) ─────────────────────────────

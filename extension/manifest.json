@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OptiPilot — Import Optimum",
-  "version": "1.7",
+  "version": "1.8",
   "description": "Importez vos clients depuis Optimum Live en 1 clic et transférez vos devis OptiPilot vers Optimum.",
   "icons": {
     "16":  "icons/icon16.png",

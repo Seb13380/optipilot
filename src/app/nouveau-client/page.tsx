@@ -30,6 +30,14 @@ interface ClientFound {
   ordonnances: Array<{ dateOrdonnance: string | null }>;
 }
 
+interface OptimumClient {
+  id: string | null;
+  nom: string;
+  prenom: string;
+  dateNaissance: string;
+  source: "optimum-live";
+}
+
 type Step = "scan" | "analyse" | "lookup" | "confirm-existing" | "new-client" | "saving" | "done";
 
 const NIVEAUX = ["Non renseigné", "Base", "Confort", "Confort+", "Premium", "Option 1", "Option 2", "Option 3"];
@@ -150,6 +158,9 @@ function NouveauClientPageInner() {
   });
   const [error, setError] = useState("");
   const [fromOptimum, setFromOptimum] = useState(false);
+  const [optimumSearching, setOptimumSearching] = useState(false);
+  const [optimumResults, setOptimumResults] = useState<OptimumClient[] | null>(null);
+  const [optimumError, setOptimumError] = useState("");
 
   // ── Import depuis Optimum via paramètres URL ──────────────────
   useEffect(() => {
@@ -205,6 +216,50 @@ function NouveauClientPageInner() {
       setStep("new-client");
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Recherche client Optimum Live (via relais extension PC — pas de bridge SQL) ──
+  async function searchOptimumLive() {
+    const query = `${form.nom} ${form.prenom}`.trim();
+    if (!query) return;
+    setOptimumSearching(true);
+    setOptimumError("");
+    setOptimumResults(null);
+    const token = localStorage.getItem("optipilot_token") || "";
+    try {
+      const pushRes = await fetch(`${BACKEND}/api/bridge/search-push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ query }),
+      });
+      if (!pushRes.ok) throw new Error("Impossible de lancer la recherche");
+      const { id } = await pushRes.json();
+
+      // Poll le résultat (l'extension PC doit être active sur Optimum Live)
+      for (let i = 0; i < 15; i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const res = await fetch(`${BACKEND}/api/bridge/search-result/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data.statut === "done") {
+          setOptimumResults((data.results as OptimumClient[]) || []);
+          setOptimumSearching(false);
+          return;
+        }
+        if (data.statut === "error") {
+          setOptimumError(data.results?.error || "Erreur de recherche");
+          setOptimumSearching(false);
+          return;
+        }
+      }
+      setOptimumError("Aucune réponse — vérifiez qu'un poste PC avec Optimum Live ouvert est connecté");
+    } catch (err) {
+      setOptimumError(err instanceof Error ? err.message : "Erreur de recherche");
+    } finally {
+      setOptimumSearching(false);
+    }
+  }
 
   async function lookupClient(nom: string, prenom: string) {
     if (!nom && !prenom) { setStep("new-client"); return; }
@@ -426,6 +481,37 @@ function NouveauClientPageInner() {
                 <InputField label="Nom" value={form.nom} onChange={(v) => setField("nom", v)} required />
                 <InputField label="Prénom" value={form.prenom} onChange={(v) => setField("prenom", v)} required />
               </div>
+              {!fromOptimum && (
+                <div className="mt-4">
+                  <motion.button whileTap={{ scale: 0.97 }} type="button" onClick={searchOptimumLive}
+                    disabled={!form.nom.trim() || optimumSearching}
+                    className="w-full py-3 rounded-2xl text-sm font-bold"
+                    style={{
+                      background: optimumSearching ? "rgba(155,150,218,0.15)" : "rgba(83,49,208,0.12)",
+                      color: "#9B96DA", border: "1px solid rgba(83,49,208,0.3)",
+                      opacity: !form.nom.trim() ? 0.5 : 1,
+                    }}>
+                    {optimumSearching ? "🔎 Recherche dans Optimum Live…" : "🔎 Vérifier dans Optimum Live"}
+                  </motion.button>
+                  {optimumError && (
+                    <p className="text-xs mt-2" style={{ color: "#ef4444" }}>{optimumError}</p>
+                  )}
+                  {optimumResults && optimumResults.length === 0 && (
+                    <p className="text-xs mt-2" style={{ color: "#22c55e" }}>✓ Aucun client existant — pas de doublon</p>
+                  )}
+                  {optimumResults && optimumResults.length > 0 && (
+                    <div className="mt-3 flex flex-col gap-2">
+                      <p className="text-xs font-semibold" style={{ color: "#f59e0b" }}>⚠ Client(s) déjà présent(s) dans Optimum Live :</p>
+                      {optimumResults.map((c, i) => (
+                        <div key={i} className="rounded-xl px-3 py-2 text-sm flex items-center justify-between"
+                          style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#FDFDFE" }}>
+                          <span>{c.nom} {c.prenom}{c.dateNaissance && ` · ${c.dateNaissance}`}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="rounded-3xl p-6" style={cardStyle}>
               <h3 className="text-xs font-black mb-1 tracking-wider" style={{ color: "#9B96DA" }}>COORDONNÉES</h3>
