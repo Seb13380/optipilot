@@ -10,11 +10,17 @@ const AMBASSADEUR_PRIX  = 199;
 
 // ─── Animated counter ─────────────────────────────────────
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
-  const [display, setDisplay] = useState(0);
+  // Le rendu initial (SSR + avant hydratation) affiche directement la valeur finale,
+  // pour que les crawlers (Google, IA) ne voient jamais "0". L'animation de comptage
+  // ne se déclenche qu'une fois l'élément visible côté client.
+  const [display, setDisplay] = useState(value);
+  const [started, setStarted] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
   useEffect(() => {
-    if (!inView) return;
+    if (!inView || started) return;
+    setStarted(true);
+    setDisplay(0);
     let start = 0;
     const duration = 1400;
     const step = 16;
@@ -25,7 +31,7 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
       else setDisplay(Math.floor(start));
     }, step);
     return () => clearInterval(timer);
-  }, [inView, value]);
+  }, [inView, value, started]);
   return <span ref={ref}>{display.toLocaleString("fr-FR")}{suffix}</span>;
 }
 
@@ -368,13 +374,6 @@ function FounderBanner({ restants, onClaim }: { restants: number; onClaim: () =>
           <span className="text-lg font-black text-white">🔥 Offre Ambassadeur</span>
           <span className="text-white/70 text-sm hidden sm:inline">·</span>
           <span className="text-white font-bold text-sm">{AMBASSADEUR_PRIX}€/mois à vie</span>
-          <span className="text-white/70 text-sm hidden sm:inline">·</span>
-          <span
-            className="px-3 py-0.5 rounded-full text-sm font-black text-white"
-            style={{ background: "rgba(255,255,255,0.22)" }}
-          >
-            {restants}/{AMBASSADEUR_TOTAL} places restantes
-          </span>
         </div>
         <motion.button
           whileTap={{ scale: 0.96 }}
@@ -1063,14 +1062,32 @@ export default function LandingPage() {
           <div className="max-w-5xl mx-auto">
             <Reveal>
               <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#2b3a67" }}>Compatibilité</p>
-              <h2 className="op-serif text-2xl md:text-3xl font-black text-center mb-3" style={{ color: "#14141f" }}>Compatible avec votre logiciel actuel</h2>
+              <h2 className="op-serif text-2xl md:text-3xl font-black text-center mb-3" style={{ color: "#14141f" }}>
+                Gardez votre logiciel.<br className="hidden sm:block" /> Ajoutez-lui OptiPilot.
+              </h2>
               <p className="text-center text-base mb-10" style={{ color: "#6b6b76" }}>
-                OptiPilot ne remplace pas votre logiciel opticien — il le complète. Il fonctionne en parallèle de votre outil :
-                              </p>
+                OptiPilot ne remplace pas votre logiciel métier — il le complète. Il fonctionne en parallèle de votre outil actuel :
+              </p>
             </Reveal>
             <div className="flex flex-wrap items-center justify-center gap-4">
-              {["Optimum", "BB Soft", "iGest", "GEO Optique", "Optosoftware"].map((name) => (
-                <div key={name} className="op-glass px-6 py-3 rounded-2xl font-bold text-sm" style={{ color: "#2b3a67" }}>{name}</div>
+              {[
+                { name: "Optimum Live", status: "Intégration active" },
+                { name: "Cosium", status: "Intégration en préparation" },
+                { name: "MyEasyOptic", status: "Intégration en préparation" },
+                { name: "BB Soft", status: "Compatible" },
+                { name: "iGest", status: "Compatible" },
+                { name: "GEO Optique", status: "Compatible" },
+                { name: "Optosoftware", status: "Compatible" },
+              ].map(({ name, status }) => (
+                <div key={name} className="op-glass px-6 py-3 rounded-2xl text-center">
+                  <p className="font-bold text-sm" style={{ color: "#2b3a67" }}>{name}</p>
+                  <p
+                    className="text-[11px] font-bold uppercase tracking-wide mt-1"
+                    style={{ color: status === "Intégration active" ? "#22c55e" : status === "Compatible" ? "#8a8a94" : "#b08d57" }}
+                  >
+                    {status}
+                  </p>
+                </div>
               ))}
             </div>
             <p className="text-center text-xs mt-6" style={{ color: "rgba(155,150,218,0.5)" }}>
