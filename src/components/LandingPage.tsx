@@ -794,7 +794,7 @@ export default function LandingPage() {
               <span className="op-gradient-text">pas assez à vendre</span>.
             </p>
             <p className="text-lg mb-8 max-w-lg leading-relaxed" style={{ color: "#4a4a55" }}>
-              Le copilote IA qui transforme une ordonnance en conseil personnalisé, propositions commerciales et reste à charge — sans remplacer votre logiciel métier.
+              <span className="op-gradient-text">Le copilote IA qui transforme une ordonnance en conseil personnalisé, propositions commerciales et reste à charge — sans remplacer votre logiciel métier.</span>.
             </p>
 
             {/* Proof stats */}
