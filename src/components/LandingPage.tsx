@@ -964,29 +964,15 @@ export default function LandingPage() {
             <Reveal>
               <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#2b3a67" }}>La solution</p>
               <h2 className="op-serif text-3xl md:text-4xl font-black text-center mb-4" style={{ color: "#14141f" }}>
-                OptiPilot automatise ce qui prend du temps
+                Et une fois le devis prêt&nbsp;?
               </h2>
               <p className="text-center text-lg mb-16" style={{ color: "#6b6b76" }}>
-                Pour que vous puissiez vous concentrer sur ce qui compte vraiment&nbsp;: votre expertise et votre client.
+                Après le scan et l&apos;analyse IA, OptiPilot vous accompagne jusqu&apos;à la vente.
               </p>
             </Reveal>
 
             <div className="flex flex-col gap-8">
               {[
-                {
-                  step: "01",
-                  icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.5"/></svg>,
-                  title: "Scannez l'ordonnance en 10 secondes",
-                  desc: "L'IA lit et extrait toutes les données optométriques (sphère, cylindre, addition, axe) directement depuis la photo. Fini la saisie manuelle.",
-                  color: "#2b3a67",
-                },
-                {
-                  step: "02",
-                  icon: <img src="/assets/images/IA_Optipilot.png" alt="IA OptiPilot" width={48} height={48} style={{ objectFit: "cover", borderRadius: 8 }} />,
-                  title: "OptiPilot construit 3 devis sur-mesure — argumentés et prêts à présenter",
-                  desc: "OptiPilot croise l'ordonnance, les habitudes de vie (conduite de nuit, sport, écrans) et le budget de votre client. Il génère 3 offres prêtes à présenter — avec les arguments pour chaque. Vous n'avez plus qu'à guider le choix.",
-                  color: "#5b7cff",
-                },
                 {
                   step: "03",
                   icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke="white" strokeWidth="1.5"/><line x1="12" y1="18" x2="12.01" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>,
@@ -1029,34 +1015,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ══════════════════════════ AVANT / AVEC ══════════════════════════ */}
-        <section className="py-12 px-6" style={{ background: "linear-gradient(160deg, #0a0318 0%, #1e1b4b 100%)" }}>
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Reveal>
-              <div className="rounded-2xl p-6 h-full" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(239,68,68,0.25)" }}>
-                <p className="text-base font-black mb-4" style={{ color: "#f87171" }}>Avant OptiPilot</p>
-                {["Saisie manuelle fastidieuse", "Erreurs et rejets fréquents", "Relances chronophages", "Temps perdu et stress"].map((item) => (
-                  <div key={item} className="flex items-center gap-3 py-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4L4 12" stroke="#f87171" strokeWidth="2" strokeLinecap="round"/></svg>
-                    <span className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <div className="rounded-2xl p-6 h-full" style={{ background: "rgba(83,49,208,0.15)", border: "1.5px solid rgba(139,92,246,0.5)" }}>
-                <p className="text-base font-black mb-4" style={{ color: "#a78bfa" }}>Avec OptiPilot</p>
-                {["Automatisation complète", "Zéro erreur, 99 % de réussite", "Relances automatiques", "Plus de temps, plus de ventes"].map((item) => (
-                  <div key={item} className="flex items-center gap-3 py-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span className="text-sm font-medium text-white">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
         {/* ══════════════════════════ COMPATIBILITÉ LOGICIELS ══════════════════════════ */}
         <section className="py-14 px-6">
           <div className="max-w-5xl mx-auto">
@@ -1094,46 +1052,6 @@ export default function LandingPage() {
               Votre logiciel n&apos;est pas dans la liste ?{" "}
               <a href="#demo" onClick={(e) => { e.preventDefault(); scrollToDemo(); }} className="underline hover:text-white transition-colors">Parlez-nous-en lors de votre démo.</a>
             </p>
-          </div>
-        </section>
-
-        {/* ══════════════════════════ CHIFFRES CLÉS ══════════════════════════ */}
-        <section
-          id="chiffres"
-          className="py-20 px-6"
-          style={{ background: "linear-gradient(135deg, #2f5fd6 0%, #5b7cff 50%, #9b6bff 100%)" }}
-        >
-          <div className="max-w-5xl mx-auto">
-            <Reveal>
-              <h2 className="text-3xl md:text-4xl font-black text-center mb-4 text-white">
-                Ce que les opticiens gagnent avec OptiPilot
-              </h2>
-              <p className="text-center text-lg mb-16" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Estimations basées sur les données réelles du secteur optique indépendant français (Synom, FNO 2024).
-              </p>
-            </Reveal>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[
-                { value: 6, suffix: " min", label: "par dossier avec OptiPilot", sub: "au lieu de 10 à 16 min sans outil" },
-                { value: 15, suffix: "%", label: "de panier moyen en plus", sub: "grâce aux recommandations personnalisées" },
-                { value: 1500, suffix: "€", label: "de chiffre d'affaires en plus / mois", sub: "estimation conservative pour 10 ventes/jour" },
-                { value: 22, suffix: "h", label: "libérées par mois", sub: "pour vos clients, votre famille, votre développement" },
-              ].map((item, i) => (
-                <RevealCard key={i} delay={i * 0.08}>
-                  <div
-                    className="rounded-3xl p-7 flex flex-col items-center text-center"
-                    style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}
-                  >
-                    <span className="text-4xl md:text-5xl font-black text-white">
-                      <AnimatedNumber value={item.value} suffix={item.suffix} />
-                    </span>
-                    <p className="text-base font-bold mt-2 text-white">{item.label}</p>
-                    <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.6)" }}>{item.sub}</p>
-                  </div>
-                </RevealCard>
-              ))}
-            </div>
           </div>
         </section>
 
