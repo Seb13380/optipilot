@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import LandingPage from "@/components/LandingPage";
 
 export const metadata: Metadata = {
-  title: "OptiPilot — Logiciel IA pour Opticiens Indépendants | +15% panier moyen",
+  title: "OptiPilot — Logiciel IA pour Opticiens | +15% panier moyen",
   description:
-    "OptiPilot est le copilote IA pour opticiens indépendants : scanner d’ordonnances, recommandations personnalisées, calcul mutuelle en temps réel, relances automatiques. Gagnez 22h/mois, +900€ à +1 800€ de CA. Essai gratuit 14 jours.",
+    "OptiPilot est le copilote IA pour opticiens : scanner d’ordonnances, recommandations personnalisées, calcul mutuelle en temps réel, relances automatiques. Gagnez 22h/mois, +900€ à +1 800€ de CA. Essai gratuit 14 jours.",
   keywords: [
     "logiciel opticien",
-    "logiciel optique indépendant",
+    "logiciel optique",
     "IA opticien",
     "scanner ordonnance IA",
     "recommandation verres IA",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "application opticien tablette",
   ],
   openGraph: {
-    title: "OptiPilot — Le Copilote IA des Opticiens Indépendants",
+    title: "OptiPilot — Le Copilote IA des Opticiens",
     description:
       "Gagnez 22h/mois, augmentez votre CA de +900€ à +1 800€/mois. Scanner d’ordonnances, recommandations IA, relances automatiques. Essai gratuit 14 jours.",
     url: "https://optipilot.fr",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "OptiPilot — Le Copilote IA pour Opticiens Indépendants",
+    title: "OptiPilot — Le Copilote IA pour Opticiens",
     description: "Gagnez 22h/mois, augmentez votre CA de +900€ à +1 800€/mois. Essai gratuit 14 jours.",
     images: ["https://optipilot.fr/assets/images/Logo-OptiPilot.png"],
   },

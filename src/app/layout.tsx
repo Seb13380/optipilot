@@ -8,10 +8,10 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-serif-
 
 export const metadata: Metadata = {
   title: {
-    default: "OptiPilot — Le logiciel qui fait gagner 1 600€/mois aux opticiens indépendants",
+    default: "OptiPilot — Le logiciel qui fait gagner 1 600€/mois aux opticiens",
     template: "%s | OptiPilot",
   },
-  description: "OptiPilot est le logiciel IA pour opticiens indépendants. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle, relances automatiques. Essai gratuit 30 jours.",
+  description: "OptiPilot est le logiciel IA pour opticiens. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle, relances automatiques. Essai gratuit 30 jours.",
   manifest: "/manifest.json",
   icons: {
     icon: [

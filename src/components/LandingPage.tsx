@@ -660,7 +660,7 @@ export default function LandingPage() {
                 name: "OptiPilot",
                 url: "https://optipilot.fr",
                 description:
-                  "Logiciel IA pour opticiens indépendants. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle en temps réel, relances automatiques.",
+                  "Logiciel IA pour opticiens. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle en temps réel, relances automatiques.",
                 applicationCategory: "BusinessApplication",
                 operatingSystem: "Web, iOS, Android",
                 offers: {
@@ -776,7 +776,7 @@ export default function LandingPage() {
               style={{ color: "#2b3a67" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#2b3a67" strokeWidth="1.5"/><path d="M8 12l3 3 5-5" stroke="#2b3a67" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Conçu par un opticien diplômé · Pour les indépendants
+              Conçu par un opticien diplômé
             </motion.span>
 
             {/* Accroche principale */}
@@ -789,10 +789,11 @@ export default function LandingPage() {
             </h1>
 
             {/* Sous-titre */}
-            <p className="text-lg mb-3 max-w-lg leading-relaxed" style={{ color: "#4a4a55" }}>
-              Vous passez trop de temps sur les prises en charge, pas assez à vendre.
+            <p className="text-xl md:text-2xl font-black mb-4 max-w-lg leading-snug" style={{ color: "#14141f" }}>
+              Vous passez trop de temps sur les prises en charge,{" "}
+              <span className="op-gradient-text">pas assez à vendre</span>.
             </p>
-            <p className="text-base mb-8 max-w-lg leading-relaxed" style={{ color: "#6b6b76" }}>
+            <p className="text-lg mb-8 max-w-lg leading-relaxed" style={{ color: "#4a4a55" }}>
               Pendant qu&apos;OptiPilot gère mutuelles et devis, vous faites ce que vous aimez&nbsp;: soigner et conseiller vos clients.
             </p>
 
@@ -1168,7 +1169,7 @@ export default function LandingPage() {
                 Un copilote, du premier regard jusqu&apos;à la vente
               </h2>
               <p className="text-center text-lg" style={{ color: "#6b6b76" }}>
-                Conçu par et pour des opticiens indépendants. Faites défiler pour découvrir chaque étape.
+                Conçu par et pour des opticiens. Faites défiler pour découvrir chaque étape.
               </p>
             </Reveal>
           </div>
@@ -1429,7 +1430,7 @@ export default function LandingPage() {
             <Reveal>
               <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#2b3a67" }}>Ils nous font confiance</p>
               <h2 className="op-serif text-3xl md:text-4xl font-black text-center mb-14" style={{ color: "#14141f" }}>
-                Des opticiens indépendants<br className="hidden sm:block" /> qui ont transformé leur quotidien
+                Des opticiens<br className="hidden sm:block" /> qui ont transformé leur quotidien
               </h2>
             </Reveal>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1693,7 +1694,7 @@ export default function LandingPage() {
                   <span className="text-lg font-black text-white">OptiPilot</span>
                 </div>
                 <p className="text-sm leading-relaxed" style={{ color: "rgba(155,150,218,0.7)" }}>
-                  Conçu par un opticien diplômé, pour les opticiens indépendants.<br />
+                  Conçu par un opticien diplômé, pour les opticiens.<br />
                   Gagnez du temps sur chaque dossier. Augmentez votre panier moyen. Fidélisez sans effort.
                 </p>
               </div>
