@@ -14,12 +14,12 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
   // pour que les crawlers (Google, IA) ne voient jamais "0". L'animation de comptage
   // ne se déclenche qu'une fois l'élément visible côté client.
   const [display, setDisplay] = useState(value);
-  const [started, setStarted] = useState(false);
+  const started = useRef(false);
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
   useEffect(() => {
-    if (!inView || started) return;
-    setStarted(true);
+    if (!inView || started.current) return;
+    started.current = true;
     setDisplay(0);
     let start = 0;
     const duration = 1400;
@@ -31,7 +31,7 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
       else setDisplay(Math.floor(start));
     }, step);
     return () => clearInterval(timer);
-  }, [inView, value, started]);
+  }, [inView, value]);
   return <span ref={ref}>{display.toLocaleString("fr-FR")}{suffix}</span>;
 }
 
