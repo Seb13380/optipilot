@@ -249,9 +249,10 @@ html.dark .page-bg {
   color: var(--op-text);
 }
 
-/* Typo serif chic — réservée aux grands titres (H1/H2), pas au corps de texte */
+/* Typo titres — Manrope ExtraBold, réservée aux grands titres (H1/H2), pas au corps de texte */
 .op-serif {
-  font-family: var(--font-serif-chic), Georgia, serif;
+  font-family: var(--font-heading), -apple-system, sans-serif;
+  font-weight: 800;
 }
 
 /* Fond clair avec halos très subtils */
