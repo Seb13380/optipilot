@@ -388,7 +388,111 @@ function FounderBanner({ restants, onClaim }: { restants: number; onClaim: () =>
   );
 }
 
-// ─── Main Component ─────────────────────────────────────
+// ─── Fonctionnalités : composant vivant (Conseiller / Vendre / Gérer / Relancer) ─────
+const LIVING_FEATURES_ICONS: Record<string, React.ReactNode> = {
+  scanner: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="1.5"/></svg>,
+  comparateur: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5"/><path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  reco: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  tablette: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="1.5"/><line x1="12" y1="18" x2="12.01" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
+  mutuelle: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  equipe: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.5"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  historique: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  relance: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  roi: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="12" width="4" height="9" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="10" y="7" width="4" height="14" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="17" y="3" width="4" height="18" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>,
+};
+
+const LIVING_FEATURES_CATEGORIES = [
+  {
+    n: "01", name: "CONSEILLER", color: "#2b3a67",
+    items: [
+      { icon: "scanner", title: "Scanner d'ordonnances par IA", desc: "Extraction automatique de toutes les données en moins de 10 secondes." },
+      { icon: "comparateur", title: "Comparateur de verres", desc: "Guide visuel illustré pour aider le client à comprendre les différences entre verres." },
+    ],
+  },
+  {
+    n: "02", name: "VENDRE", color: "#5b7cff",
+    items: [
+      { icon: "reco", title: "Recommandations personnalisées", desc: "3 offres adaptées au profil visuel, aux habitudes de vie et au budget du client." },
+      { icon: "tablette", title: "Mode tablette client", desc: "Interface premium pour présenter le devis directement au client, face à face." },
+    ],
+  },
+  {
+    n: "03", name: "GÉRER", color: "#9b6bff",
+    items: [
+      { icon: "mutuelle", title: "Calcul mutuelle en temps réel", desc: "Remboursements Sécu et mutuelle calculés automatiquement selon les tarifs LPPR." },
+      { icon: "equipe", title: "Multi-opticiens par magasin", desc: "Chaque opticien a son propre accès. Gestion d'équipe intégrée." },
+      { icon: "historique", title: "Historique client complet", desc: "Ordonnances, devis, ventes, tout est archivé et consultable en un clic." },
+    ],
+  },
+  {
+    n: "04", name: "RELANCER", color: "#b08d57",
+    items: [
+      { icon: "relance", title: "Relances automatisées", desc: "Aucun devis n'est oublié. Alertes intelligentes sur les dossiers sans réponse." },
+      { icon: "roi", title: "Tableau de bord ROI", desc: "Consultez votre impact en direct : temps libéré, CA généré, taux de conversion." },
+    ],
+  },
+];
+
+function LivingFeatures() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
+
+  // 4 catégories fixes → 4 appels explicites de useTransform (les Hooks ne peuvent pas être appelés dans une boucle)
+  const stage0 = useTransform(scrollYProgress, [0, 0.06, 0.19, 0.25], [0, 1, 1, 0]);
+  const stage1 = useTransform(scrollYProgress, [0.19, 0.25, 0.44, 0.5], [0, 1, 1, 0]);
+  const stage2 = useTransform(scrollYProgress, [0.44, 0.5, 0.69, 0.75], [0, 1, 1, 0]);
+  const stage3 = useTransform(scrollYProgress, [0.69, 0.75, 1], [0, 1, 1]);
+  const stageOpacities = [stage0, stage1, stage2, stage3];
+
+  const nav0 = useTransform(stage0, (v) => 0.35 + v * 0.65);
+  const nav1 = useTransform(stage1, (v) => 0.35 + v * 0.65);
+  const nav2 = useTransform(stage2, (v) => 0.35 + v * 0.65);
+  const nav3 = useTransform(stage3, (v) => 0.35 + v * 0.65);
+  const navOpacities = [nav0, nav1, nav2, nav3];
+
+  return (
+    <section ref={containerRef} className="relative" style={{ height: "260vh" }}>
+      <div className="sticky top-0 h-screen flex items-center overflow-hidden px-6" style={{ background: "#f8f6f2" }}>
+        <div className="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-[220px_1fr] gap-10 items-center">
+          {/* Nav verticale des catégories */}
+          <div className="hidden md:flex flex-col gap-6">
+            <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: "#8a8a94" }}>Un copilote</p>
+            {LIVING_FEATURES_CATEGORIES.map((cat, i) => (
+              <motion.div key={cat.name} style={{ opacity: navOpacities[i] }}>
+                <p className="text-xs font-black" style={{ color: cat.color }}>{cat.n}</p>
+                <p className="text-xl font-black op-serif" style={{ color: "#14141f" }}>{cat.name}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Cartes de la catégorie active */}
+          <div className="relative" style={{ minHeight: 280 }}>
+            {LIVING_FEATURES_CATEGORIES.map((cat, i) => (
+              <motion.div
+                key={cat.name}
+                style={{ opacity: stageOpacities[i] }}
+                className="absolute inset-0 flex flex-col justify-center gap-4"
+              >
+                <p className="md:hidden text-xs font-black tracking-widest mb-1" style={{ color: cat.color }}>{cat.n} — {cat.name}</p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {cat.items.map((item) => (
+                    <div key={item.title} className="op-glass rounded-2xl p-6 flex-1" style={{ color: cat.color }}>
+                      <div>{LIVING_FEATURES_ICONS[item.icon]}</div>
+                      <h3 className="text-base font-black mt-3 mb-1.5" style={{ color: "#14141f" }}>{item.title}</h3>
+                      <p className="text-sm leading-relaxed" style={{ color: "#6b6b76" }}>{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 export default function LandingPage() {
   const router = useRouter();
   const [curtainOpen, setCurtainOpen] = useState(false);
@@ -1056,43 +1160,20 @@ export default function LandingPage() {
         </section>
 
         {/* ══════════════════════════ FONCTIONNALITÉS ══════════════════════════ */}
-        <section id="fonctionnalites" className="py-20 px-6">
+        <section id="fonctionnalites" className="pt-20 pb-6 px-6">
           <div className="max-w-5xl mx-auto">
             <Reveal>
               <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#2b3a67" }}>Fonctionnalités</p>
               <h2 className="op-serif text-3xl md:text-4xl font-black text-center mb-4" style={{ color: "#14141f" }}>
-                Tout ce dont vous avez besoin, rien de superflu
+                Un copilote, du premier regard jusqu&apos;à la vente
               </h2>
-              <p className="text-center text-lg mb-14" style={{ color: "#6b6b76" }}>
-                Conçu par et pour des opticiens indépendants.
+              <p className="text-center text-lg" style={{ color: "#6b6b76" }}>
+                Conçu par et pour des opticiens indépendants. Faites défiler pour découvrir chaque étape.
               </p>
             </Reveal>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[
-                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="#2b3a67" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="#2b3a67" strokeWidth="1.5"/></svg>, title: "Scanner d'ordonnances par IA", desc: "Extraction automatique de toutes les données en moins de 10 secondes." },
-                { icon: <img src="/assets/images/IA_Optipilot.png" alt="IA OptiPilot" width={28} height={28} style={{ borderRadius: 6 }} />, title: "Recommandations personnalisées", desc: "3 offres adaptées au profil visuel, aux habitudes de vie et au budget du client." },
-                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#2b3a67" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 12l2 2 4-4" stroke="#2b3a67" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, title: "Calcul mutuelle en temps réel", desc: "Remboursements Sécu et mutuelle calculés automatiquement selon les tarifs LPPR." },
-                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke="#2b3a67" strokeWidth="1.5"/><line x1="12" y1="18" x2="12.01" y2="18" stroke="#2b3a67" strokeWidth="2" strokeLinecap="round"/></svg>, title: "Mode tablette client", desc: "Interface premium pour présenter le devis directement au client, face à face." },
-                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="#2b3a67" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="#2b3a67" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, title: "Relances automatisées", desc: "Aucun devis n'est oublié. Alertes intelligentes sur les dossiers sans réponse." },
-                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="12" width="4" height="9" rx="1" stroke="#2b3a67" strokeWidth="1.5"/><rect x="10" y="7" width="4" height="14" rx="1" stroke="#2b3a67" strokeWidth="1.5"/><rect x="17" y="3" width="4" height="18" rx="1" stroke="#2b3a67" strokeWidth="1.5"/></svg>, title: "Tableau de bord ROI", desc: "Consultez votre impact en direct : temps libéré, CA généré, taux de conversion." },
-                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#2b3a67" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="7" r="4" stroke="#2b3a67" strokeWidth="1.5"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#2b3a67" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, title: "Multi-opticiens par magasin", desc: "Chaque opticien a son propre accès. Gestion d'équipe intégrée." },
-                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="#2b3a67" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, title: "Historique client complet", desc: "Ordonnances, devis, ventes, tout est archivé et consultable en un clic." },
-                { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#2b3a67" strokeWidth="1.5"/><path d="M21 21l-4.35-4.35" stroke="#2b3a67" strokeWidth="1.5" strokeLinecap="round"/></svg>, title: "Comparateur de verres", desc: "Guide visuel illustré pour aider le client à comprendre les différences entre verres." },
-              ].map((item, i) => (
-                <RevealCard key={i} delay={(i % 3) * 0.08}>
-                  <div
-                    className="op-glass rounded-2xl p-6 h-full"
-                  >
-                    <div>{item.icon}</div>
-                    <h3 className="text-base font-black mt-3 mb-1.5" style={{ color: "#14141f" }}>{item.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: "#6b6b76" }}>{item.desc}</p>
-                  </div>
-                </RevealCard>
-              ))}
-            </div>
           </div>
         </section>
+        <LivingFeatures />
 
         {/* ══════════════════════════ TARIFS ══════════════════════════ */}
         <section
