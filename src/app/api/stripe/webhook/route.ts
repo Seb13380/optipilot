@@ -41,14 +41,14 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Décrémenter le compteur Ambassadeur si c'est ce plan
-        if (plan === "ambassadeur") {
+        // Décrémenter le compteur Fondateurs si c'est ce plan
+        if (plan === "fondateur") {
           await prisma.configGlobale.upsert({
             where: { id: "global" },
             update: { ambassadeursRestants: { decrement: 1 } },
             create: { id: "global", ambassadeursRestants: 9, ambassadeursTotal: 10 },
           });
-          console.log(`🤝 Slot Ambassadeur décrémenté pour magasin ${magasinId}`);
+          console.log(`🤝 Slot Fondateur décrémenté pour magasin ${magasinId}`);
         }
 
         console.log(`✅ Magasin ${magasinId} passé en Pro`);

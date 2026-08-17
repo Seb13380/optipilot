@@ -6,9 +6,8 @@ import prisma from "@/lib/prisma";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const PRICE_IDS: Record<string, string> = {
-  standard:    process.env.STRIPE_PRICE_STANDARD!,
-  premium:     process.env.STRIPE_PRICE_PREMIUM!,
-  ambassadeur: process.env.STRIPE_PRICE_AMBASSADEUR!,
+  fondateur: process.env.STRIPE_PRICE_FONDATEUR!,
+  regulier:  process.env.STRIPE_PRICE_REGULIER!,
 };
 
 export async function POST(req: NextRequest) {
@@ -32,15 +31,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Plan invalide" }, { status: 400 });
   }
 
-  // ── Garde Ambassadeur : vérifier les places restantes ─────────────────────
-  if (plan === "ambassadeur") {
+  // ── Garde Fondateurs : vérifier les places restantes ──────────────────────
+  if (plan === "fondateur") {
     const config = await prisma.configGlobale.upsert({
       where: { id: "global" },
       update: {},
       create: { id: "global", ambassadeursRestants: 10, ambassadeursTotal: 10 },
     });
     if (config.ambassadeursRestants <= 0) {
-      return NextResponse.json({ error: "Plus de places Ambassadeur disponibles" }, { status: 409 });
+      return NextResponse.json({ error: "Plus de places Fondateurs disponibles" }, { status: 409 });
     }
   }
 
@@ -74,7 +73,7 @@ export async function POST(req: NextRequest) {
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    metadata: { magasinId: magasin.id },
+    metadata: { magasinId: magasin.id, plan },
     success_url: `${appUrl}/dashboard?upgraded=1`,
     cancel_url: `${appUrl}/abonnement`,
     locale: "fr",
