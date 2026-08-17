@@ -619,7 +619,7 @@ export default function LandingPage() {
               {/* Conteneur logo avec shimmer */}
               <div style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 14, overflow: "hidden", borderRadius: 16, padding: "12px 24px" }}>
                 <Image
-                  src="/assets/images/Logo-OptiPilot.png"
+                  src="/assets/images/OptiPilot2.0Logo-transparent.png"
                   alt="OptiPilot"
                   width={56}
                   height={56}
@@ -722,7 +722,7 @@ export default function LandingPage() {
         >
           <a href="/" className="flex items-center gap-3" aria-label="OptiPilot — Accueil">
             <Image
-              src="/assets/images/Logo-OptiPilot.png"
+              src="/assets/images/OptiPilot2.0Logo-transparent.png"
               alt="OptiPilot logo"
               width={40}
               height={40}
@@ -1627,7 +1627,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <Image src="/assets/images/Logo-OptiPilot.png" alt="OptiPilot" width={32} height={32} className="object-contain" />
+                  <Image src="/assets/images/OptiPilot2.0Logo-transparent.png" alt="OptiPilot" width={32} height={32} className="object-contain" />
                   <span className="text-lg font-black text-white">OptiPilot</span>
                 </div>
                 <p className="text-sm leading-relaxed" style={{ color: "rgba(155,150,218,0.7)" }}>

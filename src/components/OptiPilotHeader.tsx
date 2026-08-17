@@ -80,7 +80,7 @@ export default function OptiPilotHeader({
                 />
               ) : (
                 <img
-                  src="/assets/images/Logo-OptiPilot.png"
+                  src="/assets/images/OptiPilot2.0Logo-transparent.png"
                   alt="OptiPilot"
                   className="relative w-44 h-auto object-contain"
                   style={{ filter: "drop-shadow(0 0 24px rgba(124,58,237,0.6)) drop-shadow(0 0 48px rgba(124,58,237,0.35))" }}

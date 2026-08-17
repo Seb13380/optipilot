@@ -135,7 +135,7 @@ export default function ClientPage() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center pt-10 pb-4 px-6"
       >
-        <img src="/assets/images/Logo-OptiPilot.png" alt="OptiPilot" className="w-36 mx-auto mb-3" style={{ filter: "drop-shadow(0 0 30px rgba(124,58,237,0.7))" }} />
+        <img src="/assets/images/OptiPilot2.0Logo-transparent.png" alt="OptiPilot" className="w-36 mx-auto mb-3" style={{ filter: "drop-shadow(0 0 30px rgba(124,58,237,0.7))" }} />
         <h1 className="text-xl font-black" style={{ color: "#111827" }}>{magasinNom}</h1>
         <p className="text-sm mt-0.5 font-medium" style={{ color: "#5331D0" }}>Bonjour, bienvenue !</p>
       </motion.div>

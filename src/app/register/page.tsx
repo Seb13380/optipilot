@@ -70,7 +70,7 @@ export default function RegisterPage() {
         className="flex flex-col items-center mb-10"
       >
         <img
-          src="/assets/images/Logo-OptiPilot.png"
+          src="/assets/images/OptiPilot2.0Logo-transparent.png"
           alt="OptiPilot"
           className="h-28 w-auto object-contain mb-3 drop-shadow-2xl"
         />

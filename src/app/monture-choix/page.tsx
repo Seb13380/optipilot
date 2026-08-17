@@ -24,7 +24,7 @@ export default function MonturChoixPage() {
         className="w-full flex justify-center mb-2"
       >
         <img
-          src="/assets/images/Logo-OptiPilot.png"
+          src="/assets/images/OptiPilot2.0Logo-transparent.png"
           alt="OptiPilot"
           className="h-12 w-auto object-contain"
           style={{ filter: "drop-shadow(0 0 16px rgba(124,58,237,0.5))" }}

@@ -164,7 +164,7 @@ export default function QuestionnairePage() {
         className="flex justify-center mb-6"
       >
         <img
-          src="/assets/images/Logo-OptiPilot.png"
+          src="/assets/images/OptiPilot2.0Logo-transparent.png"
           alt="OptiPilot"
           className="h-16 w-auto object-contain"
           style={{ filter: "drop-shadow(0 0 20px rgba(124,58,237,0.6)) drop-shadow(0 0 40px rgba(124,58,237,0.35))" }}

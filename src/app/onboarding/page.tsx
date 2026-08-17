@@ -177,7 +177,7 @@ export default function OnboardingPage() {
         className="mb-8 text-center"
       >
         <img
-          src="/assets/images/Logo-OptiPilot.png"
+          src="/assets/images/OptiPilot2.0Logo-transparent.png"
           alt="OptiPilot"
           className="h-40 w-auto object-contain mx-auto mb-3 drop-shadow-2xl"
         />

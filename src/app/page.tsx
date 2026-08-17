@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     images: [
       {
-        url: "https://optipilot.fr/assets/images/Logo-OptiPilot.png",
+        url: "https://optipilot.fr/assets/images/OptiPilot2.0Logo-transparent.png",
         width: 512,
         height: 512,
         alt: "OptiPilot — Logiciel IA pour opticiens",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "OptiPilot — Le Copilote IA pour Opticiens",
     description: "Gagnez 22h/mois, augmentez votre CA de +900€ à +1 800€/mois. Essai gratuit 14 jours.",
-    images: ["https://optipilot.fr/assets/images/Logo-OptiPilot.png"],
+    images: ["https://optipilot.fr/assets/images/OptiPilot2.0Logo-transparent.png"],
   },
   robots: {
     index: true,

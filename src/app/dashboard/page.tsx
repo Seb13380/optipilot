@@ -417,7 +417,7 @@ function DashboardPage() {
         >
           <div className="flex items-center gap-4 min-w-0 flex-1">
             <img
-              src="/assets/images/Logo-OptiPilot.png"
+              src="/assets/images/OptiPilot2.0Logo-transparent.png"
               alt="OptiPilot"
               style={{ width: 50, height: 50, objectFit: "contain", flexShrink: 0, filter: "drop-shadow(0 0 14px rgba(124,58,237,0.55)) drop-shadow(0 0 28px rgba(124,58,237,0.3))" }}
             />

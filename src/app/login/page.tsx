@@ -77,7 +77,7 @@ export default function LoginPage() {
             }}
           />
           <img
-            src="/assets/images/Logo-OptiPilot.png"
+            src="/assets/images/OptiPilot2.0Logo-transparent.png"
             alt="OptiPilot"
             className="relative w-80 h-auto object-contain drop-shadow-2xl"
           />

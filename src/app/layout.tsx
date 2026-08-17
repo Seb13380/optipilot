@@ -15,18 +15,18 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/assets/images/Logo-OptiPilot.png", type: "image/png" },
+      { url: "/assets/images/OptiPilot2.0Logo-transparent.png", type: "image/png" },
     ],
     apple: [
-      { url: "/assets/images/Logo-OptiPilot.png", type: "image/png" },
+      { url: "/assets/images/OptiPilot2.0Logo-transparent.png", type: "image/png" },
     ],
-    shortcut: "/assets/images/Logo-OptiPilot.png",
+    shortcut: "/assets/images/OptiPilot2.0Logo-transparent.png",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "OptiPilot",
-    startupImage: "/assets/images/Logo-OptiPilot.png",
+    startupImage: "/assets/images/OptiPilot2.0Logo-transparent.png",
   },
 };
 
