@@ -1569,7 +1569,7 @@ export default function LandingPage() {
                       className="flex items-center gap-3 px-4 py-3 rounded-2xl"
                       style={{ background: "rgba(236,72,153,0.12)", border: "1px solid rgba(236,72,153,0.3)" }}
                     >
-                      <span className="text-2xl">🔥</span>
+                     
                       <div>
                         <p className="font-black text-sm" style={{ color: "#f472b6" }}>
                           Offre Ambassadeur — 199€/mois à vie
