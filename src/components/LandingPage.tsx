@@ -4,9 +4,10 @@ import { motion, AnimatePresence, useInView, useMotionValue, useSpring, useTrans
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
-// ─── Offre Ambassadeur ─────────────────────────────────────
+// ─── Offre Fondateurs ─────────────────────────────────────
 const AMBASSADEUR_TOTAL = 10;
-const AMBASSADEUR_PRIX  = 199;
+const AMBASSADEUR_PRIX  = 149;
+const STANDARD_PRIX     = 199;
 
 // ─── Animated counter ─────────────────────────────────────
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
@@ -371,7 +372,7 @@ function FounderBanner({ restants, onClaim }: { restants: number; onClaim: () =>
     <section className="py-3 px-6" style={{ background: "linear-gradient(90deg, #5331D0 0%, #a855f7 100%)" }}>
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
         <div className="flex items-center gap-2 flex-wrap justify-center">
-          <span className="text-lg font-black text-white">Offre Ambassadeur</span>
+          <span className="text-lg font-black text-white">Offre Fondateurs</span>
           <span className="text-white/70 text-sm hidden sm:inline">·</span>
           <span className="text-white font-bold text-sm">{AMBASSADEUR_PRIX}€/mois à vie</span>
         </div>
@@ -1191,11 +1192,11 @@ export default function LandingPage() {
                 Simple et transparent
               </h2>
               <p className="text-center text-lg mb-14" style={{ color: "#6b6b76" }}>
-                Deux formules selon vos besoins. Rentabilisé en 1 à 2 ventes supplémentaires par mois.
+                Un seul tarif, tout inclus. Rentabilisé en 1 à 2 ventes supplémentaires par mois.
               </p>
             </Reveal>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-1 gap-8 items-start">
 
               {/* ── Card Ambassadeur (visible si places restantes) ── */}
               {ambassadeurRestants > 0 && (
@@ -1229,7 +1230,7 @@ export default function LandingPage() {
                           className="px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest text-white"
                           style={{ background: "linear-gradient(90deg,#ec4899,#f472b6)" }}
                         >
-                          Ambassadeur
+                          FONDATEURS
                         </span>
                         <span
                           className="px-3 py-1 rounded-full text-xs font-black text-white"
@@ -1258,7 +1259,7 @@ export default function LandingPage() {
                         <span className="text-base mb-2.5 ml-1" style={{ color: "#9B96DA" }}>/&nbsp;mois à vie</span>
                       </div>
                       <p className="text-sm line-through" style={{ color: "rgba(155,150,218,0.4)" }}>
-                        Au lieu de 299€/mois — économie de 100€/mois
+                        Au lieu de {STANDARD_PRIX}€/mois — économie de {STANDARD_PRIX - AMBASSADEUR_PRIX}€/mois
                       </p>
                     </div>
 
@@ -1266,10 +1267,10 @@ export default function LandingPage() {
                     <div className="flex-1 flex flex-col gap-5">
                       <ul className="flex flex-col gap-2.5">
                         {[
-                          "Toutes les fonctionnalités Premium incluses",
-                          "Prix bloqué à 199€/mois — pour toujours",
+                          "Toutes les fonctionnalités incluses",
+                          "Prix bloqué à 149€/mois — pour toujours",
                           "Accès prioritaire aux nouvelles fonctionnalités",
-                          "Badge Ambassadeur OptiPilot",
+                          "Badge Fondateur OptiPilot",
                           "Support direct avec le fondateur",
                           "Co-construction du produit avec votre feedback",
                         ].map((feat) => (
@@ -1292,7 +1293,7 @@ export default function LandingPage() {
                           boxShadow: "0 6px 24px rgba(236,72,153,0.4)",
                         }}
                       >
-                        Réserver ma place Ambassadeur →
+                        Réserver ma place Fondateur →
                       </motion.button>
                       <p className="text-center text-xs" style={{ color: "rgba(155,150,218,0.45)" }}>
                         Sans engagement · 30 jours gratuits inclus
@@ -1302,23 +1303,23 @@ export default function LandingPage() {
                 </motion.div>
               )}
 
-              {/* ── Plan Standard ── */}
-              <RevealLeft delay={0.1}>
+              {/* ── Plan régulier ── */}
+              <Reveal delay={0.1}>
                 <div
-                  className="rounded-3xl p-8 h-full flex flex-col"
+                  className="rounded-3xl p-8 h-full flex flex-col max-w-xl mx-auto"
                   style={{
                     background: "linear-gradient(160deg, #0a0318 0%, #1a1440 100%)",
                     border: "1.5px solid rgba(83,49,208,0.4)",
                   }}
                 >
                   <div className="mb-6">
-                    <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: "#9B96DA" }}>Standard</p>
+                    <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: "#9B96DA" }}>OptiPilot</p>
                     <div className="flex items-end gap-1 mb-1">
-                      <span className="text-5xl font-black text-white">249</span>
+                      <span className="text-5xl font-black text-white">{STANDARD_PRIX}</span>
                       <span className="text-2xl font-bold mb-1" style={{ color: "#9B96DA" }}>€</span>
                       <span className="text-base mb-1.5 ml-1" style={{ color: "#9B96DA" }}>/&nbsp;mois</span>
                     </div>
-                    <p className="text-sm" style={{ color: "rgba(155,150,218,0.55)" }}>L&apos;essentiel pour équiper votre point de vente</p>
+                    <p className="text-sm" style={{ color: "rgba(155,150,218,0.55)" }}>Un seul plan, toutes les fonctionnalités incluses</p>
                   </div>
 
                   <ul className="flex flex-col gap-3 mb-8 flex-1">
@@ -1350,75 +1351,11 @@ export default function LandingPage() {
                   >
                     Démarrer l&apos;essai gratuit
                   </motion.button>
-                </div>
-              </RevealLeft>
-
-              {/* ── Plan Premium ── */}
-              <RevealRight delay={0.2}>
-                <div
-                  className="relative rounded-3xl p-8 h-full flex flex-col"
-                  style={{
-                    background: "linear-gradient(160deg, #0a0318 0%, #1e1b4b 100%)",
-                    border: "2px solid rgba(167,139,250,0.6)",
-                    boxShadow: "0 20px 60px rgba(83,49,208,0.3)",
-                  }}
-                >
-                  {/* Badge recommandé */}
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span
-                      className="px-5 py-1.5 rounded-full text-sm font-black text-white whitespace-nowrap"
-                      style={{ background: "linear-gradient(135deg,#5331D0,#a855f7)" }}
-                    >
-                      Recommandé
-                    </span>
-                  </div>
-
-                  <div className="mb-6 mt-2">
-                    <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: "#a78bfa" }}>Premium</p>
-                    <div className="flex items-end gap-1 mb-1">
-                      <span className="text-5xl font-black text-white">299</span>
-                      <span className="text-2xl font-bold mb-1" style={{ color: "#9B96DA" }}>€</span>
-                      <span className="text-base mb-1.5 ml-1" style={{ color: "#9B96DA" }}>/&nbsp;mois</span>
-                    </div>
-                    <p className="text-sm" style={{ color: "rgba(155,150,218,0.55)" }}>Accès complet — idéal pour maximiser votre chiffre d&apos;affaires</p>
-                  </div>
-
-                  <ul className="flex flex-col gap-3 mb-8 flex-1">
-                    {[
-                      { text: "Tout le plan Standard +", highlight: true },
-                      { text: "IA commerciale avancée (profil client, correction, activité)", highlight: false },
-                      { text: "Tableau de bord business (panier moyen, options vendues…)", highlight: false },
-                      { text: "Optimisation panier moyen — suggestions premium rentables", highlight: false },
-                      { text: "Recommandation de montures selon le profil client", highlight: false },
-                      { text: "Historique client intelligent (corrections précédentes, propositions)", highlight: false },
-                      { text: "Statistiques de vente par vendeur", highlight: false },
-                      { text: "Coach vendeur IA — argumentaire commercial en temps réel", highlight: false },
-                      { text: "Rapport mensuel IA (analyse ventes et opportunités)", highlight: false },
-                    ].map(({ text, highlight }) => (
-                      <li key={text} className="flex items-start gap-3">
-                        <svg className="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M3 8l3.5 3.5L13 4.5" stroke={highlight ? "#34D399" : "#a78bfa"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        <span className="text-sm font-medium" style={{ color: highlight ? "#34D399" : "#DDDAF5" }}>{text}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    whileHover={{ y: -2 }}
-                    onClick={() => scrollToDemo()}
-                    className="w-full py-4 rounded-2xl text-base font-black text-white"
-                    style={{ background: "linear-gradient(135deg,#5331D0,#7B5CE5)", boxShadow: "0 6px 24px rgba(83,49,208,0.45)" }}
-                  >
-                    Démarrer l&apos;essai gratuit
-                  </motion.button>
-
                   <p className="text-center text-xs mt-3" style={{ color: "rgba(155,150,218,0.5)" }}>
                     30 jours gratuits · Sans engagement · Résiliable à tout moment
                   </p>
                 </div>
-              </RevealRight>
+              </Reveal>
 
             </div>
           </div>
@@ -1546,7 +1483,7 @@ export default function LandingPage() {
                 >
                   <span className="text-5xl">{isAmbassadeur ? "🔥" : "✅"}</span>
                   <h3 className="text-2xl font-black mt-4 mb-2" style={{ color: "#14141f" }}>
-                    {isAmbassadeur ? "Place Ambassadeur réservée !" : "Demande envoyée !"}
+                    {isAmbassadeur ? "Place Fondateur réservée !" : "Demande envoyée !"}
                   </h3>
                   <p style={{ color: "#6b6b76" }}>
                     {isAmbassadeur
@@ -1572,7 +1509,7 @@ export default function LandingPage() {
                      
                       <div>
                         <p className="font-black text-sm" style={{ color: "#f472b6" }}>
-                          Offre Ambassadeur — 199€/mois à vie
+                          Offre Fondateurs — {AMBASSADEUR_PRIX}€/mois à vie
                         </p>
                         <p className="text-xs" style={{ color: "rgba(155,150,218,0.65)" }}>
                           {ambassadeurRestants}/{AMBASSADEUR_TOTAL} places · Prix garanti pour toujours
@@ -1663,7 +1600,7 @@ export default function LandingPage() {
                         />
                         Envoi en cours…
                       </>
-                    ) : isAmbassadeur ? "Réserver ma place Ambassadeur →" : "Demander ma démo gratuite →"}
+                    ) : isAmbassadeur ? "Réserver ma place Fondateur →" : "Demander ma démo gratuite →"}
                   </motion.button>
                   {demoError && (
                     <p className="text-center text-sm font-semibold mt-1" style={{ color: "#f87171" }}>{demoError}</p>
