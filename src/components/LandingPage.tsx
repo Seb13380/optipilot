@@ -371,7 +371,7 @@ function FounderBanner({ restants, onClaim }: { restants: number; onClaim: () =>
     <section className="py-3 px-6" style={{ background: "linear-gradient(90deg, #5331D0 0%, #a855f7 100%)" }}>
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
         <div className="flex items-center gap-2 flex-wrap justify-center">
-          <span className="text-lg font-black text-white">🔥 Offre Ambassadeur</span>
+          <span className="text-lg font-black text-white">Offre Ambassadeur</span>
           <span className="text-white/70 text-sm hidden sm:inline">·</span>
           <span className="text-white font-bold text-sm">{AMBASSADEUR_PRIX}€/mois à vie</span>
         </div>
