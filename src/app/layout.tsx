@@ -8,7 +8,7 @@ const manrope = Manrope({ subsets: ["latin"], weight: ["700", "800"], variable: 
 
 export const metadata: Metadata = {
   title: {
-    default: "OptiPilot — Le logiciel qui fait gagner 1 600€/mois aux opticiens",
+    default: "OptiPilot — Le logiciel qui fait gagner jusqu'à 1 800€/mois aux opticiens",
     template: "%s | OptiPilot",
   },
   description: "OptiPilot est le logiciel IA pour opticiens. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle, relances automatiques. 1 mois offert.",

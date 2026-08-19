@@ -863,7 +863,7 @@ function DashboardPage() {
               <div className="flex items-center gap-3">
                 <span className="text-lg">💰</span>
                 <div>
-                  <p className="text-sm font-semibold text-white">+10 à 20% de panier moyen</p>
+                  <p className="text-sm font-semibold text-white">+15% de panier moyen</p>
                   <p className="text-xs" style={{ color: "rgba(196,181,253,0.55)" }}>Recommandations intelligentes = ventes mieux orientées</p>
                 </div>
               </div>

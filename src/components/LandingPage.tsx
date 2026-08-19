@@ -508,9 +508,9 @@ export default function LandingPage() {
 
   // Calculateur ROI
   const [roiClients, setRoiClients] = useState(10);
-  const [roiPanier, setRoiPanier] = useState(350);
-  const [roiClientsSup, setRoiClientsSup] = useState(2);
-  const [roiAugPanier, setRoiAugPanier] = useState(15);
+  const [roiPanier, setRoiPanier] = useState(300);
+  const [roiClientsSup, setRoiClientsSup] = useState(0);
+  const [roiAugPanier, setRoiAugPanier] = useState(8);
   const roiGain = Math.round((roiClientsSup * roiPanier + roiClients * roiPanier * roiAugPanier / 100) * 4.46);
 
   // Charger le compteur ambassadeur
@@ -700,7 +700,7 @@ export default function LandingPage() {
                     name: "Les données de mes clients sont-elles sécurisées ?",
                     acceptedAnswer: {
                       "@type": "Answer",
-                      text: "Oui. OptiPilot est conforme RGPD. Toutes les données sont chiffrées en transit (HTTPS) et au repos. Elles sont hébergées en Europe et ne sont jamais revendues ou partagées avec des tiers.",
+                      text: "Oui. OptiPilot est conforme RGPD. Toutes les données sont chiffrées en transit (HTTPS) et au repos. Elles sont hébergées dans l'Union Européenne et ne sont jamais revendues ou partagées avec des tiers.",
                     },
                   },
                 ],
@@ -807,8 +807,8 @@ export default function LandingPage() {
             >
               {[
                 { stat: "Jusqu'à 2h", detail: "gagnées / jour" },
-                { stat: "+10 à 25%", detail: "de panier moyen" },
-                { stat: "+4 000 à 8 000€", detail: "de CA potentiel / mois" },
+                { stat: "+15%", detail: "de panier moyen" },
+                { stat: "+900€ à +1 800€", detail: "de CA potentiel / mois" },
               ].map((item, i) => (
                 <div key={i} className="op-glass px-4 py-2.5 rounded-xl">
                   <p className="text-sm font-black" style={{ color: "#2b3a67" }}>{item.stat}</p>
@@ -844,7 +844,7 @@ export default function LandingPage() {
 
             {/* Trust badges */}
             <div className="flex flex-wrap gap-4">
-              {["✓ 1 mois offert", "✓ Sans engagement", "✓ Résiliable à tout moment", "✓ RGPD — France"].map((badge, i) => (
+              {["✓ 1 mois offert", "✓ Sans engagement", "✓ Résiliable à tout moment", "✓ RGPD — Europe"].map((badge, i) => (
                 <motion.span key={badge} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 + i * 0.1 }} className="text-sm font-medium" style={{ color: "#6b6b76" }}>
                   {badge}
                 </motion.span>
@@ -1366,9 +1366,12 @@ export default function LandingPage() {
           <div className="max-w-5xl mx-auto">
             <Reveal>
               <p className="text-center text-sm font-black uppercase tracking-widest mb-3" style={{ color: "#2b3a67" }}>Ils nous font confiance</p>
-              <h2 className="op-serif text-3xl md:text-4xl font-black text-center mb-14" style={{ color: "#14141f" }}>
+              <h2 className="op-serif text-3xl md:text-4xl font-black text-center mb-4" style={{ color: "#14141f" }}>
                 Des opticiens<br className="hidden sm:block" /> qui ont transformé leur quotidien
               </h2>
+              <p className="text-center text-sm mb-14" style={{ color: "#8a8a94" }}>
+                Témoignages de nos opticiens bêta-testeurs, avant l&apos;ouverture de l&apos;offre Fondateurs
+              </p>
             </Reveal>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
@@ -1403,7 +1406,7 @@ export default function LandingPage() {
                       <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0" style={{ background: "linear-gradient(135deg, #5b7cff, #9b6bff)" }}>{item.initials}</div>
                       <div>
                         <p className="text-sm font-black" style={{ color: "#14141f" }}>{item.name}</p>
-                        <p className="text-xs" style={{ color: "#6b6b76" }}>{item.magasin}</p>
+                        <p className="text-xs" style={{ color: "#6b6b76" }}>{item.magasin} · bêta-testeur</p>
                       </div>
                     </div>
                   </div>
@@ -1438,7 +1441,7 @@ export default function LandingPage() {
                 },
                 {
                   q: "Les données de mes clients sont-elles sécurisées ?",
-                  a: "Oui. OptiPilot est conforme RGPD. Toutes les données sont chiffrées en transit (HTTPS/TLS) et au repos. Hébergées en France. Elles ne sont jamais partagées ni revendues.",
+                  a: "Oui. OptiPilot est conforme RGPD. Toutes les données sont chiffrées en transit (HTTPS/TLS) et au repos. Hébergées dans l'Union Européenne. Elles ne sont jamais partagées ni revendues. L'ordonnance ne contient que des valeurs de correction optique (pas de diagnostic médical) ; un hébergement certifié HDS (données de santé) est à l'étude pour une prochaine étape.",
                 },
                 {
                   q: "Combien de temps pour être opérationnel ?",
@@ -1606,7 +1609,7 @@ export default function LandingPage() {
                     <p className="text-center text-sm font-semibold mt-1" style={{ color: "#f87171" }}>{demoError}</p>
                   )}
                   <p className="text-center text-xs" style={{ color: "rgba(155,150,218,0.5)" }}>
-                    Sans carte bancaire · Réponse sous 24h · Données hébergées en France · Annulation en 1 clic
+                    Sans carte bancaire · Réponse sous 24h · Données hébergées en Europe · Annulation en 1 clic
                   </p>
                 </form>
               )}
