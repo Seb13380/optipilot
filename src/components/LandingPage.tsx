@@ -268,15 +268,15 @@ function ScrollStory() {
         {/* Étape 01 — SCAN */}
         <motion.div style={{ opacity: stage1Opacity, y: stage1Y }} className="absolute inset-0 flex flex-col items-center justify-center px-6">
           <span className="text-xs font-black tracking-widest mb-5" style={{ color: "#2b3a67" }}>01 — SCAN</span>
-          <div className="op-glass rounded-3xl p-8 flex flex-col gap-4 w-full max-w-sm">
+          <div className="op-glass rounded-3xl p-10 flex flex-col gap-5 w-full max-w-md">
             {[["OD", "+1.50"], ["OG", "−0.75"], ["ADD", "+2.00"], ["AXE", "85°"]].map(([label, val]) => (
               <div key={label} className="flex items-center justify-between">
-                <span className="text-sm font-semibold" style={{ color: "#6b6b76" }}>{label}</span>
-                <span className="text-lg font-black op-gradient-text">{val}</span>
+                <span className="text-base font-semibold" style={{ color: "#6b6b76" }}>{label}</span>
+                <span className="text-2xl font-black op-gradient-text">{val}</span>
               </div>
             ))}
           </div>
-          <p className="mt-6 text-base text-center" style={{ color: "#4a4a55" }}>
+          <p className="mt-6 text-lg text-center" style={{ color: "#4a4a55" }}>
             Ordonnance comprise en <strong style={{ color: "#2b3a67" }}>8,4 s</strong> ✓
           </p>
         </motion.div>
@@ -284,24 +284,24 @@ function ScrollStory() {
         {/* Étape 02 — OPTIPILOT AI */}
         <motion.div style={{ opacity: stage2Opacity, scale: stage2Scale }} className="absolute inset-0 flex flex-col items-center justify-center px-6">
           <span className="text-xs font-black tracking-widest mb-5" style={{ color: "#2b3a67" }}>02 — ANALYSE</span>
-          <div className="relative w-full max-w-md" style={{ height: 320 }}>
+          <div className="relative w-full max-w-lg" style={{ height: 380 }}>
             {orbitData.map((label, i) => {
               const angle = (i / orbitData.length) * 2 * Math.PI;
-              const radius = 130;
+              const radius = 155;
               const x = Math.cos(angle) * radius;
               const y = Math.sin(angle) * radius;
               return (
                 <span
                   key={label}
-                  className="op-glass absolute px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                  className="op-glass absolute px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
                   style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`, transform: "translate(-50%, -50%)", color: "#4a4a55" }}
                 >
                   {label}
                 </span>
               );
             })}
-            <div className="op-glass op-glow rounded-full absolute" style={{ width: 120, height: 120, left: "50%", top: "50%", transform: "translate(-50%, -50%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span className="text-xs font-black op-gradient-text leading-tight text-center">OPTIPILOT<br />AI</span>
+            <div className="op-glass op-glow rounded-full absolute" style={{ width: 150, height: 150, left: "50%", top: "50%", transform: "translate(-50%, -50%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span className="text-sm font-black op-gradient-text leading-tight text-center">OPTIPILOT<br />AI</span>
             </div>
           </div>
         </motion.div>
