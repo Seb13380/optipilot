@@ -1154,6 +1154,11 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 text-xs" style={{ color: "#8a8a94" }}>
+              <span><strong style={{ color: "#22c55e" }}>Intégration active</strong> — transfert automatique du devis vers votre logiciel</span>
+              <span><strong style={{ color: "#b08d57" }}>En préparation</strong> — intégration automatique en cours de développement</span>
+              <span><strong style={{ color: "#8a8a94" }}>Compatible</strong> — OptiPilot fonctionne en parallèle, sans transfert automatique pour l&apos;instant</span>
+            </div>
             <p className="text-center text-xs mt-6" style={{ color: "rgba(155,150,218,0.5)" }}>
               Votre logiciel n&apos;est pas dans la liste ?{" "}
               <a href="#demo" onClick={(e) => { e.preventDefault(); scrollToDemo(); }} className="underline hover:text-white transition-colors">Parlez-nous-en lors de votre démo.</a>
@@ -1469,10 +1474,10 @@ export default function LandingPage() {
           <div className="max-w-2xl mx-auto">
             <Reveal>
               <h2 className="op-serif text-3xl md:text-4xl font-black text-center mb-3" style={{ color: "#14141f" }}>
-                Voyez OptiPilot dans votre magasin — en 15 minutes chrono.
+                Démarrez avec OptiPilot — en 15 minutes chrono.
               </h2>
               <p className="text-center text-lg mb-10" style={{ color: "#6b6b76" }}>
-                On vous montre le scan d'ordonnance, le calcul mutuelle en direct et les relances automatiques. Sur vos propres données si vous le souhaitez. Sans engagement, aucune carte bancaire requise.
+                Que vous vouliez une démo avant de vous lancer ou démarrer directement votre mois offert, laissez vos coordonnées — on s'occupe du reste. Sans engagement, sans carte bancaire pour cette demande.
               </p>
             </Reveal>
 
@@ -1490,8 +1495,8 @@ export default function LandingPage() {
                   </h3>
                   <p style={{ color: "#6b6b76" }}>
                     {isAmbassadeur
-                      ? "Votre place est réservée à 199€/mois à vie. Nous vous contactons dans les 24h pour finaliser."
-                      : "Nous vous recontacterons dans les 24h pour planifier votre démo personnalisée."}
+                      ? `Votre place est réservée à ${AMBASSADEUR_PRIX}€/mois à vie. Nous vous contactons dans les 24h pour finaliser.`
+                      : "Nous vous recontacterons dans les 24h pour activer votre accès et répondre à vos questions."}
                   </p>
                 </motion.div>
               ) : (
@@ -1603,7 +1608,7 @@ export default function LandingPage() {
                         />
                         Envoi en cours…
                       </>
-                    ) : isAmbassadeur ? "Réserver ma place Fondateur →" : "Demander ma démo gratuite →"}
+                    ) : isAmbassadeur ? "Réserver ma place Fondateur →" : "Envoyer ma demande →"}
                   </motion.button>
                   {demoError && (
                     <p className="text-center text-sm font-semibold mt-1" style={{ color: "#f87171" }}>{demoError}</p>
