@@ -48,6 +48,8 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
     req.path === "/health" ||
     req.path === "/api/health" ||
     req.path.startsWith("/api/auth/") ||
+    req.path === "/api/ambassadeur" ||
+    req.path === "/api/ambassadeur/reserver" ||
     (req.method === "POST" && req.path === "/api/noemie/push")
   ) return next();
 

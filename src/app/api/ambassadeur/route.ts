@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
     });
     const data = await res.json();
+    if (!res.ok) console.error("[/api/ambassadeur] backend error:", res.status, data);
     return NextResponse.json(data, { status: res.status });
   } catch {
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
