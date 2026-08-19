@@ -52,7 +52,16 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Création ou récupération du client Stripe ─────────────────────────────
+  // Le customerId stocké peut appartenir à un autre mode Stripe (test/live) —
+  // on vérifie qu'il existe bien dans le mode courant avant de le réutiliser.
   let customerId = magasin.stripeCustomerId;
+  if (customerId) {
+    try {
+      await stripe.customers.retrieve(customerId);
+    } catch {
+      customerId = null;
+    }
+  }
   if (!customerId) {
     const customer = await stripe.customers.create({
       email: payload.email,
@@ -69,16 +78,25 @@ export async function POST(req: NextRequest) {
   // ── Création de la session Stripe Checkout ────────────────────────────────
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
-    metadata: { magasinId: magasin.id, plan },
-    success_url: `${appUrl}/dashboard?upgraded=1`,
-    cancel_url: `${appUrl}/abonnement`,
-    locale: "fr",
-    allow_promotion_codes: true,
-  });
+  // 1er mois offert : uniquement si le magasin n'a jamais eu d'abonnement Stripe
+  const premierAbonnement = !magasin.stripeSubId;
 
-  return NextResponse.json({ url: session.url });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: "subscription",
+      line_items: [{ price: priceId, quantity: 1 }],
+      metadata: { magasinId: magasin.id, plan },
+      subscription_data: premierAbonnement ? { trial_period_days: 30 } : undefined,
+      success_url: `${appUrl}/dashboard?upgraded=1`,
+      cancel_url: `${appUrl}/abonnement`,
+      locale: "fr",
+      allow_promotion_codes: true,
+    });
+
+    return NextResponse.json({ url: session.url });
+  } catch (err) {
+    console.error("Erreur création session Stripe Checkout:", err);
+    return NextResponse.json({ error: "Impossible de créer la session de paiement" }, { status: 500 });
+  }
 }

@@ -75,7 +75,7 @@ export default function RegisterPage() {
           className="h-28 w-auto object-contain mb-3 drop-shadow-2xl"
         />
         <p className="text-xl font-semibold" style={{ color: "#9B96DA" }}>
-          Essai gratuit 14 jours — sans carte bancaire
+          1 mois offert — sans engagement
         </p>
       </motion.div>
 
@@ -225,7 +225,7 @@ export default function RegisterPage() {
                   Création du compte...
                 </span>
               ) : (
-                "Démarrer l'essai gratuit →"
+                "Créer mon compte →"
               )}
             </motion.button>
           </form>

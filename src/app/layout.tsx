@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: "OptiPilot — Le logiciel qui fait gagner 1 600€/mois aux opticiens",
     template: "%s | OptiPilot",
   },
-  description: "OptiPilot est le logiciel IA pour opticiens. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle, relances automatiques. Essai gratuit 30 jours.",
+  description: "OptiPilot est le logiciel IA pour opticiens. Scanner d'ordonnances, recommandations personnalisées, calcul mutuelle, relances automatiques. 1 mois offert.",
   manifest: "/manifest.json",
   icons: {
     icon: [

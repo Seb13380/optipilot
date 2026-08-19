@@ -12,23 +12,23 @@ interface User {
 }
 
 const FEATURES_REGULIER = [
-  "📷 Scan ordonnance & carte mutuelle IA",
-  "🧠 Analyse IA (myopie, astigmatisme, presbytie…)",
-  "👤 Questionnaire client intelligent",
-  "💡 Génération automatique de 3 devis (Essentiel / Confort / Premium)",
-  "🧾 Devis avec reste à charge estimé",
-  "📤 Export PDF & dossier client",
-  "🤖 Copilote IA vendeur (suggestions pendant la vente)",
-  "📱 Interface optimisée iPad / tablette",
+  "Scan ordonnance & carte mutuelle IA",
+  "Analyse IA (myopie, astigmatisme, presbytie…)",
+  "Questionnaire client intelligent",
+  "Génération automatique de 3 devis (Essentiel / Confort / Premium)",
+  "Devis avec reste à charge estimé",
+  "Export PDF & dossier client",
+  "Copilote IA vendeur (suggestions pendant la vente)",
+  "Interface optimisée iPad / tablette",
 ];
 
 const FEATURES_FONDATEUR = [
-  "⭐ Tout inclus dans le plan régulier",
-  "🔒 149€/mois à vie, garanti tant que vous restez abonné",
-  "🤝 Onboarding personnalisé avec l'équipe OptiPilot",
-  "📣 Statut Fondateur officiel (badge + accès prioritaire)",
-  "🔔 Accès anticipé aux nouvelles fonctionnalités",
-  "📞 Support prioritaire & accès direct fondateurs",
+  "Tout inclus dans le plan régulier",
+  "149€/mois à vie, garanti tant que vous restez abonné",
+  "Onboarding personnalisé avec l'équipe OptiPilot",
+  "Statut Fondateur officiel (badge + accès prioritaire)",
+  "Accès anticipé aux nouvelles fonctionnalités",
+  "Support prioritaire & accès direct fondateurs",
 ];
 
 const REGULIER_PRIX = 199;
@@ -126,12 +126,14 @@ export default function AbonnementPage() {
           className="text-center mb-8"
         >
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4"
-            style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}
+            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ border: "1.5px solid rgba(155,150,218,0.5)" }}
           >
-            ⚡
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke="#9B96DA" strokeWidth="1.2" />
+            </svg>
           </div>
-          <h1 className="text-3xl font-black mb-2" style={{ color: "#FDFDFE" }}>
+          <h1 className="op-serif text-3xl mb-2" style={{ color: "#FDFDFE" }}>
             Passez à OptiPilot Pro
           </h1>
           <p className="text-lg" style={{ color: "#9B96DA" }}>
@@ -194,7 +196,7 @@ export default function AbonnementPage() {
                 </p>
                 {isFondateur && slots !== null && !isFull && (
                   <p className="text-xs font-semibold mt-1" style={{ color: isSelected ? "#fde68a" : "#fbbf24" }}>
-                    🔥 {slots.restants} place{slots.restants > 1 ? "s" : ""} restante{slots.restants > 1 ? "s" : ""} / {slots.total}
+                    {slots.restants} place{slots.restants > 1 ? "s" : ""} restante{slots.restants > 1 ? "s" : ""} / {slots.total}
                   </p>
                 )}
                 {plan.sub && (
@@ -223,7 +225,7 @@ export default function AbonnementPage() {
             }}
           >
             <p className="text-sm font-bold mb-3" style={{ color: selectedPlan === "fondateur" ? "#fbbf24" : "#9B96DA" }}>
-              🔥 Fondateurs — {FONDATEUR_PRIX}€/mois
+              Fondateurs — {FONDATEUR_PRIX}€/mois
             </p>
             <div className="flex flex-col gap-2">
               {FEATURES_FONDATEUR.map((f) => (
@@ -267,8 +269,8 @@ export default function AbonnementPage() {
         >
           <p className="text-sm font-medium" style={{ color: "#a78bfa" }}>
             {fondateurDispo
-              ? `🔥 Plus que ${slots?.restants} place${(slots?.restants ?? 0) > 1 ? "s" : ""} au tarif Fondateur : ${FONDATEUR_PRIX}€/mois à vie, garanti tant que vous restez abonné.`
-              : "💡 Toutes les fonctionnalités sont incluses dans le plan Régulier, sans surprise."}
+              ? `Plus que ${slots?.restants} place${(slots?.restants ?? 0) > 1 ? "s" : ""} au tarif Fondateur : ${FONDATEUR_PRIX}€/mois à vie, garanti tant que vous restez abonné.`
+              : "Toutes les fonctionnalités sont incluses dans le plan Régulier, sans surprise."}
           </p>
         </motion.div>
 
@@ -296,7 +298,7 @@ export default function AbonnementPage() {
               : `Démarrer ${selectedPlan === "fondateur" ? `Fondateur — ${FONDATEUR_PRIX}€/mois` : `Régulier — ${REGULIER_PRIX}€/mois`} →`}
           </motion.button>
           <p className="text-center text-sm mt-3" style={{ color: "#9B96DA" }}>
-            Sans engagement · Résiliable à tout moment
+            1 mois offert · Sans engagement · Résiliable à tout moment
           </p>
         </motion.div>
 

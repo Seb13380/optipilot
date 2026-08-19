@@ -668,7 +668,7 @@ export default function LandingPage() {
                   "@type": "Offer",
                   price: "249",
                   priceCurrency: "EUR",
-                  description: "Plan Pro — accès complet, essai gratuit 30 jours",
+                  description: "Plan Pro — accès complet, 1 mois offert",
                 },
                 publisher: {
                   "@type": "Organization",
@@ -681,10 +681,10 @@ export default function LandingPage() {
                 mainEntity: [
                   {
                     "@type": "Question",
-                    name: "Comment fonctionne l'essai gratuit OptiPilot ?",
+                    name: "Comment fonctionne le mois offert OptiPilot ?",
                     acceptedAnswer: {
                       "@type": "Answer",
-                      text: "L'essai gratuit dure 30 jours avec accès complet à toutes les fonctionnalités. Aucune carte bancaire requise à l'inscription. À l'issue de la période, vous choisissez librement de continuer ou non.",
+                      text: "Votre 1er mois est offert avec accès complet à toutes les fonctionnalités. Une carte bancaire est demandée à l'inscription, sans engagement — vous pouvez résilier à tout moment avant la fin du mois offert sans être prélevé.",
                     },
                   },
                   {
@@ -844,7 +844,7 @@ export default function LandingPage() {
 
             {/* Trust badges */}
             <div className="flex flex-wrap gap-4">
-              {["✓ Essai gratuit 30 jours", "✓ Sans engagement", "✓ Sans carte bancaire", "✓ RGPD — France"].map((badge, i) => (
+              {["✓ 1 mois offert", "✓ Sans engagement", "✓ Résiliable à tout moment", "✓ RGPD — France"].map((badge, i) => (
                 <motion.span key={badge} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 + i * 0.1 }} className="text-sm font-medium" style={{ color: "#6b6b76" }}>
                   {badge}
                 </motion.span>
@@ -1349,10 +1349,10 @@ export default function LandingPage() {
                     className="w-full py-4 rounded-2xl text-base font-bold text-white"
                     style={{ background: "rgba(83,49,208,0.55)", border: "2px solid rgba(83,49,208,0.6)" }}
                   >
-                    Démarrer l&apos;essai gratuit
+                    Démarrer mon mois offert
                   </motion.button>
                   <p className="text-center text-xs mt-3" style={{ color: "rgba(155,150,218,0.5)" }}>
-                    30 jours gratuits · Sans engagement · Résiliable à tout moment
+                    1 mois offert · Sans engagement · Résiliable à tout moment
                   </p>
                 </div>
               </Reveal>
@@ -1425,8 +1425,8 @@ export default function LandingPage() {
             <div className="flex flex-col gap-3">
               {[
                 {
-                  q: "Comment fonctionne l'essai gratuit ?",
-                  a: "L'essai gratuit dure 30 jours avec accès complet à toutes les fonctionnalités. Aucune carte bancaire requise à l'inscription. À l'issue de la période, vous choisissez librement de continuer ou non.",
+                  q: "Comment fonctionne le mois offert ?",
+                  a: "Votre 1er mois est offert avec accès complet à toutes les fonctionnalités. Une carte bancaire est demandée à l'inscription, sans engagement — vous pouvez résilier à tout moment avant la fin du mois offert sans être prélevé.",
                 },
                 {
                   q: "Est-ce que ça marche avec mon logiciel actuel ?",
@@ -1446,7 +1446,7 @@ export default function LandingPage() {
                 },
                 {
                   q: "Y a-t-il un contrat à signer ?",
-                  a: "L'essai de 30 jours est sans engagement et sans carte bancaire. À l'issue, si vous souhaitez continuer, un abonnement de 12 mois minimum vous est proposé — avec acceptation des CGV en ligne et facturation mensuelle. Aucune signature papier requise.",
+                  a: "Non. L'abonnement est sans engagement et résiliable à tout moment, mois par mois. Une carte bancaire est demandée à l'inscription pour activer le mois offert, mais aucune signature papier ni contrat longue durée n'est requis.",
                 },
               ].map((item, i) => (
                 <Reveal key={i} delay={i * 0.06}>

@@ -395,8 +395,8 @@ function DashboardPage() {
             >
               <span style={{ color: s.trialDaysLeft <= 3 ? "#ef4444" : s.trialDaysLeft <= 7 ? "#f59e0b" : "#a78bfa" }} className="font-semibold text-base">
                 {s.trialDaysLeft === 0
-                  ? "⚠️ Votre essai est terminé — abonnez-vous pour continuer"
-                  : `Essai gratuit — ${s.trialDaysLeft} jour${s.trialDaysLeft > 1 ? "s" : ""} restant${s.trialDaysLeft > 1 ? "s" : ""}`}
+                  ? "Votre mois offert est terminé — abonnez-vous pour continuer"
+                  : `Mois offert — ${s.trialDaysLeft} jour${s.trialDaysLeft > 1 ? "s" : ""} restant${s.trialDaysLeft > 1 ? "s" : ""}`}
               </span>
               <button
                 onClick={() => router.push("/abonnement")}
@@ -1293,7 +1293,7 @@ function genererOpportunites(stats: Stats | null): Opportunite[] {
   if (stats.trialDaysLeft !== null && stats.trialDaysLeft <= 14 && stats.trialDaysLeft > 0) {
     ops.push({
       icon: "!",
-      titre: "Essai gratuit bientôt terminé",
+      titre: "Mois offert bientôt terminé",
       description: `Il vous reste ${stats.trialDaysLeft} jours. Passez en Pro pour ne pas perdre vos données et activer les relances automatiques.`,
       cta: "Voir les offres Pro",
       ctaHref: "/abonnement",

@@ -977,7 +977,7 @@ export default function ConfigPage() {
                   <div>
                     <p className="text-sm font-semibold" style={{ color: "#9B96DA" }}>Plan actif</p>
                     <p className="text-xl font-black capitalize mt-0.5" style={{ color: accountUser?.plan === "trial" ? "#c4b5fd" : "#4ade80" }}>
-                      {accountUser?.plan === "trial" ? "Essai gratuit" : accountUser?.plan === "standard" ? "Standard" : accountUser?.plan === "premium" ? "Premium" : accountUser?.plan ?? "—"}
+                      {accountUser?.plan === "trial" ? "Mois offert" : accountUser?.plan === "standard" ? "Standard" : accountUser?.plan === "premium" ? "Premium" : accountUser?.plan ?? "—"}
                     </p>
                   </div>
                   <motion.button
