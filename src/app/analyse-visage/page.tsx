@@ -3,7 +3,6 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
-import OpticianGuard from "@/components/OpticianGuard";
 import type { AnalyseVisage } from "@/lib/analyseVisage";
 
 // ─── Icônes morphologie ───────────────────────────────────────
@@ -142,7 +141,6 @@ export default function AnalyseVisagePage() {
 
   // ─── Rendu ──────────────────────────────────────────────────
   return (
-    <OpticianGuard>
       <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #f0f0ff 0%, #e8e4ff 100%)" }}>
         <OptiPilotHeader />
 
@@ -435,6 +433,5 @@ export default function AnalyseVisagePage() {
 
         </div>
       </div>
-    </OpticianGuard>
   );
 }

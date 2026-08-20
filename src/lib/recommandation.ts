@@ -450,12 +450,12 @@ export function calculerRecommandations(
       nom: "Confort",
       verrier: "Hoya",
       gamme: isProgressif
-        ? "Hilux 1.6"
+        ? `Hilux ${indiceConfort}`
         : isPDC
-        ? "BizView 1.6"
+        ? `BizView ${indiceConfort}`
         : isAntiFatigue
-        ? "Sync III 1.6"
-        : "Hilux 1.6",
+        ? `Sync III ${indiceConfort}`
+        : `Hilux ${indiceConfort}`,
       type: typeVerre,
       indice: indiceConfort,
       traitement: "antireflet_premium",
@@ -465,7 +465,7 @@ export function calculerRecommandations(
       remboursementMutuelle: remboursement,
       resteACharge: Math.max(0, baseConfort - secuClasseB - remboursement),
       argumentaire: [
-        "✓ Indice 1.6 — plus mince et léger",
+        `✓ Indice ${indiceConfort} — ${indiceConfort >= 1.67 ? "verre très fin et léger" : "plus mince et léger"}`,
         "✓ Antireflet haute performance antisalissure, hydrophobe et oléophobe",
         tempsEcran >= 4 ? "✓ Filtre lumière bleue inclus" : "✓ Résistance aux rayures renforcée",
         isProgressif
@@ -485,7 +485,7 @@ export function calculerRecommandations(
       gamme: isProgressif
         ? "Individual 2"
         : isPDC
-        ? "Office Lens 1.6"
+        ? `Office Lens ${indicePremium}`
         : isAntiFatigue
         ? "Digital Lens"
         : "Single Vision ClearView",

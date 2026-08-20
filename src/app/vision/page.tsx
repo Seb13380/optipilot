@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
-import OpticianGuard from "@/components/OpticianGuard";
 
 // ─── Types ────────────────────────────────────────────────────
 interface OrdoValues {
@@ -404,7 +403,6 @@ export default function SimulateurVisionPage() {
   const displayPoints = modeVerre === "progressif" ? POINTS_PROGRESSIF[lentille] : [...selectedLentille.points];
 
   return (
-    <OpticianGuard>
       <div className="page-bg min-h-screen flex flex-col">
         <OptiPilotHeader title="Simulateur de vision" showBack onBack={() => router.back()} />
 
@@ -738,6 +736,5 @@ export default function SimulateurVisionPage() {
 
         </main>
       </div>
-    </OpticianGuard>
   );
 }
