@@ -4,11 +4,13 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
+import Stripe from "stripe";
 import { hashPassword, comparePassword, signToken, verifyToken, TokenPayload } from "../src/lib/auth";
 
 const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -65,6 +67,21 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+// ─── Super-admin Middleware ────────────────────────────────
+// Vérifie en base (pas seulement dans le JWT) que l'utilisateur est super-admin —
+// évite qu'un ancien token reste valide si le statut est révoqué.
+async function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
+  const userId = (req as AuthRequest).user?.userId;
+  if (!userId) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const user = await prisma.utilisateur.findUnique({ where: { id: userId }, select: { isSuperAdmin: true } });
+    if (!user?.isSuperAdmin) return res.status(403).json({ error: "Accès réservé" });
+    next();
+  } catch {
+    return res.status(500).json({ error: "Erreur vérification accès" });
+  }
+}
+
 app.use(requireAuth);
 
 // ─── Middleware vérification expiration essai ─────────────
@@ -76,6 +93,7 @@ const TRIAL_EXEMPT_PATHS = [
   "/api/abonnement",
   "/api/stats/",
   "/api/magasin/",
+  "/api/admin/",
   "/health",
   "/api/health",
 ];
@@ -174,6 +192,7 @@ app.post("/api/auth/login", async (req, res) => {
         onboardingDone: user.magasin.onboardingDone,
         plan: user.magasin.plan,
         trialEndsAt: user.magasin.trialEndsAt,
+        isSuperAdmin: user.isSuperAdmin,
       },
     });
   } catch (err) {
@@ -1762,6 +1781,130 @@ app.get("/api/bridge/search-result/:id", requireAuth, async (req: AuthRequest, r
   } catch (err) {
     console.error("GET /api/bridge/search-result error:", err);
     res.status(500).json({ error: "Erreur lecture résultat" });
+  }
+});
+
+// ─── Panneau Super-Admin (gestion transversale des magasins/employés) ────────
+// Toutes ces routes exigent isSuperAdmin=true (vérifié en base, pas dans le JWT)
+
+// GET /api/admin/magasins → liste tous les magasins + nb employés + plan
+app.get("/api/admin/magasins", requireAuth, requireSuperAdmin, async (_req, res) => {
+  try {
+    const magasins = await prisma.magasin.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { _count: { select: { utilisateurs: true, clients: true, devis: true } } },
+    });
+    res.json(magasins);
+  } catch (err) {
+    console.error("GET /api/admin/magasins error:", err);
+    res.status(500).json({ error: "Erreur lecture magasins" });
+  }
+});
+
+// GET /api/admin/magasins/:id → détail + liste des employés
+app.get("/api/admin/magasins/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const magasin = await prisma.magasin.findUnique({
+      where: { id: req.params.id },
+      include: { utilisateurs: { select: { id: true, nom: true, email: true, role: true, isSuperAdmin: true, createdAt: true } } },
+    });
+    if (!magasin) return res.status(404).json({ error: "Magasin introuvable" });
+    res.json(magasin);
+  } catch (err) {
+    console.error("GET /api/admin/magasins/:id error:", err);
+    res.status(500).json({ error: "Erreur lecture magasin" });
+  }
+});
+
+// GET /api/admin/magasins/:id/stripe → statut abonnement Stripe en direct
+app.get("/api/admin/magasins/:id/stripe", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const magasin = await prisma.magasin.findUnique({ where: { id: req.params.id } });
+    if (!magasin) return res.status(404).json({ error: "Magasin introuvable" });
+    if (!magasin.stripeSubId) return res.json({ statut: "aucun_abonnement" });
+    const sub = await stripe.subscriptions.retrieve(magasin.stripeSubId);
+    res.json({
+      statut: sub.status,
+      trialEnd: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
+      currentPeriodEnd: (sub as unknown as { current_period_end?: number }).current_period_end
+        ? new Date((sub as unknown as { current_period_end: number }).current_period_end * 1000)
+        : null,
+      cancelAtPeriodEnd: sub.cancel_at_period_end,
+    });
+  } catch (err) {
+    console.error("GET /api/admin/magasins/:id/stripe error:", err);
+    res.status(500).json({ error: "Erreur lecture Stripe" });
+  }
+});
+
+// POST /api/admin/utilisateurs → créer un employé manuellement
+app.post("/api/admin/utilisateurs", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const { magasinId, nom, email, motDePasse, role } = req.body;
+    if (!magasinId || !nom || !email || !motDePasse) {
+      return res.status(400).json({ error: "magasinId, nom, email et motDePasse requis" });
+    }
+    const hash = await hashPassword(motDePasse);
+    const user = await prisma.utilisateur.create({
+      data: { magasinId, nom, email, motDePasse: hash, role: role || "vendeur" },
+      select: { id: true, nom: true, email: true, role: true, magasinId: true },
+    });
+    res.status(201).json(user);
+  } catch (err: unknown) {
+    const code = (err as { code?: string }).code;
+    if (code === "P2002") return res.status(409).json({ error: "Un compte existe déjà avec cet email" });
+    console.error("POST /api/admin/utilisateurs error:", err);
+    res.status(500).json({ error: "Erreur création employé" });
+  }
+});
+
+// PATCH /api/admin/utilisateurs/:id → modifier nom/email/role
+app.patch("/api/admin/utilisateurs/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const { nom, email, role } = req.body;
+    const user = await prisma.utilisateur.update({
+      where: { id: req.params.id },
+      data: { ...(nom && { nom }), ...(email && { email }), ...(role && { role }) },
+      select: { id: true, nom: true, email: true, role: true, magasinId: true },
+    });
+    res.json(user);
+  } catch (err: unknown) {
+    const code = (err as { code?: string }).code;
+    if (code === "P2002") return res.status(409).json({ error: "Cet email est déjà utilisé" });
+    if (code === "P2025") return res.status(404).json({ error: "Employé introuvable" });
+    console.error("PATCH /api/admin/utilisateurs/:id error:", err);
+    res.status(500).json({ error: "Erreur modification employé" });
+  }
+});
+
+// POST /api/admin/utilisateurs/:id/reset-password → réinitialiser un mot de passe
+app.post("/api/admin/utilisateurs/:id/reset-password", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const { nouveauMotDePasse } = req.body;
+    if (!nouveauMotDePasse || nouveauMotDePasse.length < 8) {
+      return res.status(400).json({ error: "Le nouveau mot de passe doit faire au moins 8 caractères" });
+    }
+    const hash = await hashPassword(nouveauMotDePasse);
+    await prisma.utilisateur.update({ where: { id: req.params.id }, data: { motDePasse: hash } });
+    res.json({ ok: true });
+  } catch (err: unknown) {
+    const code = (err as { code?: string }).code;
+    if (code === "P2025") return res.status(404).json({ error: "Employé introuvable" });
+    console.error("POST /api/admin/utilisateurs/:id/reset-password error:", err);
+    res.status(500).json({ error: "Erreur réinitialisation mot de passe" });
+  }
+});
+
+// DELETE /api/admin/utilisateurs/:id → supprimer un compte employé
+app.delete("/api/admin/utilisateurs/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    await prisma.utilisateur.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (err: unknown) {
+    const code = (err as { code?: string }).code;
+    if (code === "P2025") return res.status(404).json({ error: "Employé introuvable" });
+    console.error("DELETE /api/admin/utilisateurs/:id error:", err);
+    res.status(500).json({ error: "Erreur suppression employé" });
   }
 });
 

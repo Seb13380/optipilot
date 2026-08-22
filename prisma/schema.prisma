@@ -45,13 +45,14 @@ model Magasin {
 }
 
 model Utilisateur {
-  id         String   @id @default(uuid())
-  magasinId  String
-  nom        String
-  email      String   @unique
-  motDePasse String
-  role       String   @default("vendeur")
-  createdAt  DateTime @default(now())
+  id            String   @id @default(uuid())
+  magasinId     String
+  nom           String
+  email         String   @unique
+  motDePasse    String
+  role          String   @default("vendeur")
+  isSuperAdmin  Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   magasin Magasin @relation(fields: [magasinId], references: [id])
   devis   Devis[]
