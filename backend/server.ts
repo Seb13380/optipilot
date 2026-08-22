@@ -2015,7 +2015,7 @@ app.get("/api/admin/finances", requireAuth, requireSuperAdmin, async (_req, res)
     });
   } catch (err) {
     console.error("GET /api/admin/finances error:", err);
-    res.status(500).json({ error: "Erreur calcul finances" });
+    res.status(500).json({ error: "Erreur calcul finances", detail: err instanceof Error ? err.message : String(err) });
   }
 });
 

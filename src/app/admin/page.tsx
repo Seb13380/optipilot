@@ -94,7 +94,7 @@ export default function AdminPage() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         console.error("Erreur /api/admin/finances:", res.status, data);
-        setErreurFinances(data.error || `Erreur ${res.status}`);
+        setErreurFinances(data.detail || data.error || `Erreur ${res.status}`);
         return;
       }
       const data = await res.json();
