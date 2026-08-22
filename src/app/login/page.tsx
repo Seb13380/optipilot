@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -18,7 +20,7 @@ export default function LoginPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login`,
+        `${BACKEND}/api/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -31,6 +33,8 @@ export default function LoginPage() {
 
       localStorage.setItem("optipilot_token", data.token);
       localStorage.setItem("optipilot_user", JSON.stringify(data.user));
+      // Initialise le timestamp de dernière activité dès la connexion
+      localStorage.setItem("optipilot_last_activity", String(Date.now()));
       router.push(data.user.onboardingDone ? "/dashboard" : "/onboarding");
     } catch (err: unknown) {
       const message = (err as Error).message;
@@ -73,12 +77,12 @@ export default function LoginPage() {
             }}
           />
           <img
-            src="/assets/images/logo-OptiPilot.png"
+            src="/assets/images/OptiPilot2.0Logo-transparent.png"
             alt="OptiPilot"
             className="relative w-80 h-auto object-contain drop-shadow-2xl"
           />
         </div>
-        <p className="text-xl mt-1 font-semibold" style={{ color: "#9B96DA" }}>
+        <p className="text-xl mt-1 font-semibold" style={{ color: "#5331D0" }}>
           Copilote IA pour opticiens
         </p>
       </motion.div>

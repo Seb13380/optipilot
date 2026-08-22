@@ -3,7 +3,7 @@ services:
     name: optipilot-backend
     runtime: node
     region: frankfurt
-    plan: free
+    plan: starter
     rootDir: optipilot
     buildCommand: npm install && npx prisma generate && npx tsc --project tsconfig.backend.json
     startCommand: node dist/backend/backend/server.js

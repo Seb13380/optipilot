@@ -1,8 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
+import { getStoredPin, savePin } from "@/lib/opticianAuth";
+import { useApp } from "@/lib/AppContext";
 
 interface ConfigMagasin {
   nom: string;
@@ -10,6 +13,8 @@ interface ConfigMagasin {
   telephone: string;
   email: string;
   siret: string;
+  logoUrl?: string;
+  couleurPrimaire?: string;
 }
 
 interface TarifVerrier {
@@ -43,12 +48,18 @@ interface ConfigRelance {
 }
 
 const VERRIERS_DEFAUT: TarifVerrier[] = [
-  { id: "1", verrier: "Essilor",    gamme: "Varilux Comfort", offre: "essentiel", matiere: "CR39",   indice: "1.5",  prixUnifocal: 180, prixProgressif: 380, actif: true  },
-  { id: "2", verrier: "Essilor",    gamme: "Crizal Sapphire", offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 220, prixProgressif: 450, actif: true  },
-  { id: "3", verrier: "Zeiss",      gamme: "Individual 2",    offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 260, prixProgressif: 520, actif: true  },
-  { id: "4", verrier: "Nikon",      gamme: "Lite AS",          offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 140, prixProgressif: 290, actif: true  },
-  { id: "5", verrier: "Hoya",       gamme: "Lifestyle 3+",     offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 160, prixProgressif: 340, actif: false },
-  { id: "6", verrier: "100% Santé", gamme: "Classe A",          offre: "essentiel", matiere: "CR39",   indice: "1.5",  prixUnifocal: 0,   prixProgressif: 0,   actif: true  },
+  { id: "1",  verrier: "Essilor",    gamme: "Varilux Comfort",        offre: "essentiel", matiere: "CR39",   indice: "1.5",  prixUnifocal: 180, prixProgressif: 380, actif: true  },
+  { id: "2",  verrier: "Essilor",    gamme: "Crizal Sapphire",        offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 220, prixProgressif: 450, actif: true  },
+  { id: "3",  verrier: "Zeiss",      gamme: "Individual 2",           offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 260, prixProgressif: 520, actif: false },
+  { id: "4",  verrier: "Nikon",      gamme: "Lite AS",                offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 140, prixProgressif: 290, actif: false },
+  { id: "5",  verrier: "Hoya",       gamme: "Lifestyle 3+",           offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 160, prixProgressif: 340, actif: false },
+  { id: "6",  verrier: "BBGR",       gamme: "Natrio Confort",         offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 130, prixProgressif: 280, actif: false },
+  { id: "7",  verrier: "BBGR",       gamme: "Natrio Premium",         offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 170, prixProgressif: 360, actif: false },
+  { id: "8",  verrier: "Kodak",      gamme: "Unique HD",              offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 120, prixProgressif: 260, actif: false },
+  { id: "9",  verrier: "Kodak",      gamme: "Precise PB",             offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 155, prixProgressif: 320, actif: false },
+  { id: "10", verrier: "Rodenstock", gamme: "Progressiv Life",        offre: "confort",   matiere: "MR-8",   indice: "1.6",  prixUnifocal: 145, prixProgressif: 300, actif: false },
+  { id: "11", verrier: "Rodenstock", gamme: "Impression 5",           offre: "premium",   matiere: "MR-10",  indice: "1.67", prixUnifocal: 200, prixProgressif: 420, actif: false },
+  { id: "12", verrier: "100% Santé", gamme: "Classe A",               offre: "essentiel", matiere: "CR39",   indice: "1.5",  prixUnifocal: 0,   prixProgressif: 0,   actif: true  },
 ];
 
 const RESEAUX_OPTIQUES = [
@@ -63,18 +74,27 @@ const RESEAUX_OPTIQUES = [
 ];
 
 const TABS = [
-  { id: "magasin",  label: "Magasin" },
-  { id: "reseaux",  label: "Réseaux" },
-  { id: "verriers", label: "Verriers" },
-  { id: "relances", label: "Relances" },
-  { id: "bridge",   label: "Bridge" },
-  { id: "compte",   label: "Compte" },
+  { id: "magasin",   label: "Magasin" },
+  { id: "reseaux",   label: "Réseaux" },
+  { id: "verriers",  label: "Verriers" },
+  { id: "relances",  label: "Relances" },
+  { id: "bridge",    label: "Bridge" },
+  { id: "equipe",    label: "Équipe" },
+  { id: "compte",    label: "Compte" },
+  { id: "securite",  label: "Sécurité" },
 ];
 
 export default function ConfigPage() {
   const router = useRouter();
+  const { appliquerBranding } = useApp();
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState("magasin");
   const [toast, setToast] = useState<string | null>(null);
+  // ── État onglet Sécurité ──
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [pinMsg, setPinMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [accountUser, setAccountUser] = useState<{ id?: string; nom: string; email: string; role: string; plan?: string } | null>(null);
   const [editNom, setEditNom] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -95,6 +115,95 @@ export default function ConfigPage() {
   });
   const [bridgeStatus, setBridgeStatus] = useState<"idle" | "ok" | "error">("idle");
   const [bridgeTesting, setBridgeTesting] = useState(false);
+
+  // ── État onglet Équipe ──
+  interface TeamMember { id: string; nom: string; email: string; role: string; createdAt: string; }
+  interface TeamStat { userId: string; nom: string; role: string; devisMois: number; ventesMois: number; tauxConversion: number; panierMoyen: number; }
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamStats, setTeamStats] = useState<TeamStat[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [newOpticienNom, setNewOpticienNom] = useState("");
+  const [newOpticienEmail, setNewOpticienEmail] = useState("");
+  const [newOpticienPassword, setNewOpticienPassword] = useState("");
+  const [newOpticienRole, setNewOpticienRole] = useState("opticien");
+  const [addingOpticien, setAddingOpticien] = useState(false);
+
+  const ROLE_LABELS: Record<string, string> = {
+    admin: "Administrateur",
+    responsable: "Responsable",
+    opticien: "Opticien",
+    vendeur: "Opticien",
+  };
+  const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+    admin:       { bg: "rgba(236,72,153,0.14)",  text: "#f472b6", border: "rgba(236,72,153,0.35)" },  // rose
+    responsable: { bg: "rgba(83,49,208,0.22)",   text: "#9B96DA", border: "rgba(83,49,208,0.45)" },  // violet
+    opticien:    { bg: "rgba(155,150,218,0.12)", text: "rgba(155,150,218,0.85)", border: "rgba(155,150,218,0.25)" }, // gris
+    vendeur:     { bg: "rgba(155,150,218,0.12)", text: "rgba(155,150,218,0.85)", border: "rgba(155,150,218,0.25)" }, // gris
+  };
+
+  async function loadTeam() {
+    try {
+      setTeamLoading(true);
+      const userRaw = localStorage.getItem("optipilot_user");
+      const token = localStorage.getItem("optipilot_token") || "";
+      if (!userRaw) return;
+      const u = JSON.parse(userRaw);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+      const [resMembers, resStats] = await Promise.all([
+        fetch(`${backendUrl}/api/utilisateurs/${u.magasinId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${backendUrl}/api/stats/team/${u.magasinId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      if (resMembers.ok) setTeamMembers(await resMembers.json());
+      if (resStats.ok) {
+        const data = await resStats.json();
+        if (data.members) setTeamStats(data.members);
+      }
+    } catch { /* ignore */ } finally {
+      setTeamLoading(false);
+    }
+  }
+
+  async function addOpticien() {
+    if (!newOpticienNom.trim() || !newOpticienEmail.trim() || newOpticienPassword.length < 8) {
+      showToast("Nom, email et mot de passe (8 car. min.) requis");
+      return;
+    }
+    setAddingOpticien(true);
+    try {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+      const res = await fetch(`${backendUrl}/api/utilisateur`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ nom: newOpticienNom.trim(), email: newOpticienEmail.trim(), motDePasse: newOpticienPassword, role: newOpticienRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || "Erreur"); return; }
+      setTeamMembers((prev) => [...prev, data]);
+      setNewOpticienNom(""); setNewOpticienEmail(""); setNewOpticienPassword(""); setNewOpticienRole("vendeur");
+      showToast(`${data.nom} ajouté(e) ✓`);
+    } catch { showToast("Impossible de contacter le serveur"); }
+    finally { setAddingOpticien(false); }
+  }
+
+  async function deleteOpticien(id: string, nom: string) {
+    if (!confirm(`Supprimer ${nom} de l’équipe ?`)) return;
+    try {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+      const res = await fetch(`${backendUrl}/api/utilisateur/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { const d = await res.json(); showToast(d.error || "Erreur"); return; }
+      setTeamMembers((prev) => prev.filter((m) => m.id !== id));
+      showToast(`${nom} supprimé(e) ✓`);
+    } catch { showToast("Impossible de contacter le serveur"); }
+  }
 
   async function testerBridge() {
     setBridgeTesting(true);
@@ -122,15 +231,56 @@ export default function ConfigPage() {
     } catch { /* ignore */ }
   }, []);
 
+  // Charger l'équipe à l'ouverture de l'onglet
+  useEffect(() => {
+    if (tab === "equipe") loadTeam();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
   const [magasin, setMagasin] = useState<ConfigMagasin>({
     nom: "Optique Lumière",
     adresse: "12 Rue de la Paix, 75001 Paris",
     telephone: "01 23 45 67 89",
     email: "contact@optiquelumiere.fr",
     siret: "123 456 789 00012",
+    logoUrl: undefined,
+    couleurPrimaire: undefined,
   });
+  const [savingMagasin, setSavingMagasin] = useState(false);
+
+  // Charger infos magasin depuis le backend au démarrage
+  useEffect(() => {
+    const userRaw = localStorage.getItem("optipilot_user");
+    const token   = localStorage.getItem("optipilot_token") || "";
+    if (!userRaw) return;
+    const u = JSON.parse(userRaw);
+    if (!u.magasinId) return;
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+    fetch(`${backendUrl}/api/magasin/${u.magasinId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setMagasin({
+          nom:             data.nom           ?? "Optique Lumière",
+          adresse:         data.adresse        ?? "",
+          telephone:       data.telephone      ?? "",
+          email:           data.email          ?? "",
+          siret:           data.siret          ?? "",
+          logoUrl:         data.logoUrl        ?? undefined,
+          couleurPrimaire: data.couleurPrimaire ?? undefined,
+        });
+        // Charger les verriers depuis la base si configurés
+        if (Array.isArray(data.verriersConfig) && data.verriersConfig.length > 0) {
+          setVerriers(data.verriersConfig as TarifVerrier[]);
+        }
+        setVerriersCharged(true);
+      })
+      .catch(() => { /* backend non dispo, garde les valeurs par défaut */ });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [verriers, setVerriers] = useState<TarifVerrier[]>(VERRIERS_DEFAUT);
+  const [verriersCharged, setVerriersCharged] = useState(false);
   const [reseauxPartenaires, setReseauxPartenaires] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("optipilot_reseaux_partenaires") || "[]"); }
     catch { return []; }
@@ -157,8 +307,40 @@ export default function ConfigPage() {
     });
   }
 
-  function sauvegarder() {
+  async function sauvegarder() {
     localStorage.setItem("optipilot_reseaux_partenaires", JSON.stringify(reseauxPartenaires));
+
+    // Sauvegarder les infos magasin (dont logo + couleur) dans le backend
+    const userRaw = localStorage.getItem("optipilot_user");
+    const token   = localStorage.getItem("optipilot_token") || "";
+    if (userRaw) {
+      const u = JSON.parse(userRaw);
+      if (u.magasinId) {
+        setSavingMagasin(true);
+        try {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+          const res = await fetch(`${backendUrl}/api/magasin/${u.magasinId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              nom:             magasin.nom,
+              adresse:         magasin.adresse,
+              telephone:       magasin.telephone,
+              email:           magasin.email,
+              siret:           magasin.siret,
+              logoUrl:         magasin.logoUrl   ?? null,
+              couleurPrimaire: magasin.couleurPrimaire ?? null,
+              verriersConfig:  verriers,
+            }),
+          });
+          if (res.ok) {
+            // Appliquer le branding immédiatement et le mettre en cache
+            appliquerBranding(magasin.logoUrl ?? null, magasin.couleurPrimaire ?? null);
+          }
+        } catch { /* ignore si backend hors ligne */ }
+        finally { setSavingMagasin(false); }
+      }
+    }
     showToast("Configuration sauvegardée ✓");
   }
 
@@ -183,6 +365,7 @@ export default function ConfigPage() {
   }
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader title="Configuration" showBack onBack={() => router.push("/dashboard")} />
 
@@ -197,9 +380,10 @@ export default function ConfigPage() {
               onClick={() => setTab(t.id)}
               className="px-6 py-3 rounded-xl text-lg font-semibold whitespace-nowrap border-2 transition-all"
               style={{
-                background: tab === t.id ? "rgba(83,49,208,0.25)" : "rgba(10,3,56,0.6)",
-                borderColor: tab === t.id ? "#5331D0" : "rgba(155,150,218,0.2)",
-                color: tab === t.id ? "#9B96DA" : "#FDFDFE",
+                background: tab === t.id ? "#5331D0" : "rgba(10,3,56,0.6)",
+                borderColor: tab === t.id ? "#7C5CE5" : "rgba(155,150,218,0.2)",
+                color: "#FDFDFE",
+                boxShadow: tab === t.id ? "0 2px 12px rgba(83,49,208,0.5)" : "none",
               }}
             >
               {t.label}
@@ -241,8 +425,108 @@ export default function ConfigPage() {
                       />
                     </div>
                   ))}
+
+                  {/* ── Logo du magasin ── */}
+                  <div>
+                    <label className="block text-base font-semibold mb-2" style={{ color: "#9B96DA" }}>
+                      Logo du magasin
+                    </label>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const base64 = ev.target?.result as string;
+                          setMagasin((prev) => ({ ...prev, logoUrl: base64 }));
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    <div className="flex items-center gap-4">
+                      {magasin.logoUrl ? (
+                        <img
+                          src={magasin.logoUrl}
+                          alt="Logo magasin"
+                          className="h-16 w-auto object-contain rounded-lg"
+                          style={{ border: "1px solid rgba(83,49,208,0.35)", background: "rgba(2,0,23,0.7)", padding: 8 }}
+                        />
+                      ) : (
+                        <div
+                          className="h-16 w-32 rounded-lg flex items-center justify-center text-sm"
+                          style={{ border: "1px dashed rgba(155,150,218,0.4)", color: "rgba(155,150,218,0.5)" }}
+                        >
+                          Aucun logo
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => logoInputRef.current?.click()}
+                          className="px-4 py-2 rounded-xl text-sm font-semibold"
+                          style={{ background: "rgba(83,49,208,0.2)", border: "1px solid rgba(83,49,208,0.4)", color: "#9B96DA" }}
+                        >
+                          {magasin.logoUrl ? "Changer le logo" : "Choisir un logo"}
+                        </motion.button>
+                        {magasin.logoUrl && (
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={() => setMagasin((prev) => ({ ...prev, logoUrl: undefined }))}
+                            className="px-4 py-2 rounded-xl text-sm font-semibold"
+                            style={{ background: "rgba(236,72,153,0.1)", border: "1px solid rgba(236,72,153,0.3)", color: "#f472b6" }}
+                          >
+                            Supprimer
+                          </motion.button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs mt-2" style={{ color: "rgba(155,150,218,0.5)" }}>
+                      PNG, JPG ou SVG — apparaîtra dans l'en-tête de l'application
+                    </p>
+                  </div>
+
+                  {/* ── Couleur principale ── */}
+                  <div>
+                    <label className="block text-base font-semibold mb-2" style={{ color: "#9B96DA" }}>
+                      Couleur principale du magasin
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="color"
+                        value={magasin.couleurPrimaire || "#5331D0"}
+                        onChange={(e) => setMagasin((prev) => ({ ...prev, couleurPrimaire: e.target.value }))}
+                        className="h-12 w-20 rounded-lg cursor-pointer border-2"
+                        style={{ borderColor: "rgba(83,49,208,0.35)", background: "transparent" }}
+                      />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-lg font-bold" style={{ color: magasin.couleurPrimaire || "#5331D0" }}>
+                          {magasin.couleurPrimaire || "#5331D0"}
+                        </span>
+                        <span className="text-xs" style={{ color: "rgba(155,150,218,0.5)" }}>
+                          Sera appliquée aux boutons, titres et accents
+                        </span>
+                      </div>
+                      {magasin.couleurPrimaire && magasin.couleurPrimaire !== "#5331D0" && (
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => setMagasin((prev) => ({ ...prev, couleurPrimaire: "#5331D0" }))}
+                          className="px-3 py-1.5 rounded-xl text-xs font-semibold"
+                          style={{ background: "rgba(155,150,218,0.1)", border: "1px solid rgba(155,150,218,0.25)", color: "rgba(155,150,218,0.7)" }}
+                        >
+                          Réinitialiser
+                        </motion.button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <SaveButton onClick={sauvegarder} />
+                <SaveButton onClick={sauvegarder} label={savingMagasin ? "Sauvegarde…" : undefined} />
               </Card>
             </motion.div>
           )}
@@ -544,6 +828,141 @@ export default function ConfigPage() {
             </motion.div>
           )}
 
+          {/* ── ONGLET ÉQUIPE ── */}
+          {tab === "equipe" && (
+            <motion.div key="equipe" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <Card>
+                <CardTitle>Équipe du magasin</CardTitle>
+                <p className="text-sm mt-1 mb-5" style={{ color: "rgba(155,150,218,0.8)" }}>
+                  Chaque opticien se connecte avec son propre email et mot de passe. Le responsable voit les stats de toute l’équipe.
+                </p>
+
+                {/* Liste des membres */}
+                {teamLoading ? (
+                  <p className="text-base" style={{ color: "#9B96DA" }}>Chargement…</p>
+                ) : teamMembers.length === 0 ? (
+                  <p className="text-base" style={{ color: "rgba(155,150,218,0.6)" }}>Aucun membre trouvé.</p>
+                ) : (
+                  <div className="flex flex-col gap-3 mb-6">
+                    {teamMembers.map((m) => {
+                      const stats = teamStats.find((s) => s.userId === m.id);
+                      const roleStyle = ROLE_COLORS[m.role] ?? ROLE_COLORS["opticien"];
+                      const isAdmin = accountUser?.role === "admin" || accountUser?.role === "responsable";
+                      return (
+                        <div
+                          key={m.id}
+                          className="flex flex-col px-4 py-4 rounded-xl gap-2"
+                          style={{ background: "rgba(83,49,208,0.1)", border: "1px solid rgba(83,49,208,0.25)" }}
+                        >
+                          {/* En-tête membre */}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>{m.nom}</p>
+                              <p className="text-sm" style={{ color: "#9B96DA" }}>{m.email}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="text-xs px-2 py-1 rounded-full font-semibold"
+                                style={{ background: roleStyle.bg, color: roleStyle.text, border: `1px solid ${roleStyle.border}` }}
+                              >
+                                {ROLE_LABELS[m.role] ?? m.role}
+                              </span>
+                              {isAdmin && m.id !== accountUser?.id && (
+                                <button
+                                  onClick={() => deleteOpticien(m.id, m.nom)}
+                                  className="text-xs px-3 py-1 rounded-lg font-semibold"
+                                  style={{ background: "rgba(239,68,68,0.12)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.25)" }}
+                                >
+                                  Retirer
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Stats 30 derniers jours — affichées si disponibles */}
+                          {stats && (
+                            <div className="grid grid-cols-4 gap-2 mt-1">
+                              {[
+                                { label: "Devis", value: stats.devisMois },
+                                { label: "Ventes", value: stats.ventesMois },
+                                { label: "Convers.", value: `${stats.tauxConversion} %` },
+                                { label: "Panier moy.", value: `${stats.panierMoyen} €` },
+                              ].map(({ label, value }) => (
+                                <div key={label} className="flex flex-col items-center py-2 rounded-lg" style={{ background: "rgba(83,49,208,0.18)" }}>
+                                  <p className="text-sm font-bold" style={{ color: "#FDFDFE" }}>{value}</p>
+                                  <p className="text-xs" style={{ color: "rgba(155,150,218,0.7)" }}>{label}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Formulaire ajouter un membre — admin/responsable uniquement */}
+                {(accountUser?.role === "admin" || accountUser?.role === "responsable") && (
+                  <div
+                    className="mt-2 p-5 rounded-xl flex flex-col gap-4"
+                    style={{ background: "rgba(2,0,23,0.5)", border: "1px solid rgba(83,49,208,0.3)" }}
+                  >
+                    <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Ajouter un membre</p>
+                    {[
+                      { label: "Nom complet", value: newOpticienNom, setter: setNewOpticienNom, type: "text", placeholder: "Prénom Nom" },
+                      { label: "Email", value: newOpticienEmail, setter: setNewOpticienEmail, type: "email", placeholder: "opticien@magasin.fr" },
+                      { label: "Mot de passe", value: newOpticienPassword, setter: setNewOpticienPassword, type: "password", placeholder: "8 caractères min." },
+                    ].map(({ label, value, setter, type, placeholder }) => (
+                      <div key={label}>
+                        <label className="text-sm font-semibold mb-1 block" style={{ color: "#9B96DA" }}>{label}</label>
+                        <input
+                          type={type}
+                          value={value}
+                          onChange={(e) => setter(e.target.value)}
+                          placeholder={placeholder}
+                          className="w-full px-4 py-3 rounded-xl text-base border-2 outline-none transition-all"
+                          style={{ background: "rgba(2,0,23,0.7)", borderColor: "rgba(83,49,208,0.35)", color: "#FDFDFE" }}
+                          onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+                          onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
+                        />
+                      </div>
+                    ))}
+                    <div>
+                      <label className="text-sm font-semibold mb-1 block" style={{ color: "#9B96DA" }}>Rôle</label>
+                      <div className="flex gap-2 flex-wrap">
+                        {[
+                          { value: "opticien",    label: "Opticien" },
+                          { value: "responsable", label: "Responsable" },
+                          ...(accountUser?.role === "admin" ? [{ value: "admin", label: "Administrateur" }] : []),
+                        ].map((r) => (
+                          <button
+                            key={r.value}
+                            onClick={() => setNewOpticienRole(r.value)}
+                            className="flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition-all"
+                            style={{
+                              background: newOpticienRole === r.value ? "#5331D0" : "rgba(10,3,56,0.6)",
+                              borderColor: newOpticienRole === r.value ? "#7C5CE5" : "rgba(155,150,218,0.2)",
+                              color: "#FDFDFE",
+                            }}
+                          >
+                            {r.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs mt-2" style={{ color: "rgba(155,150,218,0.55)" }}>
+                        Opticien : fait les ventes. Responsable : gère l’équipe et voit toutes les stats.
+                      </p>
+                    </div>
+                    <SaveButton
+                      onClick={addOpticien}
+                      label={addingOpticien ? "Création…" : "Créer le compte"}
+                    />
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          )}
+
           {/* ── ONGLET COMPTE ── */}
           {tab === "compte" && (
             <motion.div key="compte" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
@@ -552,22 +971,22 @@ export default function ConfigPage() {
 
                 {/* Plan actif */}
                 <div
-                  className="mt-4 mb-2 flex items-center justify-between px-5 py-4 rounded-xl"
+                  className="mt-4 mb-2 flex flex-col gap-3 px-5 py-4 rounded-xl"
                   style={{ background: "rgba(83,49,208,0.18)", border: "1.5px solid rgba(83,49,208,0.45)" }}
                 >
                   <div>
                     <p className="text-sm font-semibold" style={{ color: "#9B96DA" }}>Plan actif</p>
                     <p className="text-xl font-black capitalize mt-0.5" style={{ color: accountUser?.plan === "trial" ? "#c4b5fd" : "#4ade80" }}>
-                      {accountUser?.plan === "trial" ? "Essai gratuit" : accountUser?.plan === "standard" ? "Standard" : accountUser?.plan === "premium" ? "Premium" : accountUser?.plan ?? "—"}
+                      {accountUser?.plan === "trial" ? "Mois offert" : accountUser?.plan === "standard" ? "Standard" : accountUser?.plan === "premium" ? "Premium" : accountUser?.plan ?? "—"}
                     </p>
                   </div>
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={() => router.push("/abonnement")}
-                    className="px-5 py-3 rounded-xl text-base font-bold"
-                    style={{ background: "linear-gradient(135deg,#5331D0,#9B96DA)", color: "#fff" }}
+                    className="w-full py-3 rounded-xl text-base font-bold"
+                    style={{ background: "linear-gradient(135deg,#5331D0,#7C5CE5)", color: "#fff", boxShadow: "0 4px 16px rgba(83,49,208,0.5)" }}
                   >
-                    Gérer l&apos;abonnement →
+                    💳 Gérer l&apos;abonnement →
                   </motion.button>
                 </div>
 
@@ -827,6 +1246,119 @@ export default function ConfigPage() {
             </motion.div>
           )}
 
+          {/* ── ONGLET SÉCURITÉ ── */}
+          {tab === "securite" && (
+            <motion.div key="securite" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <Card>
+                <CardTitle>Code PIN opticien</CardTitle>
+                <p className="text-base mt-2 mb-6" style={{ color: "rgba(155,150,218,0.65)" }}>
+                  Ce code à 4 chiffres protège l&apos;accès aux pages opticien (tableau de bord, config, devis...). Il est demandé dès que la tablette a été passée au client.
+                </p>
+
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: "#9B96DA" }}>Code actuel</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={currentPin}
+                      onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full px-4 py-3 rounded-xl text-lg tracking-[0.5em] text-center font-bold"
+                      style={{
+                        background: "rgba(83,49,208,0.12)",
+                        border: "1px solid rgba(83,49,208,0.35)",
+                        color: "#FDFDFE",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: "#9B96DA" }}>Nouveau code (4 chiffres)</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full px-4 py-3 rounded-xl text-lg tracking-[0.5em] text-center font-bold"
+                      style={{
+                        background: "rgba(83,49,208,0.12)",
+                        border: "1px solid rgba(83,49,208,0.35)",
+                        color: "#FDFDFE",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: "#9B96DA" }}>Confirmer le nouveau code</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full px-4 py-3 rounded-xl text-lg tracking-[0.5em] text-center font-bold"
+                      style={{
+                        background: "rgba(83,49,208,0.12)",
+                        border: "1px solid rgba(83,49,208,0.35)",
+                        color: "#FDFDFE",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+
+                  {pinMsg && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm text-center font-semibold"
+                      style={{ color: pinMsg.ok ? "#a855f7" : "#ef4444" }}
+                    >
+                      {pinMsg.text}
+                    </motion.p>
+                  )}
+
+                  <SaveButton
+                    onClick={() => {
+                      const stored = getStoredPin();
+                      if (currentPin !== stored) {
+                        setPinMsg({ text: "Code actuel incorrect.", ok: false });
+                        setTimeout(() => setPinMsg(null), 3000);
+                        return;
+                      }
+                      if (newPin.length !== 4) {
+                        setPinMsg({ text: "Le nouveau code doit contenir exactement 4 chiffres.", ok: false });
+                        setTimeout(() => setPinMsg(null), 3000);
+                        return;
+                      }
+                      if (newPin !== confirmPin) {
+                        setPinMsg({ text: "Les deux codes ne correspondent pas.", ok: false });
+                        setTimeout(() => setPinMsg(null), 3000);
+                        return;
+                      }
+                      savePin(newPin);
+                      setPinMsg({ text: "Code PIN mis à jour avec succès.", ok: true });
+                      setCurrentPin(""); setNewPin(""); setConfirmPin("");
+                      setTimeout(() => setPinMsg(null), 4000);
+                    }}
+                    label="Changer le code PIN"
+                  />
+                </div>
+
+                <div className="mt-6 pt-4" style={{ borderTop: "1px solid rgba(83,49,208,0.25)" }}>
+                  <p className="text-xs" style={{ color: "rgba(155,150,218,0.55)" }}>
+                    Code par défaut : <strong style={{ color: "rgba(167,139,250,0.7)" }}>1234</strong> — modifiez-le dès votre première utilisation.
+                    Le code est stocké localement sur cet appareil.
+                  </p>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
@@ -851,6 +1383,7 @@ export default function ConfigPage() {
         )}
       </AnimatePresence>
     </div>
+    </OpticianGuard>
   );
 }
 

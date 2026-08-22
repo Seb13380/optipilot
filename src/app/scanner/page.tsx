@@ -4,6 +4,137 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
 import { analyserOrdonnance } from "@/lib/analyseOrdonnance";
+import { useApp } from "@/lib/AppContext";
+
+// ─── Utilitaires transformation de perspective ────────────────────────────────
+
+function gaussElim(A: number[][], b: number[]): number[] {
+  const n = A.length;
+  const M = A.map((row, i) => [...row, b[i]]);
+  for (let col = 0; col < n; col++) {
+    let max = col;
+    for (let r = col + 1; r < n; r++) if (Math.abs(M[r][col]) > Math.abs(M[max][col])) max = r;
+    [M[col], M[max]] = [M[max], M[col]];
+    for (let r = col + 1; r < n; r++) {
+      const f = M[r][col] / M[col][col];
+      for (let j = col; j <= n; j++) M[r][j] -= f * M[col][j];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n - 1; i >= 0; i--) {
+    x[i] = M[i][n] / M[i][i];
+    for (let j = i + 1; j < n; j++) x[i] -= M[i][j] * x[j] / M[i][i];
+  }
+  return x;
+}
+
+function computeH(src: [number,number][], dst: [number,number][]): number[] {
+  const A: number[][] = [];
+  const b: number[] = [];
+  for (let i = 0; i < 4; i++) {
+    const [sx, sy] = src[i], [dx, dy] = dst[i];
+    A.push([sx,sy,1,0,0,0,-dx*sx,-dx*sy]); b.push(dx);
+    A.push([0,0,0,sx,sy,1,-dy*sx,-dy*sy]); b.push(dy);
+  }
+  const h = gaussElim(A, b);
+  return [...h, 1];
+}
+
+function applyH(H: number[], x: number, y: number): [number,number] {
+  const w = H[6]*x + H[7]*y + H[8];
+  return [(H[0]*x + H[1]*y + H[2])/w, (H[3]*x + H[4]*y + H[5])/w];
+}
+
+function ptDist(a: [number,number], b: [number,number]) { return Math.hypot(a[0]-b[0], a[1]-b[1]); }
+
+/** Applique la correction de perspective et retourne une data URL JPEG. */
+function warpPerspective(imageSrc: string, corners: [number,number][]): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      // Réduire à 1400px max pour performance
+      const scale = Math.min(1, 1400 / Math.max(img.width, img.height));
+      const iw = Math.round(img.width * scale), ih = Math.round(img.height * scale);
+      const scaledCorners = corners.map(([x,y]) => [x*scale, y*scale] as [number,number]);
+      const [tl, tr, br, bl] = scaledCorners;
+      const outW = Math.round(Math.max(ptDist(tl,tr), ptDist(bl,br)));
+      const outH = Math.round(Math.max(ptDist(tl,bl), ptDist(tr,br)));
+      const dstC: [number,number][] = [[0,0],[outW,0],[outW,outH],[0,outH]];
+      const H = computeH(dstC, scaledCorners); // inverse mapping
+
+      const srcC = document.createElement("canvas");
+      srcC.width = iw; srcC.height = ih;
+      srcC.getContext("2d")!.drawImage(img, 0, 0, iw, ih);
+      const srcD = srcC.getContext("2d")!.getImageData(0, 0, iw, ih).data;
+
+      const outC = document.createElement("canvas");
+      outC.width = outW; outC.height = outH;
+      const outCtx = outC.getContext("2d")!;
+      const outImg = outCtx.createImageData(outW, outH);
+
+      for (let y = 0; y < outH; y++) {
+        for (let x = 0; x < outW; x++) {
+          const [sx, sy] = applyH(H, x, y);
+          const x0 = Math.floor(sx), y0 = Math.floor(sy);
+          const dx = sx-x0, dy = sy-y0;
+          const px = (xx: number, yy: number, c: number) =>
+            (xx>=0&&xx<iw&&yy>=0&&yy<ih) ? srcD[(yy*iw+xx)*4+c] : 0;
+          const oi = (y*outW+x)*4;
+          for (let c=0;c<3;c++) {
+            outImg.data[oi+c] = Math.round(
+              px(x0,y0,c)*(1-dx)*(1-dy) + px(x0+1,y0,c)*dx*(1-dy) +
+              px(x0,y0+1,c)*(1-dx)*dy   + px(x0+1,y0+1,c)*dx*dy
+            );
+          }
+          outImg.data[oi+3] = 255;
+        }
+      }
+      outCtx.putImageData(outImg, 0, 0);
+      resolve(outC.toDataURL("image/jpeg", 0.93));
+    };
+    img.src = imageSrc;
+  });
+}
+
+// ─── Auto-détection des bords du document ─────────────────────────────────────
+/** Détecte automatiquement les coins du document (fond sombre, document blanc). */
+function autoDetectCorners(imageSrc: string): Promise<[number,number][]> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 480 / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+      const { data } = ctx.getImageData(0, 0, w, h);
+      const lum = (x: number, y: number) => {
+        const i = (y * w + x) * 4;
+        return 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+      };
+      const THRESH = 145;
+      const rowFrac  = (y: number, x0: number, x1: number) => { let n=0; for(let x=x0;x<x1;x++) if(lum(x,y)>THRESH) n++; return n/(x1-x0); };
+      const colFrac  = (x: number, y0: number, y1: number) => { let n=0; for(let y=y0;y<y1;y++) if(lum(x,y)>THRESH) n++; return n/(y1-y0); };
+      const mx1 = Math.floor(w*0.15), mx2 = Math.ceil(w*0.85);
+      const my1 = Math.floor(h*0.15), my2 = Math.ceil(h*0.85);
+      let top=0.03, bottom=0.97, left=0.03, right=0.97;
+      for(let y=0;y<h;y++)        { if(rowFrac(y,mx1,mx2)>0.55){ top=y/h; break; } }
+      for(let y=h-1;y>=0;y--)    { if(rowFrac(y,mx1,mx2)>0.55){ bottom=y/h; break; } }
+      for(let x=0;x<w;x++)        { if(colFrac(x,my1,my2)>0.45){ left=x/w; break; } }
+      for(let x=w-1;x>=0;x--)    { if(colFrac(x,my1,my2)>0.45){ right=x/w; break; } }
+      const valid = (right-left)>0.3 && (bottom-top)>0.3;
+      const m = 0.01;
+      resolve(valid ? [
+        [Math.max(0.01,left-m), Math.max(0.01,top-m)],
+        [Math.min(0.99,right+m), Math.max(0.01,top-m)],
+        [Math.min(0.99,right+m), Math.min(0.99,bottom+m)],
+        [Math.max(0.01,left-m), Math.min(0.99,bottom+m)],
+      ] : [[0.04,0.04],[0.96,0.04],[0.96,0.96],[0.04,0.96]]);
+    };
+    img.src = imageSrc;
+  });
+}
 
 interface OrdonnanceData {
   civilite?: string;
@@ -24,12 +155,16 @@ interface OrdonnanceData {
 
 type Step = "camera" | "preview" | "result";
 
-// Seuil de stabilité : différence moyenne de pixels entre 2 frames
-const STABILITY_THRESHOLD = 8;
-const STABLE_FRAMES_NEEDED = 12; // ~1.2s à 10fps
+// Seuil de stabilité assoupli — moins strict pour personnes âgées / cartes
+const STABILITY_THRESHOLD = 28; // était 8
+const STABLE_FRAMES_NEEDED = 5;  // était 12 (~0.5s à 10fps)
+const AUTO_CAPTURE_TIMEOUT_MS = 6000; // capture forcée après 6s si pas stable
+
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
 
 export default function ScannerPage() {
   const router = useRouter();
+  const { t } = useApp();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const prevFrameRef = useRef<ImageData | null>(null);
@@ -42,16 +177,43 @@ export default function ScannerPage() {
   const [scanning, setScanning] = useState(false);
   const [ordonnance, setOrdonnance] = useState<OrdonnanceData>({});
   const [cameraStarted, setCameraStarted] = useState(false);
+  const [videoRotation, setVideoRotation] = useState(0); // 0 ou 90 — correction rotation iOS
+  const videoRotationRef = useRef(0);
   const [scanError, setScanError] = useState("");
   const [stableProgress, setStableProgress] = useState(0); // 0-100
   const [autoCapturing, setAutoCapturing] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [magasinNom, setMagasinNom] = useState("");
+  const [champsIncertains, setChampsIncertains] = useState<string[]>([]);
+  // Coins de recadrage (fraction 0-1 de l'image affichée) : TL, TR, BR, BL
+  const [corners, setCorners] = useState<[number,number][]>([[0.04,0.04],[0.96,0.04],[0.96,0.96],[0.04,0.96]]);
+  const [draggingIdx, setDraggingIdx] = useState<number|null>(null);
+  const previewImgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("optipilot_user") || "{}");
     if (user.magasinNom) setMagasinNom(user.magasinNom);
   }, []);
+
+  // Synchronise la ref (accessible dans les callbacks)
+  useEffect(() => { videoRotationRef.current = videoRotation; }, [videoRotation]);
+
+  // Rotation iOS : le flux physique est TOUJOURS paysage — rotation selon orientation écran
+  useEffect(() => {
+    if (!cameraStarted) return;
+    const apply = () => {
+      // Le flux iOS est déjà correctement orienté — pas de rotation nécessaire
+      setVideoRotation(0);
+      videoRotationRef.current = 0;
+    };
+    apply();
+    window.addEventListener("orientationchange", apply);
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("orientationchange", apply);
+      window.removeEventListener("resize", apply);
+    };
+  }, [cameraStarted]);
 
   // Calcul de la différence entre deux frames
   function frameDiff(a: ImageData, b: ImageData): number {
@@ -63,37 +225,55 @@ export default function ScannerPage() {
     return total / (len / 16);
   }
 
-  const captureAndAnalyse = useCallback(() => {
+  const captureAndAnalyse = useCallback((force = false) => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
+    if (!video.videoWidth || video.videoWidth === 0) return;
+    if (video.readyState < 4) return;
 
-    const w = video.videoWidth || 1280;
-    const h = video.videoHeight || 720;
-    canvas.width = w;
-    canvas.height = h;
+    const rawW = video.videoWidth;
+    const rawH = video.videoHeight || 720;
 
+    // Capture brute : drawImage direct, sans rotation canvas (évite les bugs iOS)
+    canvas.width = rawW; canvas.height = rawH;
     const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(video, 0, 0, w, h);
+    ctx.drawImage(video, 0, 0, rawW, rawH);
+    const outW = rawW, outH = rawH;
 
-    // Prétraitement : contraste fort + netteté pour manuscrit et imprimé
-    // On upscale ×2 si résolution native < 1600px pour améliorer la lisibilité GPT
-    const scale = w < 1600 ? 2 : 1;
+    // Vérifier que le contenu capturé n'est pas noir
+    if (!force) {
+      const sampleCtx = canvas.getContext("2d")!;
+      const sample = sampleCtx.getImageData(0, 0, Math.min(outW, 80), Math.min(outH, 60));
+      let bright = 0;
+      for (let i = 0; i < sample.data.length; i += 4) bright += sample.data[i];
+      if ((bright / (sample.data.length / 4)) < 12) {
+        stableCountRef.current = 0;
+        setStableProgress(0);
+        prevFrameRef.current = null;
+        setAutoCapturing(false);
+        setTimeout(startStabilityLoop, 1000);
+        return;
+      }
+    }
+
+    const scale = outW < 1600 ? 2 : 1;
     const tmpCanvas = document.createElement("canvas");
-    tmpCanvas.width = w * scale;
-    tmpCanvas.height = h * scale;
+    tmpCanvas.width = outW * scale;
+    tmpCanvas.height = outH * scale;
     const tmpCtx = tmpCanvas.getContext("2d")!;
-    // Contraste élevé : encre foncée sur fond clair (imprimé ET manuscrit)
     tmpCtx.filter = "contrast(160%) brightness(102%) saturate(70%)";
-    tmpCtx.drawImage(canvas, 0, 0, w * scale, h * scale);
+    tmpCtx.drawImage(canvas, 0, 0, outW * scale, outH * scale);
     tmpCtx.filter = "none";
 
-    // JPEG haute qualité (0.98 pour perdre le moins possible de netteté)
-    const dataUrl = tmpCanvas.toDataURL("image/jpeg", 0.98);
-    setImageDataUrl(dataUrl);
+    const rawDataUrl = tmpCanvas.toDataURL("image/jpeg", 0.98);
+
+    // Pas de rotation post-capture : le flux iOS est déjà portrait
+    setImageDataUrl(rawDataUrl);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (autoScanTimerRef.current) clearInterval(autoScanTimerRef.current);
     setStep("preview");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Boucle de détection de stabilité
@@ -109,7 +289,7 @@ export default function ScannerPage() {
 
     autoScanTimerRef.current = setInterval(() => {
       const video = videoRef.current;
-      if (!video || video.readyState < 2) return;
+      if (!video || video.readyState < 4) return;
 
       ctx.drawImage(video, 0, 0, 80, 60);
       const frame = ctx.getImageData(0, 0, 80, 60);
@@ -139,21 +319,43 @@ export default function ScannerPage() {
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       streamRef.current = stream;
+      const attach = (video: HTMLVideoElement) => {
+        video.srcObject = stream;
+        video.play().catch(() => {});
+        setCameraStarted(true);
+        setTimeout(startStabilityLoop, 2500); // délai mise au point caméra iOS
+      };
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-          setCameraStarted(true);
-          setTimeout(startStabilityLoop, 800);
-        };
+        attach(videoRef.current);
+      } else {
+        setTimeout(() => { if (videoRef.current) attach(videoRef.current!); }, 150);
       }
     } catch {
       setCameraStarted(false);
     }
   }, [startStabilityLoop]);
+
+  // Auto-démarrage caméra
+  useEffect(() => { startCamera(); }, [startCamera]);
+
+  // Fallback : capture forcée après AUTO_CAPTURE_TIMEOUT_MS si la stabilité n'est pas atteinte
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!cameraStarted) return;
+    fallbackTimerRef.current = setTimeout(() => {
+      if (step === "camera") captureAndAnalyse(true);
+    }, AUTO_CAPTURE_TIMEOUT_MS);
+    return () => { if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current); };
+  }, [cameraStarted, captureAndAnalyse, step]);
+
+  // Auto-détection des bords dès qu'une image est capturée
+  useEffect(() => {
+    if (step !== "preview" || !imageDataUrl) return;
+    autoDetectCorners(imageDataUrl).then((detected) => setCorners(detected));
+  }, [step, imageDataUrl]);
 
   // Nettoyage à la sortie de la page
   useEffect(() => {
@@ -168,10 +370,25 @@ export default function ScannerPage() {
     setScanError("");
     setStep("result");
     try {
+      // Appliquer la correction de perspective avant envoi
+      const img = previewImgRef.current;
+      let imageToSend = imageDataUrl;
+      if (img && imageDataUrl) {
+        const natW = img.naturalWidth || img.width;
+        const natH = img.naturalHeight || img.height;
+        const displayW = img.clientWidth || img.offsetWidth;
+        const displayH = img.clientHeight || img.offsetHeight;
+        if (natW > 0 && displayW > 0) {
+          const scaleX = natW / displayW;
+          const scaleY = natH / displayH;
+          const pixelCorners = corners.map(([fx, fy]) => [fx * displayW * scaleX, fy * displayH * scaleY] as [number,number]);
+          imageToSend = await warpPerspective(imageDataUrl, pixelCorners);
+        }
+      }
       const res = await fetch("/api/scan-ordonnance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: imageDataUrl }),
+        body: JSON.stringify({ image: imageToSend }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -179,6 +396,7 @@ export default function ScannerPage() {
         setOrdonnance({});
       } else if (data.ordonnance) {
         setOrdonnance(data.ordonnance);
+        setChampsIncertains(data.champsIncertains || []);
       }
     } catch {
       setScanError("Erreur réseau. Vérifiez votre connexion.");
@@ -193,7 +411,7 @@ export default function ScannerPage() {
     try {
       const client = JSON.parse(localStorage.getItem("optipilot_client") || "{}");
       if (client.id) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ordonnances`, {
+        const res = await fetch(`${BACKEND}/api/ordonnances`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -218,7 +436,7 @@ export default function ScannerPage() {
         if (res.ok) localStorage.setItem("optipilot_ordonnance_db", JSON.stringify(ordo));
       }
     } catch { /* Continue sans backend */ }
-    router.push("/questionnaire");
+    router.push("/client/mutuelle");
   }
 
   function resetCamera() {
@@ -230,6 +448,8 @@ export default function ScannerPage() {
     setStableProgress(0);
     stableCountRef.current = 0;
     prevFrameRef.current = null;
+    setCorners([[0.04,0.04],[0.96,0.04],[0.96,0.96],[0.04,0.96]]);
+    setDraggingIdx(null);
   }
 
   function normaliseCivilite(c?: string): string {
@@ -242,7 +462,7 @@ export default function ScannerPage() {
 
   return (
     <div className="page-bg min-h-screen flex flex-col">
-      <OptiPilotHeader title="Scanner l'ordonnance" showBack onBack={() => router.push("/dashboard")} />
+      <OptiPilotHeader title={t.scanTitle} showBack onBack={() => router.push("/dashboard")} />
 
       <main className="flex-1 flex flex-col px-5 pt-5 pb-8 w-full">
         <AnimatePresence mode="wait">
@@ -252,22 +472,54 @@ export default function ScannerPage() {
             <motion.div key="camera" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
 
               {/* Conseils de scan */}
-              <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: "rgba(83,49,208,0.15)", border: "1px solid rgba(83,49,208,0.3)" }}>
+              <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(83,49,208,0.25)", backdropFilter: "blur(6px)" }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
                   <circle cx="12" cy="12" r="10" stroke="#9B96DA" strokeWidth="2"/>
                   <path d="M12 8v4M12 16h.01" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
                 <div>
-                  <p className="text-sm font-bold" style={{ color: "#9B96DA" }}>Conseils pour un scan réussi</p>
-                  <p className="text-sm mt-1 leading-relaxed" style={{ color: "rgba(155,150,218,0.8)" }}>
-                    Posez l&apos;ordonnance sur une surface plane · bonne lumière (pas de reflet) · la capture est automatique dès que l&apos;image est stable
+                  <p className="text-sm font-bold" style={{ color: "#5331D0" }}>{t.scanTips}</p>
+                  <p className="text-sm mt-1 leading-relaxed" style={{ color: "#6b7280" }}>
+                    {t.scanTipsBody}
                   </p>
                 </div>
               </div>
 
-              {/* Viewfinder */}
-              <div className="rounded-2xl overflow-hidden relative shadow-lg" style={{ background: "#000", minHeight: 300 }}>
-                <video ref={videoRef} className="w-full object-cover" style={{ minHeight: 300, display: cameraStarted ? "block" : "none" }} playsInline muted />
+              {/* Viewfinder — toujours portrait (ratio 3/4), largeur limitée en paysage */}
+              <div
+                className="rounded-2xl overflow-hidden relative shadow-lg"
+                style={{
+                  background: "#000",
+                  width: "100%",
+                  maxWidth: "min(100%, calc(58vh * 0.75))",
+                  aspectRatio: "3/4",
+                  maxHeight: "58vh",
+                  margin: "0 auto",
+                }}
+              >
+                {/* Wrapper div pour rotation */}
+                <div style={videoRotation !== 0 ? {
+                  position: "absolute",
+                  top: "50%", left: "50%",
+                  width: "100vmax",
+                  height: "100vmax",
+                  transform: "translate(-50%, -50%) rotate(90deg)",
+                  transformOrigin: "center center",
+                } : {
+                  position: "absolute", inset: 0,
+                }}>
+                  <video
+                    ref={videoRef}
+                    playsInline
+                    muted
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: cameraStarted ? "block" : "none",
+                    }}
+                  />
+                </div>
                 <canvas ref={canvasRef} className="hidden" />
 
                 {/* Cadre de guidage bien visible */}
@@ -291,16 +543,16 @@ export default function ScannerPage() {
                 {cameraStarted && (
                   <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-6" style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.75))" }}>
                     {autoCapturing ? (
-                      <p className="text-center font-bold text-xl" style={{ color: "#22c55e" }}>✓ Capture en cours…</p>
+                      <p className="text-center font-bold text-xl" style={{ color: "#22c55e" }}>{t.captureInProgress}</p>
                     ) : stableProgress > 0 ? (
                       <>
-                        <p className="text-center font-bold text-lg text-white mb-2">Ne bougez plus…</p>
+                        <p className="text-center font-bold text-lg text-white mb-2">{t.holdStill}</p>
                         <div className="w-full h-2 rounded-full" style={{ background: "rgba(255,255,255,0.2)" }}>
                           <div className="h-2 rounded-full transition-all" style={{ width: `${stableProgress}%`, background: stableProgress > 70 ? "#22c55e" : "#facc15" }} />
                         </div>
                       </>
                     ) : (
-                      <p className="text-center font-bold text-xl text-white">Placez l'ordonnance dans le cadre</p>
+                      <p className="text-center font-bold text-xl text-white">{t.placeInFrame}</p>
                     )}
                   </div>
                 )}
@@ -314,8 +566,8 @@ export default function ScannerPage() {
                         <circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.5" />
                       </svg>
                     </div>
-                    <p className="text-white font-bold text-2xl text-center">Appareil photo</p>
-                    <p className="font-semibold text-lg text-center" style={{ color: "#9B96DA" }}>La photo sera prise automatiquement</p>
+                    <p className="text-white font-bold text-2xl text-center">{t.cameraTitle}</p>
+                    <p className="font-semibold text-lg text-center" style={{ color: "#9B96DA" }}>{t.autoCapture}</p>
                   </div>
                 )}
               </div>
@@ -326,43 +578,117 @@ export default function ScannerPage() {
                   <motion.button whileTap={{ scale: 0.97 }} onClick={startCamera}
                     className="py-5 rounded-2xl text-white font-bold text-xl"
                     style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                    📸 Démarrer la caméra
+                    {t.enableCamera}
                   </motion.button>
                 ) : (
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={captureAndAnalyse}
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => captureAndAnalyse(true)}
                     className="py-4 rounded-2xl font-bold text-lg"
                     style={{ background: "rgba(83,49,208,0.15)", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.4)" }}>
-                    📷 Capturer manuellement
+                    {t.captureManually}
                   </motion.button>
                 )}
               </div>
             </motion.div>
           )}
 
-          {/* ── ÉTAPE 2 : APERÇU ── */}
+          {/* ── ÉTAPE 2 : APERÇU + RECADRAGE ── */}
           {step === "preview" && (
-            <motion.div key="preview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
-              <p className="text-center font-bold text-xl" style={{ color: "#FDFDFE" }}>Vérifiez la photo</p>
-              <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: "rgba(10,3,56,0.8)", minHeight: 280 }}>
-                {imageDataUrl ? (
-                  <img src={imageDataUrl} alt="Ordonnance" className="w-full object-contain" style={{ maxHeight: 400 }} />
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-10 gap-3" style={{ minHeight: 280 }}>
-                    <span className="text-7xl">📄</span>
-                    <p className="font-bold text-xl text-white">Document prêt</p>
-                  </div>
-                )}
+            <motion.div key="preview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
+              <div>
+                <p className="text-center font-bold text-xl mb-1" style={{ color: "#111827" }}>Cadrez l'ordonnance</p>
+                <p className="text-center text-sm" style={{ color: "#6b7280" }}>Document détecté · ajustez les coins si besoin</p>
               </div>
+              {/* Conteneur image + overlay SVG */}
+              <div
+                className="rounded-2xl overflow-hidden shadow-md relative"
+                style={{ background: "#000", touchAction: "none", userSelect: "none" }}
+                onPointerMove={(e) => {
+                  if (draggingIdx === null) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = Math.max(0.01, Math.min(0.99, (e.clientX - rect.left) / rect.width));
+                  const y = Math.max(0.01, Math.min(0.99, (e.clientY - rect.top) / rect.height));
+                  setCorners(prev => prev.map((c, i) => i === draggingIdx ? [x, y] : c) as [number,number][]);
+                }}
+                onPointerUp={() => setDraggingIdx(null)}
+                onPointerLeave={() => setDraggingIdx(null)}
+              >
+                {imageDataUrl && (
+                  <img
+                    ref={previewImgRef}
+                    src={imageDataUrl}
+                    alt="Ordonnance"
+                    style={{ width: "100%", display: "block", maxHeight: "60vh", objectFit: "contain" }}
+                  />
+                )}
+                {/* Overlay SVG avec coins déplaçables */}
+                <svg
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible" }}
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  {/* Zone sombre hors recadrage */}
+                  <defs>
+                    <mask id="cropMask">
+                      <rect width="100" height="100" fill="white" />
+                      <polygon
+                        points={corners.map(([x,y]) => `${x*100},${y*100}`).join(" ")}
+                        fill="black"
+                      />
+                    </mask>
+                  </defs>
+                  <rect width="100" height="100" fill="rgba(0,0,0,0.5)" mask="url(#cropMask)" />
+                  {/* Contour du quadrilatère */}
+                  <polygon
+                    points={corners.map(([x,y]) => `${x*100},${y*100}`).join(" ")}
+                    fill="none"
+                    stroke="#5331D0"
+                    strokeWidth="0.6"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+                {/* Poignées de coin (DOM, pas SVG, pour pointer events fiables) */}
+                {corners.map(([x, y], i) => (
+                  <div
+                    key={i}
+                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setDraggingIdx(i); }}
+                    style={{
+                      position: "absolute",
+                      left: `${x * 100}%`,
+                      top: `${y * 100}%`,
+                      transform: "translate(-50%, -50%)",
+                      width: 36, height: 36,
+                      borderRadius: "50%",
+                      background: "#fff",
+                      border: "3px solid #5331D0",
+                      boxShadow: "0 2px 8px rgba(83,49,208,0.4)",
+                      cursor: "grab",
+                      touchAction: "none",
+                      zIndex: 10,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#5331D0" }} />
+                  </div>
+                ))}
+              </div>
+              {/* Bouton reset coins */}
+              <button
+                onClick={() => setCorners([[0.04,0.04],[0.96,0.04],[0.96,0.96],[0.04,0.96]])}
+                className="text-sm text-center"
+                style={{ color: "#9ca3af" }}
+              >
+                ↺ Réinitialiser le cadrage
+              </button>
               <div className="flex gap-3">
                 <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                   className="flex-1 py-5 rounded-2xl font-bold text-lg"
                   style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}>
-                  ↩ Reprendre
+                  {t.retake}
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={analyseOrdonnance}
                   className="flex-1 py-5 rounded-2xl text-white font-bold text-lg"
                   style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                  🤖 Analyser
+                  {t.analyze}
                 </motion.button>
               </div>
             </motion.div>
@@ -378,20 +704,23 @@ export default function ScannerPage() {
                       <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" />
                     </svg>
                   </div>
-                  <p className="text-2xl font-bold text-white">Analyse en cours…</p>
-                  <p className="text-lg" style={{ color: "#9B96DA" }}>L'IA lit votre ordonnance</p>
+                  <p className="text-2xl font-bold text-white">{t.analyzingPrescription}</p>
+                  <p className="text-lg" style={{ color: "#9B96DA" }}>{t.aiReading}</p>
                 </div>
               ) : scanError ? (
                 <div className="flex flex-col gap-5">
                   <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(239,68,68,0.1)", border: "2px solid rgba(239,68,68,0.4)" }}>
-                    <p className="text-2xl mb-2">⚠️</p>
-                    <p className="font-bold text-xl text-white mb-1">Lecture impossible</p>
+                    <svg width="36" height="36" fill="none" viewBox="0 0 24 24" className="mx-auto mb-3" style={{ color: "#ef4444" }}>
+                      <path d="M12 9v4M12 17h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+                      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="font-bold text-xl text-white mb-1">{t.cannotRead}</p>
                     <p className="text-lg" style={{ color: "#fca5a5" }}>{scanError}</p>
                   </div>
                   <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                     className="py-5 rounded-2xl text-white font-bold text-xl"
                     style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                    📸 Reprendre le scan
+                    {t.retryScan}
                   </motion.button>
                 </div>
               ) : (
@@ -400,7 +729,7 @@ export default function ScannerPage() {
                     <div className="flex items-center gap-3 mb-5">
                       <span className="px-3 py-1.5 rounded-full font-bold text-base text-white" style={{ background: editMode ? "#ec4899" : "#22c55e" }}>
                       </span>
-                      <h2 className="text-xl font-bold" style={{ color: "#FDFDFE" }}>Résultats de l'ordonnance</h2>
+                      <h2 className="text-xl font-bold" style={{ color: "#FDFDFE" }}>{t.prescriptionResults}</h2>
                     </div>
 
                     {/* ─── Analyse clinique ─── */}
@@ -423,7 +752,7 @@ export default function ScannerPage() {
                               </svg>
                             </div>
                             <div className="flex-1">
-                              <p className="text-base font-bold uppercase tracking-wider" style={{ color: analyse.couleur }}>Analyse OptiPilot</p>
+                              <p className="text-base font-bold uppercase tracking-wider" style={{ color: analyse.couleur }}>{t.analyzeTitle}</p>
                               <p className="text-2xl font-black" style={{ color: "#FDFDFE" }}>
                                 {analyse.typeCorrection}
                                 <span className="ml-2 text-lg font-semibold px-3 py-1 rounded-full" style={{ background: `${analyse.couleur}20`, color: analyse.couleur }}>
@@ -457,13 +786,13 @@ export default function ScannerPage() {
                           {/* Indice + Type verre */}
                           <div className="flex gap-3 mt-3">
                             <div className="flex-1 rounded-xl p-2.5 text-center" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.25)" }}>
-                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Indice recommandé</p>
+                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>{t.recommendedIndex}</p>
                               <p className="text-lg font-bold mt-1" style={{ color: "#FDFDFE" }}>{analyse.indiceRecommande}</p>
                             </div>
                             <div className="flex-1 rounded-xl p-2.5 text-center" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.25)" }}>
-                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>Type de verre</p>
+                              <p className="text-base font-semibold" style={{ color: "rgba(155,150,218,0.6)" }}>{t.lensTypeLabel}</p>
                               <p className="text-lg font-bold mt-1" style={{ color: "#FDFDFE" }}>
-                                {analyse.typeVerre === "progressif" ? "Progressif" : "Unifocal"}
+                                {analyse.typeVerre === "progressif" ? t.progressive : t.unifocal}
                                 {analyse.presbytie && <span className="text-base ml-1" style={{ color: analyse.couleur }}>({analyse.presbytie})</span>}
                               </p>
                             </div>
@@ -475,7 +804,7 @@ export default function ScannerPage() {
                     {/* Bienvenue + édition patient en mode correction */}
                     {editMode ? (
                       <div className="mb-4 rounded-xl p-4 flex flex-col gap-3" style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.3)" }}>
-                        <p className="text-sm font-bold" style={{ color: "#f472b6" }}>Correction du patient</p>
+                        <p className="text-sm font-bold" style={{ color: "#f472b6" }}>{t.patientEdit}</p>
                         <div className="flex gap-2">
                           <select value={ordonnance.civilite || ""}
                             onChange={(e) => setOrdonnance((p) => ({ ...p, civilite: e.target.value }))}
@@ -498,22 +827,22 @@ export default function ScannerPage() {
                     ) : (ordonnance.nomPatient || ordonnance.prenomPatient) && (
                       <div className="mb-4 px-4 py-3 rounded-xl" style={{ background: "rgba(83,49,208,0.15)", border: "1px solid rgba(83,49,208,0.3)" }}>
                         <p className="font-bold text-xl" style={{ color: "#FDFDFE" }}>
-                          {normaliseCivilite(ordonnance.civilite)} {[ordonnance.prenomPatient, ordonnance.nomPatient].filter(Boolean).join(" ")}{magasinNom ? `, Bienvenue chez ${magasinNom}` : ", Bienvenue !"}
+                          {normaliseCivilite(ordonnance.civilite)} {[ordonnance.prenomPatient, ordonnance.nomPatient].filter(Boolean).join(" ")}{magasinNom ? `, ${t.welcomeAt} ${magasinNom}` : `, ${t.welcomeExcl}`}
                         </p>
                       </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-4">
-                      <OrdonnanceSection label="OD — Œil Droit" sphere={ordonnance.odSphere} cylindre={ordonnance.odCylindre} axe={ordonnance.odAxe} addition={ordonnance.odAddition} color="#5331D0"
+                      <OrdonnanceSection label={t.rightEye} sphere={ordonnance.odSphere} cylindre={ordonnance.odCylindre} axe={ordonnance.odAxe} addition={ordonnance.odAddition} color="#5331D0"
                         onChange={(field, val) => setOrdonnance((prev) => ({ ...prev, [`od${field.charAt(0).toUpperCase() + field.slice(1)}`]: val }))} />
-                      <OrdonnanceSection label="OG — Œil Gauche" sphere={ordonnance.ogSphere} cylindre={ordonnance.ogCylindre} axe={ordonnance.ogAxe} addition={ordonnance.ogAddition} color="#5331D0"
+                      <OrdonnanceSection label={t.leftEye} sphere={ordonnance.ogSphere} cylindre={ordonnance.ogCylindre} axe={ordonnance.ogAxe} addition={ordonnance.ogAddition} color="#5331D0"
                         onChange={(field, val) => setOrdonnance((prev) => ({ ...prev, [`og${field.charAt(0).toUpperCase() + field.slice(1)}`]: val }))} />
                     </div>
 
                     <div className="mt-4 flex flex-col gap-2">
                       {editMode ? (
                         <>
-                          <p className="text-sm font-bold mb-1" style={{ color: "#f472b6" }}>Correction du médecin et de la date</p>
+                          <p className="text-sm font-bold mb-1" style={{ color: "#f472b6" }}>{t.doctorEdit}</p>
                           <input value={ordonnance.prescripteur || ""} placeholder="Dr. Prénom NOM"
                             onChange={(e) => setOrdonnance((p) => ({ ...p, prescripteur: e.target.value }))}
                             className="w-full px-3 py-2 rounded-lg text-base outline-none"
@@ -553,12 +882,52 @@ export default function ScannerPage() {
                     </div>
                   </div>
 
+                  {/* Champs non lus par l'OCR — invite à vérifier */}
+                  {!scanning && champsIncertains.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="rounded-xl px-4 py-3"
+                      style={{ background: "rgba(155,150,218,0.1)", border: "1px solid rgba(155,150,218,0.35)" }}
+                    >
+                      <p className="text-sm font-semibold mb-1" style={{ color: "#9B96DA" }}>
+                        Vérifiez les champs suivants — non lus sur l'ordonnance :
+                      </p>
+                      <p className="text-sm" style={{ color: "rgba(155,150,218,0.75)" }}>
+                        {champsIncertains.join(" · ")}
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {/* Alerte ordonnance > 3 ans */}
+                  {!scanning && ordonnance.dateOrdonnance && (() => {
+                    const raw = ordonnance.dateOrdonnance!;
+                    const d = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+                      ? new Date(raw + "T00:00:00")
+                      : new Date(raw);
+                    const limit = new Date();
+                    limit.setFullYear(limit.getFullYear() - 3);
+                    if (isNaN(d.getTime()) || d >= limit) return null;
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-xl px-4 py-3"
+                        style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.4)" }}
+                      >
+                        <p className="text-sm font-semibold" style={{ color: "#f59e0b" }}>
+                          Ordonnance datée de plus de 3 ans — vérifier la validité avant de continuer
+                        </p>
+                      </motion.div>
+                    );
+                  })()}
+
                   <div className="flex flex-col gap-3">
                     <div className="flex gap-3">
                       <motion.button whileTap={{ scale: 0.97 }} onClick={resetCamera}
                         className="flex-1 py-4 rounded-2xl font-bold text-base"
                         style={{ background: "#0A0338", color: "#9B96DA", border: "2px solid rgba(83,49,208,0.35)" }}>
-                        📸 Reprendre la photo
+                        {t.retakePhoto}
                       </motion.button>
                       <motion.button whileTap={{ scale: 0.97 }} onClick={() => setEditMode((v) => !v)}
                         className="flex-1 py-4 rounded-2xl font-bold text-base"
@@ -567,13 +936,13 @@ export default function ScannerPage() {
                           color: "#FDFDFE",
                           border: editMode ? "2px solid #a78bfa" : "2px solid rgba(83,49,208,0.35)"
                         }}>
-                        {editMode ? "Fermer correction" : "Corriger manuellement"}
+                        {editMode ? t.closeEdit : t.editManually}
                       </motion.button>
                     </div>
                     <motion.button whileTap={{ scale: 0.97 }} onClick={confirmerOrdonnance}
                       className="py-5 rounded-2xl text-white font-bold text-xl"
                       style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 20px rgba(83,49,208,0.5)" }}>
-                      ✓ Confirmer
+                      {t.confirmPrescription}
                     </motion.button>
                   </div>
                 </>

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
@@ -12,7 +13,8 @@ const NIVEAUX = [
     pour: "Budget maîtrisé · correction simple",
     indice: "1.5",
     type: "Unifocal standard",
-    lensRx: 22,
+    negEdgeHW: 12,
+    posCenterHW: 13,
     lensLabel: "Épaisseur standard",
   },
   {
@@ -23,7 +25,8 @@ const NIVEAUX = [
     pour: "Quotidien · écrans · conduite",
     indice: "1.6",
     type: "Progressif HD",
-    lensRx: 15,
+    negEdgeHW: 7,
+    posCenterHW: 8,
     lensLabel: "Verres fins",
   },
   {
@@ -34,7 +37,8 @@ const NIVEAUX = [
     pour: "Forte correction · exigence maximale",
     indice: "1.67",
     type: "Progressif Digital",
-    lensRx: 9,
+    negEdgeHW: 4,
+    posCenterHW: 5,
     lensLabel: "Verres ultra-fins",
   },
 ];
@@ -141,13 +145,57 @@ function TickIcon({ value }: { value: boolean | "yes" | "partial" }) {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(34,197,94,0.5)" strokeWidth="2"/><path d="M8 12l3 3 5-5" stroke="rgba(34,197,94,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 }
 
-function LensSideView({ rx, color }: { rx: number; color: string }) {
+function LensCrossSection({ negEdgeHW, posCenterHW, color }: { negEdgeHW: number; posCenterHW: number; color: string }) {
+  const H = 80;
+  const W = 40;
+  const cx = W / 2;
+  const minHW = 1.5;
+
+  function makePts(edgeHW: number, centerHW: number): string {
+    const steps = 32;
+    const pts: string[] = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const hw = edgeHW + (centerHW - edgeHW) * Math.sin(Math.PI * t);
+      pts.push(`${(cx - hw).toFixed(1)},${(t * H).toFixed(1)}`);
+    }
+    for (let i = steps; i >= 0; i--) {
+      const t = i / steps;
+      const hw = edgeHW + (centerHW - edgeHW) * Math.sin(Math.PI * t);
+      pts.push(`${(cx + hw).toFixed(1)},${(t * H).toFixed(1)}`);
+    }
+    return pts.join(" ");
+  }
+
   return (
-    <svg width="60" height="96" viewBox="0 0 60 96">
-      <ellipse cx="30" cy="48" rx={rx} ry="46" fill={`${color}18`} stroke={color} strokeWidth="2" />
-      {/* center line */}
-      <line x1="30" y1="4" x2="30" y2="92" stroke={`${color}40`} strokeWidth="1" strokeDasharray="3 3"/>
-    </svg>
+    <div className="flex gap-3 justify-center items-end">
+      {/* Verre biconcave — Myopie (−) */}
+      <div className="flex flex-col items-center gap-1.5">
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+          <polygon
+            points={makePts(negEdgeHW, minHW)}
+            fill={`${color}20`}
+            stroke={color}
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 700, letterSpacing: "0.02em" }}>−</span>
+      </div>
+      {/* Verre biconvexe — Hypermétropie (+) */}
+      <div className="flex flex-col items-center gap-1.5">
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+          <polygon
+            points={makePts(minHW, posCenterHW)}
+            fill={`${color}20`}
+            stroke={color}
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 700, letterSpacing: "0.02em" }}>+</span>
+      </div>
+    </div>
   );
 }
 
@@ -169,9 +217,9 @@ export default function ComparateurPage() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 rounded-2xl"
-          style={{ background: "rgba(83,49,208,0.14)", border: "1px solid rgba(83,49,208,0.3)" }}
+          style={{ background: "linear-gradient(135deg, rgba(83,49,208,0.18) 0%, rgba(124,92,252,0.12) 100%)", border: "1px solid rgba(167,139,250,0.25)" }}
         >
-          <p className="text-base font-semibold" style={{ color: "#9B96DA" }}>
+          <p className="text-sm font-semibold" style={{ color: "rgba(196,181,253,0.9)" }}>
             Ce guide aide à comprendre les différences entre les 3 niveaux — en toute transparence.
           </p>
         </motion.div>
@@ -183,25 +231,40 @@ export default function ComparateurPage() {
           transition={{ delay: 0.08 }}
           className="mb-8"
         >
-          <h2 className="text-xl font-black mb-1" style={{ color: "#FDFDFE" }}>Épaisseur des verres</h2>
-          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.7)" }}>
-            Plus l&apos;indice est élevé, plus les verres sont fins — à correction identique.
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1 h-5 rounded-full shrink-0" style={{ background: "linear-gradient(to bottom, #5331D0, #a78bfa)" }} />
+            <h2 className="text-xl font-black" style={{ color: "#FDFDFE" }}>Épaisseur des verres</h2>
+          </div>
+          <p className="text-sm mb-3" style={{ color: "#9B96DA" }}>
+            Coupe transversale à correction équivalente — plus l&apos;indice est élevé, plus le verre est fin.
           </p>
-          <div className="grid grid-cols-3 gap-4">
+          {/* Légende */}
+          <div className="flex flex-wrap items-center gap-4 mb-4 px-1">
+            <span className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+              <span className="font-black text-base leading-none">−</span>
+              <span>Myopie — bords épais, centre fin</span>
+            </span>
+            <span className="hidden sm:block w-px h-3 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
+            <span className="flex items-center gap-2 text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+              <span className="font-black text-base leading-none">+</span>
+              <span>Hypermétropie — centre épais, bords fins</span>
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
             {NIVEAUX.map((n, i) => (
               <motion.div
                 key={n.nom}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + i * 0.1 }}
-                className="rounded-2xl p-5 flex flex-col items-center gap-3"
+                className="rounded-2xl p-4 flex flex-col items-center gap-3"
                 style={{ background: n.bg, border: `1.5px solid ${n.border}` }}
               >
-                <LensSideView rx={n.lensRx} color={n.couleur} />
+                <LensCrossSection negEdgeHW={n.negEdgeHW} posCenterHW={n.posCenterHW} color={n.couleur} />
                 <div className="text-center">
-                  <p className="text-lg font-black" style={{ color: n.couleur }}>{n.nom}</p>
-                  <p className="text-sm font-semibold mt-0.5" style={{ color: "#FDFDFE" }}>Indice {n.indice}</p>
-                  <p className="text-xs mt-1" style={{ color: "rgba(155,150,218,0.6)" }}>{n.lensLabel}</p>
+                  <p className="text-base font-black" style={{ color: n.couleur }}>{n.nom}</p>
+                  <p className="text-xs font-bold mt-0.5" style={{ color: "rgba(255,255,255,0.75)" }}>Indice {n.indice}</p>
+                  <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>{n.lensLabel}</p>
                 </div>
               </motion.div>
             ))}
@@ -215,8 +278,11 @@ export default function ComparateurPage() {
           transition={{ delay: 0.2 }}
           className="mb-8"
         >
-          <h2 className="text-xl font-black mb-1" style={{ color: "#FDFDFE" }}>Champ de vision — Progressif</h2>
-          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.7)" }}>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1 h-5 rounded-full shrink-0" style={{ background: "linear-gradient(to bottom, #5331D0, #a78bfa)" }} />
+            <h2 className="text-xl font-black" style={{ color: "#FDFDFE" }}>Champ de vision — Progressif</h2>
+          </div>
+          <p className="text-sm mb-5" style={{ color: "#9B96DA" }}>
             Le progressif HD offre des zones de vision plus larges et une transition plus douce.
           </p>
           <div className="grid grid-cols-2 gap-5">
@@ -229,13 +295,13 @@ export default function ComparateurPage() {
                   <text x="60" y="34" textAnchor="middle" fontSize="10" fill="#22c55e">Loin</text>
                   <line x1="30" y1="54" x2="90" y2="54" stroke="rgba(34,197,94,0.3)" strokeWidth="1.5"/>
                   <ellipse cx="60" cy="80" rx="20" ry="18" fill="rgba(34,197,94,0.1)" stroke="rgba(34,197,94,0.4)" strokeWidth="1.5" strokeDasharray="4 3"/>
-                  <text x="60" y="84" textAnchor="middle" fontSize="9" fill="rgba(34,197,94,0.7)">Interméd.</text>
+                  <text x="60" y="84" textAnchor="middle" fontSize="9" fill="rgba(34,197,94,0.95)">Interméd.</text>
                   <line x1="40" y1="98" x2="80" y2="98" stroke="rgba(34,197,94,0.3)" strokeWidth="1.5"/>
                   <ellipse cx="60" cy="122" rx="15" ry="20" fill="rgba(34,197,94,0.15)" stroke="#22c55e" strokeWidth="1.5"/>
                   <text x="60" y="127" textAnchor="middle" fontSize="10" fill="#22c55e">Près</text>
                 </svg>
               </div>
-              <p className="text-xs text-center mt-2" style={{ color: "rgba(155,150,218,0.6)" }}>Zones de vision étroites</p>
+              <p className="text-xs text-center mt-2 font-semibold" style={{ color: "rgba(196,181,253,0.65)" }}>Zones de vision étroites</p>
             </div>
             {/* HD */}
             <div className="rounded-2xl p-5" style={{ background: "rgba(124,95,236,0.1)", border: "1.5px solid rgba(124,95,236,0.45)" }}>
@@ -246,14 +312,73 @@ export default function ComparateurPage() {
                   <text x="60" y="32" textAnchor="middle" fontSize="10" fill="#7c5fec">Loin (large)</text>
                   <line x1="14" y1="52" x2="106" y2="52" stroke="rgba(124,95,236,0.3)" strokeWidth="1.5"/>
                   <ellipse cx="60" cy="80" rx="32" ry="20" fill="rgba(124,95,236,0.1)" stroke="rgba(124,95,236,0.4)" strokeWidth="1.5" strokeDasharray="4 3"/>
-                  <text x="60" y="84" textAnchor="middle" fontSize="9" fill="rgba(124,95,236,0.8)">Interméd. (confort)</text>
+                  <text x="60" y="84" textAnchor="middle" fontSize="9" fill="rgba(124,95,236,1)">Interméd. (confort)</text>
                   <line x1="28" y1="100" x2="92" y2="100" stroke="rgba(124,95,236,0.3)" strokeWidth="1.5"/>
                   <ellipse cx="60" cy="125" rx="28" ry="22" fill="rgba(124,95,236,0.15)" stroke="#7c5fec" strokeWidth="1.5"/>
                   <text x="60" y="130" textAnchor="middle" fontSize="10" fill="#7c5fec">Près (large)</text>
                 </svg>
               </div>
-              <p className="text-xs text-center mt-2" style={{ color: "rgba(155,150,218,0.6)" }}>Zones plus larges, transition douce</p>
+              <p className="text-xs text-center mt-2 font-semibold" style={{ color: "rgba(196,181,253,0.65)" }}>Zones plus larges, transition douce</p>
             </div>
+          </div>
+        </motion.section>
+
+        {/* ─── SECTION 2b : PHOTOS RÉELLES ─── */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mb-8"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1 h-5 rounded-full shrink-0" style={{ background: "linear-gradient(to bottom, #5331D0, #a78bfa)" }} />
+            <h2 className="text-xl font-black" style={{ color: "#FDFDFE" }}>Photos réelles des verres</h2>
+          </div>
+          <p className="text-sm mb-5" style={{ color: "#9B96DA" }}>
+            Voici à quoi ressemblent les verres progressifs et les verres Transitions en conditions réelles.
+          </p>
+
+          {/* Verres progressifs */}
+          <div className="mb-5">
+            <p className="text-base font-bold mb-3" style={{ color: "#c084fc" }}>Verres progressifs</p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { src: "/assets/images/prog.webp", label: "Vue de profil" },
+                { src: "/assets/images/progs.webp", label: "Zones de vision" },
+                { src: "/assets/images/progs2.webp", label: "Vue frontale" },
+              ].map(({ src, label }) => (
+                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0a0338", border: "1px solid rgba(192,132,252,0.5)" }}>
+                  <div className="relative w-full" style={{ aspectRatio: "1" }}>
+                    <Image src={src} alt={label} fill className="object-contain" sizes="(max-width: 768px) 33vw, 25vw" quality={95} />
+                  </div>
+                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "#c084fc" }}>{label}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs mt-2 px-1" style={{ color: "rgba(196,181,253,0.6)" }}>
+              Le verre progressif comprend 3 zones invisibles : vision de loin (haut), intermédiaire (milieu) et de près (bas). Un seul verre pour toutes les distances.
+            </p>
+          </div>
+
+          {/* Verres Transitions */}
+          <div>
+            <p className="text-base font-bold mb-3" style={{ color: "#60a5fa" }}>Verres Transitions (photochromiques)</p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { src: "/assets/images/transitions.webp", label: "En intérieur (clairs)" },
+                { src: "/assets/images/verres-transitions.webp", label: "En extérieur (foncés)" },
+              ].map(({ src, label }) => (
+                <div key={src} className="rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0a0338", border: "1px solid rgba(96,165,250,0.5)" }}>
+                  <div className="relative w-full" style={{ aspectRatio: "4/3" }}>
+                    <Image src={src} alt={label} fill className="object-cover" sizes="(max-width: 768px) 50vw, 40vw" quality={95} />
+                  </div>
+                  <p className="text-xs text-center py-2 font-semibold" style={{ color: "#60a5fa" }}>{label}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs mt-2 px-1" style={{ color: "rgba(196,181,253,0.6)" }}>
+              Les verres Transitions s&apos;obscurcissent automatiquement au soleil et redeviennent clairs à l&apos;intérieur en 30 secondes. Ils remplacent les lunettes de soleil au quotidien.
+            </p>
           </div>
         </motion.section>
 
@@ -264,11 +389,14 @@ export default function ComparateurPage() {
           transition={{ delay: 0.28 }}
           className="mb-8"
         >
-          <h2 className="text-xl font-black mb-5" style={{ color: "#FDFDFE" }}>Tableau comparatif</h2>
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-1 h-5 rounded-full shrink-0" style={{ background: "linear-gradient(to bottom, #5331D0, #a78bfa)" }} />
+            <h2 className="text-xl font-black" style={{ color: "#FDFDFE" }}>Tableau comparatif</h2>
+          </div>
           <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(83,49,208,0.35)" }}>
             {/* Header */}
             <div className="grid grid-cols-4 gap-0" style={{ background: "rgba(10,3,56,0.9)" }}>
-              <div className="p-3 text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(155,150,218,0.5)" }}>Fonctionnalité</div>
+              <div className="p-3 text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(196,181,253,0.75)" }}>Fonctionnalité</div>
               {NIVEAUX.map((n) => (
                 <div key={n.nom} className="p-3 text-center">
                   <p className="text-sm font-black" style={{ color: n.couleur }}>{n.nom}</p>
@@ -288,7 +416,7 @@ export default function ComparateurPage() {
                 {f.values.map((v, j) => (
                   <div key={j} className="p-3 flex flex-col items-center gap-1">
                     <TickIcon value={f.ticks[j]} />
-                    <p className="text-xs text-center" style={{ color: "rgba(155,150,218,0.7)" }}>{v}</p>
+                    <p className="text-xs text-center font-semibold" style={{ color: "#DDDAF5" }}>{v}</p>
                   </div>
                 ))}
               </div>
@@ -296,9 +424,9 @@ export default function ComparateurPage() {
           </div>
           {/* Légende */}
           <div className="flex gap-5 mt-3 px-1">
-            <div className="flex items-center gap-1.5"><TickIcon value="yes"/><span className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>Inclus</span></div>
-            <div className="flex items-center gap-1.5"><TickIcon value="partial"/><span className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>Version standard</span></div>
-            <div className="flex items-center gap-1.5"><TickIcon value={false}/><span className="text-xs" style={{ color: "rgba(155,150,218,0.6)" }}>Non inclus</span></div>
+            <div className="flex items-center gap-1.5"><TickIcon value="yes"/><span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.75)" }}>Inclus</span></div>
+            <div className="flex items-center gap-1.5"><TickIcon value="partial"/><span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.75)" }}>Version standard</span></div>
+            <div className="flex items-center gap-1.5"><TickIcon value={false}/><span className="text-xs font-semibold" style={{ color: "rgba(196,181,253,0.75)" }}>Non inclus</span></div>
           </div>
         </motion.section>
 
@@ -309,8 +437,11 @@ export default function ComparateurPage() {
           transition={{ delay: 0.36 }}
           className="mb-8"
         >
-          <h2 className="text-xl font-black mb-2" style={{ color: "#FDFDFE" }}>À quoi servent les traitements ?</h2>
-          <p className="text-sm mb-5" style={{ color: "rgba(155,150,218,0.6)" }}>Ces traitements sont appliqués sur la surface du verre.</p>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1 h-5 rounded-full shrink-0" style={{ background: "linear-gradient(to bottom, #5331D0, #a78bfa)" }} />
+            <h2 className="text-xl font-black" style={{ color: "#FDFDFE" }}>À quoi servent les traitements ?</h2>
+          </div>
+          <p className="text-sm mb-5" style={{ color: "#9B96DA" }}>Ces traitements sont appliqués sur la surface du verre.</p>
           <div className="grid grid-cols-1 gap-4">
             {TRAITEMENTS.map((t, i) => (
               <motion.div
@@ -331,7 +462,7 @@ export default function ComparateurPage() {
                       {t.pourqui}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed" style={{ color: "rgba(155,150,218,0.8)" }}>{t.description}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: "rgba(155,150,218,0.95)" }}>{t.description}</p>
                 </div>
               </motion.div>
             ))}
@@ -349,6 +480,20 @@ export default function ComparateurPage() {
           style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)", boxShadow: "0 4px 24px rgba(83,49,208,0.4)" }}
         >
           Voir mes recommandations →
+        </motion.button>
+
+        {/* Simulateur vision */}
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => router.push("/vision")}
+          className="w-full py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2"
+          style={{ background: "rgba(28,11,98,0.6)", color: "#9B96DA", border: "1.5px solid rgba(83,49,208,0.35)" }}
+        >
+          <span style={{ fontSize: 20 }}>👁️</span>
+          Simulateur AVANT / APRÈS — Voir la différence
         </motion.button>
 
       </main>
