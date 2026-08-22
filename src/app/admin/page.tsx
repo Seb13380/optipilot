@@ -68,6 +68,7 @@ export default function AdminPage() {
   const [erreur, setErreur] = useState("");
   const [creation, setCreation] = useState({ nom: "", email: "", motDePasse: "", role: "vendeur" });
   const [finances, setFinances] = useState<Finances | null>(null);
+  const [erreurFinances, setErreurFinances] = useState("");
   const [parametresOuvert, setParametresOuvert] = useState(false);
   const [tauxInput, setTauxInput] = useState("0");
   const [frequenceInput, setFrequenceInput] = useState("mensuelle");
@@ -90,12 +91,19 @@ export default function AdminPage() {
   const chargerFinances = useCallback(async () => {
     try {
       const res = await fetch(`${BACKEND}/api/admin/finances`, { headers: authHeaders() });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error("Erreur /api/admin/finances:", res.status, data);
+        setErreurFinances(data.error || `Erreur ${res.status}`);
+        return;
+      }
       const data = await res.json();
       setFinances(data);
       setTauxInput(String(data.tauxUrssaf));
       setFrequenceInput(data.declarationFrequence);
-    } catch { /* non bloquant */ }
+    } catch (e) {
+      setErreurFinances(e instanceof Error ? e.message : "Erreur réseau");
+    }
   }, []);
 
   useEffect(() => {
@@ -224,6 +232,7 @@ export default function AdminPage() {
       <main className="flex-1 px-6 pb-10 pt-4 w-full max-w-5xl mx-auto">
 
         {/* ─── Cockpit financier ─── */}
+        {erreurFinances && <p className="mb-4 text-sm font-semibold" style={{ color: "#f87171" }}>Cockpit financier indisponible : {erreurFinances}</p>}
         {finances && (
           <section className="mb-8">
             <div className="flex items-center justify-between mb-3">
