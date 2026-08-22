@@ -26,9 +26,27 @@ interface Employe {
 
 interface StripeInfo {
   statut: string;
+  montantMensuel?: number | null;
+  dateDebut?: string | null;
   trialEnd?: string | null;
   currentPeriodEnd?: string | null;
   cancelAtPeriodEnd?: boolean;
+  dernierPaiement?: { date: string; montant: number } | null;
+  prochainPaiement?: string | null;
+}
+
+interface Finances {
+  clientsPayants: number;
+  mrr: number;
+  caEncaisse: number;
+  provisionUrssaf: number;
+  netEstime: number;
+  essaisEnCours: number;
+  impayes: number;
+  resiliationsCeMois: number;
+  prochaineDeclaration: string;
+  tauxUrssaf: number;
+  declarationFrequence: string;
 }
 
 function authHeaders(): HeadersInit {
@@ -49,6 +67,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [erreur, setErreur] = useState("");
   const [creation, setCreation] = useState({ nom: "", email: "", motDePasse: "", role: "vendeur" });
+  const [finances, setFinances] = useState<Finances | null>(null);
+  const [parametresOuvert, setParametresOuvert] = useState(false);
+  const [tauxInput, setTauxInput] = useState("0");
+  const [frequenceInput, setFrequenceInput] = useState("mensuelle");
 
   const chargerMagasins = useCallback(async () => {
     setLoading(true);
@@ -65,11 +87,39 @@ export default function AdminPage() {
     }
   }, []);
 
+  const chargerFinances = useCallback(async () => {
+    try {
+      const res = await fetch(`${BACKEND}/api/admin/finances`, { headers: authHeaders() });
+      if (!res.ok) return;
+      const data = await res.json();
+      setFinances(data);
+      setTauxInput(String(data.tauxUrssaf));
+      setFrequenceInput(data.declarationFrequence);
+    } catch { /* non bloquant */ }
+  }, []);
+
   useEffect(() => {
     const userRaw = localStorage.getItem("optipilot_user");
     if (!userRaw) { router.replace("/login"); return; }
     chargerMagasins();
-  }, [chargerMagasins, router]);
+    chargerFinances();
+  }, [chargerMagasins, chargerFinances, router]);
+
+  async function sauvegarderFiscalite(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${BACKEND}/api/admin/fiscalite`, {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: JSON.stringify({ tauxUrssaf: parseFloat(tauxInput) || 0, declarationFrequence: frequenceInput }),
+      });
+      if (!res.ok) throw new Error();
+      setParametresOuvert(false);
+      chargerFinances();
+    } catch {
+      alert("Erreur lors de la sauvegarde");
+    }
+  }
 
   async function ouvrirMagasin(m: Magasin) {
     setSelected(m);
@@ -171,7 +221,82 @@ export default function AdminPage() {
   return (
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader title="Administration" showBack onBack={() => router.push("/dashboard")} />
-      <main className="flex-1 px-6 pb-10 pt-4 w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+      <main className="flex-1 px-6 pb-10 pt-4 w-full max-w-5xl mx-auto">
+
+        {/* ─── Cockpit financier ─── */}
+        {finances && (
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold" style={{ color: textMain }}>Cockpit financier</h2>
+              <button
+                onClick={() => setParametresOuvert((o) => !o)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                style={{ background: "rgba(83,49,208,0.18)", color: "#7B5CE5", border: "1px solid rgba(83,49,208,0.4)" }}
+              >
+                Paramètres · Fiscalité
+              </button>
+            </div>
+
+            {parametresOuvert && (
+              <form onSubmit={sauvegarderFiscalite} className="rounded-xl p-4 mb-4 flex flex-wrap items-end gap-3" style={{ background: "rgba(10,3,56,0.85)", border: "1.5px solid rgba(83,49,208,0.3)" }}>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs" style={{ color: "#9B96DA" }}>Taux URSSAF (%)</label>
+                  <input
+                    type="number" step="0.1" min="0" max="100"
+                    value={tauxInput} onChange={(e) => setTauxInput(e.target.value)}
+                    className="px-3 py-2 rounded-lg text-sm w-28"
+                    style={{ background: "#0A0338", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.4)" }}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs" style={{ color: "#9B96DA" }}>Fréquence de déclaration</label>
+                  <select
+                    value={frequenceInput} onChange={(e) => setFrequenceInput(e.target.value)}
+                    className="px-3 py-2 rounded-lg text-sm"
+                    style={{ background: "#0A0338", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.4)" }}
+                  >
+                    <option value="mensuelle">Mensuelle</option>
+                    <option value="trimestrielle">Trimestrielle</option>
+                  </select>
+                </div>
+                <button type="submit" className="px-4 py-2 rounded-lg text-sm font-bold text-white" style={{ background: "linear-gradient(135deg, #5331D0, #9B96DA)" }}>
+                  Enregistrer
+                </button>
+              </form>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+              {[
+                { label: "Clients payants", val: finances.clientsPayants },
+                { label: "MRR", val: `${finances.mrr.toLocaleString("fr-FR")} €` },
+                { label: "CA encaissé ce mois", val: `${finances.caEncaisse.toLocaleString("fr-FR")} €` },
+                { label: "URSSAF provisionnée", val: `${finances.provisionUrssaf.toLocaleString("fr-FR")} €` },
+                { label: "Net estimé", val: `${finances.netEstime.toLocaleString("fr-FR")} €` },
+              ].map((c) => (
+                <div key={c.label} className="rounded-xl p-3" style={{ background: "rgba(10,3,56,0.85)", border: "1.5px solid rgba(83,49,208,0.3)" }}>
+                  <p className="text-xs mb-1" style={{ color: "#9B96DA" }}>{c.label}</p>
+                  <p className="text-lg font-black" style={{ color: "#FDFDFE" }}>{c.val}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Essais en cours", val: finances.essaisEnCours },
+                { label: "Impayés", val: finances.impayes },
+                { label: "Résiliations (mois)", val: finances.resiliationsCeMois },
+                { label: "Prochaine déclaration", val: new Date(finances.prochaineDeclaration).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) },
+              ].map((c) => (
+                <div key={c.label} className="rounded-xl p-3" style={{ background: "rgba(10,3,56,0.5)", border: "1px solid rgba(83,49,208,0.2)" }}>
+                  <p className="text-xs mb-1" style={{ color: "#9B96DA" }}>{c.label}</p>
+                  <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>{c.val}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Liste des magasins */}
         <section>
           <h2 className="text-lg font-bold mb-3" style={{ color: textMain }}>Magasins ({magasins.length})</h2>
@@ -215,10 +340,12 @@ export default function AdminPage() {
               </div>
 
               {stripeInfo && (
-                <div className="rounded-xl p-3 mb-4 text-xs" style={{ background: "rgba(83,49,208,0.12)", color: "#a78bfa" }}>
-                  Statut : <strong>{stripeInfo.statut}</strong>
-                  {stripeInfo.currentPeriodEnd && <> · Fin de période : {new Date(stripeInfo.currentPeriodEnd).toLocaleDateString("fr-FR")}</>}
-                  {stripeInfo.cancelAtPeriodEnd && <> · Résiliation programmée</>}
+                <div className="rounded-xl p-3 mb-4 text-xs flex flex-col gap-1" style={{ background: "rgba(83,49,208,0.12)", color: "#a78bfa" }}>
+                  <div>Statut : <strong>{stripeInfo.statut}</strong>{stripeInfo.montantMensuel ? <> · {stripeInfo.montantMensuel}€/mois</> : null}</div>
+                  {stripeInfo.dateDebut && <div>Début abonnement : {new Date(stripeInfo.dateDebut).toLocaleDateString("fr-FR")}</div>}
+                  {stripeInfo.dernierPaiement && <div>Dernier paiement : {stripeInfo.dernierPaiement.montant}€ le {new Date(stripeInfo.dernierPaiement.date).toLocaleDateString("fr-FR")}</div>}
+                  {stripeInfo.currentPeriodEnd && <div>Prochain paiement : {new Date(stripeInfo.currentPeriodEnd).toLocaleDateString("fr-FR")}</div>}
+                  {stripeInfo.cancelAtPeriodEnd && <div>⚠ Résiliation programmée en fin de période</div>}
                 </div>
               )}
 
@@ -262,6 +389,7 @@ export default function AdminPage() {
             </>
           )}
         </section>
+        </div>
       </main>
     </div>
   );

@@ -1822,14 +1822,38 @@ app.get("/api/admin/magasins/:id/stripe", requireAuth, requireSuperAdmin, async 
     const magasin = await prisma.magasin.findUnique({ where: { id: String(req.params.id) } });
     if (!magasin) return res.status(404).json({ error: "Magasin introuvable" });
     if (!magasin.stripeSubId) return res.json({ statut: "aucun_abonnement" });
+
+    const PRICE_FONDATEUR = process.env.STRIPE_PRICE_FONDATEUR;
+    const montantParPrice: Record<string, number> = {
+      ...(PRICE_FONDATEUR ? { [PRICE_FONDATEUR]: 149 } : {}),
+      ...(process.env.STRIPE_PRICE_REGULIER ? { [process.env.STRIPE_PRICE_REGULIER]: 199 } : {}),
+    };
+
     const sub = await stripe.subscriptions.retrieve(magasin.stripeSubId);
+    const priceId = sub.items.data[0]?.price?.id;
+    const montantMensuel = priceId ? montantParPrice[priceId] || null : null;
+
+    // Dernière facture payée + prochaine échéance
+    let dernierPaiement: { date: Date; montant: number } | null = null;
+    let prochainPaiement: Date | null = null;
+    try {
+      const invoices = await stripe.invoices.list({ subscription: magasin.stripeSubId, status: "paid", limit: 1 });
+      if (invoices.data[0]) {
+        dernierPaiement = { date: new Date(invoices.data[0].created * 1000), montant: (invoices.data[0].amount_paid || 0) / 100 };
+      }
+    } catch { /* pas bloquant */ }
+    const currentPeriodEnd = (sub as unknown as { current_period_end?: number }).current_period_end;
+    if (currentPeriodEnd) prochainPaiement = new Date(currentPeriodEnd * 1000);
+
     res.json({
       statut: sub.status,
+      montantMensuel,
+      dateDebut: new Date(sub.start_date * 1000),
       trialEnd: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
-      currentPeriodEnd: (sub as unknown as { current_period_end?: number }).current_period_end
-        ? new Date((sub as unknown as { current_period_end: number }).current_period_end * 1000)
-        : null,
+      currentPeriodEnd: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : null,
       cancelAtPeriodEnd: sub.cancel_at_period_end,
+      dernierPaiement,
+      prochainPaiement,
     });
   } catch (err) {
     console.error("GET /api/admin/magasins/:id/stripe error:", err);
@@ -1905,6 +1929,112 @@ app.delete("/api/admin/utilisateurs/:id", requireAuth, requireSuperAdmin, async 
     if (code === "P2025") return res.status(404).json({ error: "Employé introuvable" });
     console.error("DELETE /api/admin/utilisateurs/:id error:", err);
     res.status(500).json({ error: "Erreur suppression employé" });
+  }
+});
+
+// GET /api/admin/finances → cockpit financier (MRR, encaissé, URSSAF, essais, impayés...)
+app.get("/api/admin/finances", requireAuth, requireSuperAdmin, async (_req, res) => {
+  try {
+    const PRICE_FONDATEUR = process.env.STRIPE_PRICE_FONDATEUR;
+    const PRICE_REGULIER = process.env.STRIPE_PRICE_REGULIER;
+    const montantParPrice: Record<string, number> = {
+      ...(PRICE_FONDATEUR ? { [PRICE_FONDATEUR]: 149 } : {}),
+      ...(PRICE_REGULIER ? { [PRICE_REGULIER]: 199 } : {}),
+    };
+
+    const magasins = await prisma.magasin.findMany({
+      where: { stripeCustomerId: { not: null } },
+      select: { id: true, nom: true, stripeCustomerId: true },
+    });
+    const magasinParCustomer = new Map(magasins.map((m) => [m.stripeCustomerId as string, m]));
+
+    // Toutes les subs Stripe (actives, essai, impayées, résiliées...)
+    const subs = await stripe.subscriptions.list({ status: "all", limit: 100 });
+
+    let mrr = 0;
+    let clientsPayants = 0;
+    let essaisEnCours = 0;
+    let impayes = 0;
+    const debutMois = new Date();
+    debutMois.setDate(1);
+    debutMois.setHours(0, 0, 0, 0);
+    let resiliationsCeMois = 0;
+
+    for (const sub of subs.data) {
+      const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+      if (!magasinParCustomer.has(customerId)) continue; // sub hors OptiPilot (autre usage de ce compte Stripe)
+
+      const priceId = sub.items.data[0]?.price?.id;
+      const montant = priceId ? montantParPrice[priceId] || 0 : 0;
+
+      if (sub.status === "active") {
+        mrr += montant;
+        clientsPayants += 1;
+      } else if (sub.status === "trialing") {
+        essaisEnCours += 1;
+      } else if (sub.status === "past_due" || sub.status === "unpaid") {
+        impayes += 1;
+      } else if (sub.status === "canceled" && sub.canceled_at && new Date(sub.canceled_at * 1000) >= debutMois) {
+        resiliationsCeMois += 1;
+      }
+    }
+
+    // CA réellement encaissé ce mois (factures payées), pas le MRR théorique
+    const invoices = await stripe.invoices.list({
+      status: "paid",
+      created: { gte: Math.floor(debutMois.getTime() / 1000) },
+      limit: 100,
+    });
+    const caEncaisseCentimes = invoices.data.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0);
+    const caEncaisse = caEncaisseCentimes / 100;
+
+    const config = await prisma.configGlobale.upsert({
+      where: { id: "global" },
+      update: {},
+      create: { id: "global" },
+    });
+    const provisionUrssaf = Math.round(caEncaisse * (config.tauxUrssaf / 100) * 100) / 100;
+    const netEstime = Math.round((caEncaisse - provisionUrssaf) * 100) / 100;
+
+    // Prochaine déclaration (indicative, pas une date légale officielle)
+    const prochaineDeclaration = new Date(debutMois);
+    prochaineDeclaration.setMonth(prochaineDeclaration.getMonth() + (config.declarationFrequence === "trimestrielle" ? 3 : 1));
+
+    res.json({
+      clientsPayants,
+      mrr,
+      caEncaisse,
+      provisionUrssaf,
+      netEstime,
+      essaisEnCours,
+      impayes,
+      resiliationsCeMois,
+      prochaineDeclaration,
+      tauxUrssaf: config.tauxUrssaf,
+      declarationFrequence: config.declarationFrequence,
+    });
+  } catch (err) {
+    console.error("GET /api/admin/finances error:", err);
+    res.status(500).json({ error: "Erreur calcul finances" });
+  }
+});
+
+// PATCH /api/admin/fiscalite → modifier le taux URSSAF / fréquence de déclaration
+app.patch("/api/admin/fiscalite", requireAuth, requireSuperAdmin, async (req, res) => {
+  try {
+    const { tauxUrssaf, declarationFrequence } = req.body;
+    const config = await prisma.configGlobale.upsert({
+      where: { id: "global" },
+      update: {
+        ...(tauxUrssaf !== undefined && { tauxUrssaf: Number(tauxUrssaf) }),
+        ...(declarationFrequence && { declarationFrequence }),
+      },
+      create: { id: "global" },
+    });
+    res.json(config);
+  } catch (err) {
+    console.error("PATCH /api/admin/fiscalite error:", err);
+    res.status(500).json({ error: "Erreur mise à jour fiscalité" });
   }
 });
 

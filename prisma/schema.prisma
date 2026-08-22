@@ -262,6 +262,9 @@ model ConfigGlobale {
   id                   String @id @default("global")
   ambassadeursRestants Int    @default(10)
   ambassadeursTotal    Int    @default(10)
+  // Fiscalité (auto-entrepreneur) — modifiable dans Admin > Paramètres > Fiscalité
+  tauxUrssaf           Float  @default(0)
+  declarationFrequence String @default("mensuelle") // mensuelle | trimestrielle
 
   @@map("config_globale")
 }
