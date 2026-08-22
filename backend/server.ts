@@ -287,7 +287,7 @@ app.patch("/api/utilisateur/:id", async (req, res) => {
     const { nom, email, role } = req.body as { nom?: string; email?: string; role?: string };
 
     // Récupérer le rôle actuel de cet utilisateur pour savoir s'il peut changer le rôle
-    const current = await prisma.utilisateur.findUnique({ where: { id: req.params.id } });
+    const current = await prisma.utilisateur.findUnique({ where: { id: String(req.params.id) } });
     if (!current) return res.status(404).json({ error: "Utilisateur introuvable" });
 
     const data: Record<string, unknown> = {};
@@ -306,7 +306,7 @@ app.patch("/api/utilisateur/:id", async (req, res) => {
     }
 
     const updated = await prisma.utilisateur.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data,
       select: { id: true, nom: true, email: true, role: true, magasinId: true },
     });
@@ -348,7 +348,7 @@ app.put("/api/clients/:id", async (req, res) => {
       numAdherent?: string | null; consentementRelance?: boolean;
     };
     const client = await prisma.client.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { nom, prenom, email, telephone, adresse, mutuelle, niveauGarantie, numAdherent, consentementRelance },
     });
     res.json(client);
@@ -361,7 +361,7 @@ app.put("/api/clients/:id", async (req, res) => {
 app.get("/api/clients/:magasinId", async (req, res) => {
   try {
     const clients = await prisma.client.findMany({
-      where: { magasinId: req.params.magasinId },
+      where: { magasinId: String(req.params.magasinId) },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
@@ -385,7 +385,7 @@ app.post("/api/clients", async (req, res) => {
 app.get("/api/devis/:magasinId", async (req, res) => {
   try {
     const devis = await prisma.devis.findMany({
-      where: { magasinId: req.params.magasinId },
+      where: { magasinId: String(req.params.magasinId) },
       include: { client: true, ordonnance: true },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -415,7 +415,7 @@ app.post("/api/devis", async (req, res) => {
 app.patch("/api/devis/:id", async (req, res) => {
   try {
     const devis = await (prisma.devis as any).update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: req.body,
     });
 
@@ -433,8 +433,8 @@ app.patch("/api/devis/:id", async (req, res) => {
       if (montantSS  > 0 && !(devis as any).statutPaiementSS)       { initData.statutPaiementSS = "en_attente"; initData.montantAttenduSS = montantSS; }
       if (montantMut > 0 && !(devis as any).statutPaiementMutuelle) { initData.statutPaiementMutuelle = "en_attente"; initData.montantAttenduMutuelle = montantMut; }
       if (Object.keys(initData).length > 0) {
-        await (prisma.devis as any).update({ where: { id: req.params.id }, data: initData });
-        console.log(`[TP] Auto-init rapprochement devis ${req.params.id} — SS:${montantSS}€ Mut:${montantMut}€`);
+        await (prisma.devis as any).update({ where: { id: String(req.params.id) }, data: initData });
+        console.log(`[TP] Auto-init rapprochement devis ${String(req.params.id)} — SS:${montantSS}€ Mut:${montantMut}€`);
       }
     }
 
@@ -448,7 +448,7 @@ app.patch("/api/devis/:id", async (req, res) => {
 app.post("/api/devis/:id/email", async (req, res) => {
   try {
     const devis = await (prisma.devis as any).findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       include: { client: true },
     });
     if (!devis) return res.status(404).json({ error: "Devis non trouvé" });
@@ -458,7 +458,7 @@ app.post("/api/devis/:id/email", async (req, res) => {
 
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
       // SMTP non configuré — on logue mais on ne bloque pas
-      console.log(`[EMAIL non configuré] Devis ${req.params.id} → ${emailTo}`);
+      console.log(`[EMAIL non configuré] Devis ${String(req.params.id)} → ${emailTo}`);
       return res.json({ ok: true, warn: "SMTP non configuré" });
     }
 
@@ -552,12 +552,12 @@ app.get("/api/stats/team/:magasinId", async (req, res) => {
 // ─── Gestion équipe ───────────────────────────────────────
 app.get("/api/utilisateurs/:magasinId", async (req, res) => {
   const authUser = (req as AuthRequest).user;
-  if (authUser?.magasinId !== req.params.magasinId || !(authUser?.role === "admin" || authUser?.role === "responsable")) {
+  if (authUser?.magasinId !== String(req.params.magasinId) || !(authUser?.role === "admin" || authUser?.role === "responsable")) {
     return res.status(403).json({ error: "Accès refusé" });
   }
   try {
     const users = await prisma.utilisateur.findMany({
-      where: { magasinId: req.params.magasinId },
+      where: { magasinId: String(req.params.magasinId) },
       select: { id: true, nom: true, email: true, role: true, createdAt: true },
       orderBy: { nom: "asc" },
     });
@@ -726,7 +726,7 @@ app.post("/api/ordonnances", async (req, res) => {
 app.get("/api/magasin/:id", async (req, res) => {
   try {
     const magasin = await prisma.magasin.findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
     });
     if (!magasin) return res.status(404).json({ error: "Magasin non trouvé" });
     res.json(magasin);
@@ -747,14 +747,14 @@ app.put("/api/magasin/:id", async (req, res) => {
     let siretToSave: string | undefined = siret;
     if (siret) {
       const existingSiret = await prisma.magasin.findUnique({ where: { siret } });
-      if (existingSiret && existingSiret.id !== req.params.id) {
+      if (existingSiret && existingSiret.id !== String(req.params.id)) {
         // SIRET pris par un autre compte → on l'ignore silencieusement
         siretToSave = undefined;
       }
     }
 
     const magasin = await prisma.magasin.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: {
         ...(nom !== undefined && { nom }),
         ...(siretToSave !== undefined && { siret: siretToSave }),
@@ -813,7 +813,7 @@ app.get("/api/mutuelles", async (_req, res) => {
 app.get("/api/mutuelles/:nom/:niveau", async (req, res) => {
   try {
     const mutuelle = await prisma.mutuelle.findFirst({
-      where: { nom: req.params.nom, niveau: req.params.niveau },
+      where: { nom: String(req.params.nom), niveau: String(req.params.niveau) },
     });
     res.json(mutuelle || { remboursementUnifocal: 0, remboursementProgressif: 0, tarifsDetail: null });
   } catch (err) {
@@ -831,7 +831,7 @@ app.put("/api/mutuelles/:id", async (req, res) => {
       remboursementSolaire?: number;
     };
     const updated = await prisma.mutuelle.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: {
         ...(tarifsDetail !== undefined && { tarifsDetail }),
         ...(remboursementUnifocal !== undefined && { remboursementUnifocal }),
@@ -861,7 +861,7 @@ app.get("/api/verres", async (_req, res) => {
 app.get("/api/config-tarifs/:magasinId", async (req, res) => {
   try {
     const tarifs = await prisma.configTarif.findMany({
-      where: { magasinId: req.params.magasinId },
+      where: { magasinId: String(req.params.magasinId) },
       include: { verre: true },
     });
     res.json(tarifs);
@@ -873,7 +873,7 @@ app.get("/api/config-tarifs/:magasinId", async (req, res) => {
 app.put("/api/config-tarifs/:id", async (req, res) => {
   try {
     const tarif = await prisma.configTarif.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { prixVente: req.body.prixVente, coefficient: req.body.coefficient },
     });
     res.json(tarif);
@@ -945,7 +945,7 @@ app.get("/api/relances/:magasinId", async (req, res) => {
   try {
     const devis = await prisma.devis.findMany({
       where: {
-        magasinId: req.params.magasinId,
+        magasinId: String(req.params.magasinId),
         statut: { in: ["en_cours", "relance"] },
       },
       include: {
@@ -1423,7 +1423,7 @@ app.get("/api/rapprochements/devis-acceptes/:magasinId", async (req, res) => {
   try {
     const devis = await (prisma.devis as any).findMany({
       where: {
-        magasinId: req.params.magasinId,
+        magasinId: String(req.params.magasinId),
         statut: "accepté",
         statutPaiementSS: null,
         statutPaiementMutuelle: null,
@@ -1490,10 +1490,10 @@ app.delete("/api/utilisateur/:id", async (req, res) => {
     if (!requester || !(["admin", "responsable"].includes(requester.role))) {
       return res.status(403).json({ error: "Réservé aux administrateurs et responsables" });
     }
-    if (requester.userId === req.params.id) {
+    if (requester.userId === String(req.params.id)) {
       return res.status(400).json({ error: "Impossible de supprimer son propre compte" });
     }
-    const target = await prisma.utilisateur.findUnique({ where: { id: req.params.id } });
+    const target = await prisma.utilisateur.findUnique({ where: { id: String(req.params.id) } });
     if (!target) return res.status(404).json({ error: "Utilisateur introuvable" });
     if (target.magasinId !== requester.magasinId) {
       return res.status(403).json({ error: "Accès refusé" });
@@ -1502,7 +1502,7 @@ app.delete("/api/utilisateur/:id", async (req, res) => {
     if (requester.role === "responsable" && target.role === "admin") {
       return res.status(403).json({ error: "Un responsable ne peut pas supprimer un administrateur" });
     }
-    await prisma.utilisateur.delete({ where: { id: req.params.id } });
+    await prisma.utilisateur.delete({ where: { id: String(req.params.id) } });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur suppression opticien" });
@@ -1805,7 +1805,7 @@ app.get("/api/admin/magasins", requireAuth, requireSuperAdmin, async (_req, res)
 app.get("/api/admin/magasins/:id", requireAuth, requireSuperAdmin, async (req, res) => {
   try {
     const magasin = await prisma.magasin.findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       include: { utilisateurs: { select: { id: true, nom: true, email: true, role: true, isSuperAdmin: true, createdAt: true } } },
     });
     if (!magasin) return res.status(404).json({ error: "Magasin introuvable" });
@@ -1819,7 +1819,7 @@ app.get("/api/admin/magasins/:id", requireAuth, requireSuperAdmin, async (req, r
 // GET /api/admin/magasins/:id/stripe → statut abonnement Stripe en direct
 app.get("/api/admin/magasins/:id/stripe", requireAuth, requireSuperAdmin, async (req, res) => {
   try {
-    const magasin = await prisma.magasin.findUnique({ where: { id: req.params.id } });
+    const magasin = await prisma.magasin.findUnique({ where: { id: String(req.params.id) } });
     if (!magasin) return res.status(404).json({ error: "Magasin introuvable" });
     if (!magasin.stripeSubId) return res.json({ statut: "aucun_abonnement" });
     const sub = await stripe.subscriptions.retrieve(magasin.stripeSubId);
@@ -1863,7 +1863,7 @@ app.patch("/api/admin/utilisateurs/:id", requireAuth, requireSuperAdmin, async (
   try {
     const { nom, email, role } = req.body;
     const user = await prisma.utilisateur.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { ...(nom && { nom }), ...(email && { email }), ...(role && { role }) },
       select: { id: true, nom: true, email: true, role: true, magasinId: true },
     });
@@ -1885,7 +1885,7 @@ app.post("/api/admin/utilisateurs/:id/reset-password", requireAuth, requireSuper
       return res.status(400).json({ error: "Le nouveau mot de passe doit faire au moins 8 caractères" });
     }
     const hash = await hashPassword(nouveauMotDePasse);
-    await prisma.utilisateur.update({ where: { id: req.params.id }, data: { motDePasse: hash } });
+    await prisma.utilisateur.update({ where: { id: String(req.params.id) }, data: { motDePasse: hash } });
     res.json({ ok: true });
   } catch (err: unknown) {
     const code = (err as { code?: string }).code;
@@ -1898,7 +1898,7 @@ app.post("/api/admin/utilisateurs/:id/reset-password", requireAuth, requireSuper
 // DELETE /api/admin/utilisateurs/:id → supprimer un compte employé
 app.delete("/api/admin/utilisateurs/:id", requireAuth, requireSuperAdmin, async (req, res) => {
   try {
-    await prisma.utilisateur.delete({ where: { id: req.params.id } });
+    await prisma.utilisateur.delete({ where: { id: String(req.params.id) } });
     res.json({ ok: true });
   } catch (err: unknown) {
     const code = (err as { code?: string }).code;
