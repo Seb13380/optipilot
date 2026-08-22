@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import { useApp } from "@/lib/AppContext";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
@@ -37,6 +38,9 @@ function authHeaders(): HeadersInit {
 
 export default function AdminPage() {
   const router = useRouter();
+  const { theme } = useApp();
+  const textMain = theme === "dark" ? "#FDFDFE" : "#111827";
+  const textMuted = theme === "dark" ? "#9B96DA" : "#6b7280";
   const [autorise, setAutorise] = useState<boolean | null>(null);
   const [magasins, setMagasins] = useState<Magasin[]>([]);
   const [selected, setSelected] = useState<Magasin | null>(null);
@@ -159,7 +163,7 @@ export default function AdminPage() {
   if (autorise === false) {
     return (
       <div className="page-bg min-h-screen flex items-center justify-center">
-        <p style={{ color: "#FDFDFE" }}>Accès réservé.</p>
+        <p style={{ color: textMain }}>Accès réservé.</p>
       </div>
     );
   }
@@ -170,8 +174,8 @@ export default function AdminPage() {
       <main className="flex-1 px-6 pb-10 pt-4 w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Liste des magasins */}
         <section>
-          <h2 className="text-lg font-bold mb-3" style={{ color: "#FDFDFE" }}>Magasins ({magasins.length})</h2>
-          {loading && <p style={{ color: "#9B96DA" }}>Chargement…</p>}
+          <h2 className="text-lg font-bold mb-3" style={{ color: textMain }}>Magasins ({magasins.length})</h2>
+          {loading && <p style={{ color: textMuted }}>Chargement…</p>}
           {erreur && <p style={{ color: "#f87171" }}>{erreur}</p>}
           <div className="flex flex-col gap-2">
             {magasins.map((m) => (
@@ -196,11 +200,11 @@ export default function AdminPage() {
         {/* Détail du magasin sélectionné */}
         <section>
           {!selected ? (
-            <p style={{ color: "#9B96DA" }}>Sélectionne un magasin pour voir ses employés.</p>
+            <p style={{ color: textMuted }}>Sélectionne un magasin pour voir ses employés.</p>
           ) : (
             <>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-bold" style={{ color: "#FDFDFE" }}>{selected.nom}</h2>
+                <h2 className="text-lg font-bold" style={{ color: textMain }}>{selected.nom}</h2>
                 <button
                   onClick={() => chargerStripe(selected.id)}
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg"
@@ -242,7 +246,7 @@ export default function AdminPage() {
                 ))}
               </div>
 
-              <h3 className="text-sm font-bold mb-2" style={{ color: "#FDFDFE" }}>Créer un employé</h3>
+              <h3 className="text-sm font-bold mb-2" style={{ color: textMain }}>Créer un employé</h3>
               <form onSubmit={creerEmploye} className="flex flex-col gap-2">
                 <input required placeholder="Nom" value={creation.nom} onChange={(e) => setCreation((c) => ({ ...c, nom: e.target.value }))} className="px-3 py-2 rounded-lg text-sm" style={{ background: "#0A0338", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.4)" }} />
                 <input required type="email" placeholder="Email" value={creation.email} onChange={(e) => setCreation((c) => ({ ...c, email: e.target.value }))} className="px-3 py-2 rounded-lg text-sm" style={{ background: "#0A0338", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.4)" }} />

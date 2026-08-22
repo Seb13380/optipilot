@@ -74,6 +74,7 @@ interface User {
   magasinNom?: string;
   magasinId: string;
   plan?: string;
+  isSuperAdmin?: boolean;
 }
 
 interface TeamMember {
@@ -431,6 +432,15 @@ function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {user?.isSuperAdmin && (
+              <button
+                onClick={() => router.push("/admin")}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                style={{ background: "rgba(83,49,208,0.18)", color: "#7B5CE5", border: "1px solid rgba(83,49,208,0.4)" }}
+              >
+                Administration
+              </button>
+            )}
             {/* Sélecteur de langue — masqué sur mobile */}
             <div className="hidden sm:flex rounded-lg overflow-hidden" style={{ border: "1px solid rgba(83,49,208,0.35)" }}>
               {(["FR", "EN"] as const).map((l) => (
