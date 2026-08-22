@@ -10,7 +10,10 @@ import { hashPassword, comparePassword, signToken, verifyToken, TokenPayload } f
 const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  timeout: 20000,
+  maxNetworkRetries: 3,
+});
 
 const allowedOrigins = [
   "http://localhost:3000",
