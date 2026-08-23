@@ -68,6 +68,7 @@ export default function DevisPage() {
   const [optimumStatut, setOptimumStatut] = useState<OptimumStatut>("idle");
   const [optimumError, setOptimumError] = useState<string | null>(null);
   const [optimumToast, setOptimumToast] = useState("");
+  const [champCopie, setChampCopie] = useState<string | null>(null);
 
   // Remise opticien
   const [remise, setRemise] = useState(0);
@@ -1538,6 +1539,43 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
             >
               Copier données
             </motion.button>
+          </div>
+
+          {/* ─── Utiliser mon devis — mode universel (tout logiciel) ─── */}
+          <div className="rounded-2xl overflow-hidden" style={{ border: "1.5px solid rgba(83,49,208,0.3)", background: "rgba(10,3,56,0.6)" }}>
+            <div className="px-5 py-3" style={{ borderBottom: "1px solid rgba(83,49,208,0.2)" }}>
+              <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Copier pour mon logiciel</p>
+              <p className="text-xs mt-0.5" style={{ color: "#9B96DA" }}>Un clic par montant, colle-le directement dans ton logiciel de caisse</p>
+            </div>
+            <div className="px-5 py-3 flex flex-col gap-2">
+              {[
+                { label: "Monture", val: `${prixMonture}` },
+                { label: "Verres", val: `${totalVerres}` },
+                ...(remise > 0 ? [{ label: "Remise", val: `${remise}` }] : []),
+                { label: "Sécu", val: `${racResult ? racResult.secu : (offre?.remboursementSecu ?? 0)}` },
+                { label: "Mutuelle", val: `${racResult ? racResult.mutuelle : (offre?.remboursementMutuelle ?? 0)}` },
+                { label: "Reste à charge", val: `${racResult ? racResult.montant : resteACharge}` },
+              ].map((champ) => (
+                <button
+                  key={champ.label}
+                  onClick={() => {
+                    navigator.clipboard.writeText(champ.val);
+                    setChampCopie(champ.label);
+                    setTimeout(() => setChampCopie(null), 1500);
+                  }}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-sm"
+                  style={{ background: "rgba(83,49,208,0.12)", color: "#FDFDFE" }}
+                >
+                  <span style={{ color: "#9B96DA" }}>{champ.label}</span>
+                  <span className="font-bold flex items-center gap-2">
+                    {champ.val}€
+                    <span className="text-xs" style={{ color: champCopie === champ.label ? "#22c55e" : "#9B96DA" }}>
+                      {champCopie === champ.label ? "✓ copié" : "copier"}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* ─── SYNCHRONISATION OPTIMUM ─── */}
