@@ -1,4 +1,5 @@
 import "dotenv/config";
+import dns from "dns";
 import express, { Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -6,6 +7,10 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import Stripe from "stripe";
 import { hashPassword, comparePassword, signToken, verifyToken, TokenPayload } from "../src/lib/auth";
+
+// Force IPv4 en priorité — évite les timeouts vers des API externes (Stripe...)
+// sur des hébergeurs où la route IPv6 sortante est cassée/lente.
+dns.setDefaultResultOrder("ipv4first");
 
 const app = express();
 const httpServer = createServer(app);
