@@ -600,26 +600,9 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
       } catch { /* fallback */ }
     }
 
-    // Fallback : relais cloud — le PC de l'opticien connecté (extension) récupère
-    // le devis et affiche le panneau directement sur son onglet Optimum Live.
-    // On n'ouvre plus Optimum sur la tablette elle-même.
-    try {
-      const token = localStorage.getItem("optipilot_token") || "";
-      const res = await fetch(`${BACKEND}/api/bridge/devis-push`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        setOptimumToast(`⏳ Envoyé au poste de ${user.nom || "l'opticien connecté"} — panneau Optimum Live dans ~15s`);
-        setTimeout(() => setOptimumToast(""), 6000);
-      } else {
-        throw new Error();
-      }
-    } catch {
-      setOptimumToast("⚠️ Échec de l'envoi — vérifiez la connexion");
-      setTimeout(() => setOptimumToast(""), 4000);
-    }
+    // Fallback : ouvrir directement (mode desktop avec extension)
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    window.open(`https://livebyoptimum.com/accueil#optipilot-devis=${encoded}`, "_blank");
   }
 
   return (

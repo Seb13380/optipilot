@@ -214,7 +214,6 @@ model Questionnaire {
 model DevisPending {
   id          String   @id @default(uuid())
   magasinId   String
-  userId      String?  // opticien cible (poste PC) — évite l'envoi croisé entre postes
   payload     Json     // toutes les données du devis (client, ordo, offre, prix...)
   statut      String   @default("pending") // pending | processing | done | error
   createdAt   DateTime @default(now())
