@@ -1621,12 +1621,13 @@ app.post("/api/ambassadeur/reset", async (req, res) => {
 app.post("/api/bridge/devis-push", requireAuth, async (req: AuthRequest, res) => {
   try {
     const magasinId = req.user?.magasinId!;
+    const userId = req.user?.userId;
     const payload = req.body;
     if (!payload || Object.keys(payload).length === 0) {
       return res.status(400).json({ error: "Payload vide" });
     }
     const pending = await prisma.devisPending.create({
-      data: { magasinId, payload, statut: "pending" },
+      data: { magasinId, userId, payload, statut: "pending" },
     });
     console.log(`📤 DevisPending créé ${pending.id} pour magasin ${magasinId}`);
     res.json({ id: pending.id });
@@ -1639,8 +1640,11 @@ app.post("/api/bridge/devis-push", requireAuth, async (req: AuthRequest, res) =>
 app.get("/api/bridge/devis-pull", requireAuth, async (req: AuthRequest, res) => {
   try {
     const magasinId = req.user?.magasinId!;
+    const userId = req.user?.userId;
+    // Cible uniquement les devis envoyés à CE poste (opticien connecté ici) —
+    // sinon 2 postes du même magasin se disputeraient le même devis.
     const pending = await prisma.devisPending.findMany({
-      where: { magasinId, statut: "pending" },
+      where: { magasinId, statut: "pending", OR: [{ userId }, { userId: null }] },
       orderBy: { createdAt: "asc" },
     });
     // Passer en "processing" pour éviter les doubles traitements
