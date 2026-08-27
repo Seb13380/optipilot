@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
 
     const response = await openai.chat.completions.create({
       model: "gpt-5.6-terra",
+      reasoning_effort: "low",
       max_completion_tokens: 2500,
       messages: [
         {
