@@ -77,9 +77,8 @@ export async function POST(request: NextRequest) {
     const mimeType = (mimeMatch?.[1] || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp";
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_tokens: 1200,
-      temperature: 0.2,
+      model: "gpt-5.6-terra",
+      max_completion_tokens: 2000,
       response_format: { type: "json_object" },
       messages: [
         {

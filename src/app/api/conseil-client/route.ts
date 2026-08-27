@@ -32,13 +32,12 @@ export async function POST(req: NextRequest) {
       : question;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5.6-terra",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userMessage },
       ],
-      max_tokens: 300,
-      temperature: 0.5,
+      max_completion_tokens: 800,
     });
 
     const reponse = completion.choices[0]?.message?.content?.trim() || "Je n'ai pas pu générer une réponse. Veuillez reformuler votre question.";
