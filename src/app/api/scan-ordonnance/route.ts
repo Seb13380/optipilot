@@ -194,8 +194,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log("[scan-ordonnance] GPT raw:", raw);
-    console.log("[scan-ordonnance] cleaned+normalized:", ordonnance);
+    // Logs de diagnostic SANS données patient (pas de nom/prénom/prescripteur en clair)
+    console.log("[scan-ordonnance] valeurs optiques lues:", {
+      odSphere: ordonnance.odSphere, odCylindre: ordonnance.odCylindre, odAxe: ordonnance.odAxe,
+      ogSphere: ordonnance.ogSphere, ogCylindre: ordonnance.ogCylindre, ogAxe: ordonnance.ogAxe,
+    });
     console.log("[scan-ordonnance] champs incertains:", champsIncertains);
 
     return NextResponse.json({ ordonnance, champsIncertains, source: "gpt-4o" });
