@@ -54,6 +54,10 @@ En manuscrit : souvent écrite après "Le " ou "Fait le " ou "À [ville], le " o
 ⚠️ NE PAS prendre la date de naissance du patient ni la date d'expiration.
 Si ambiguïté entre JJ et MM (ex: 06/03 ou 03/06), préférer la lecture JJ/MM/AAAA.
 
+═══ CAS PARTICULIERS ═══
+- deuxPaires : mettre true si l'ordonnance mentionne EXPLICITEMENT "2 paires", "deux paires", "VL + VP", "VP + VL", "vision de loin + vision de près", "2 équipements" ou toute formulation prescrivant deux équipements distincts. false sinon.
+- intoleranceProgressifs : mettre true si l'ordonnance mentionne "intolérance progressifs", "intolérant aux progressifs", "ne supporte pas les progressifs", "mal supporté les progressifs", "contre-indication progressifs", "échec progressifs" ou équivalent. false sinon.
+
 ═══ FORMAT DE SORTIE ═══
 Retourne UNIQUEMENT ce JSON valide, sans aucun texte avant ni après :
 {
@@ -70,7 +74,9 @@ Retourne UNIQUEMENT ce JSON valide, sans aucun texte avant ni après :
   "ogAddition": null,
   "ecartPupillaire": null,
   "prescripteur": null,
-  "dateOrdonnance": null
+  "dateOrdonnance": null,
+  "deuxPaires": false,
+  "intoleranceProgressifs": false
 }
 
 ═══ RÈGLES STRICTES ═══
@@ -111,9 +117,9 @@ export async function POST(request: NextRequest) {
     const mimeType = (mimeMatch?.[1] || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp";
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_tokens: 1500,
-      temperature: 0,
+      model: "gpt-5.6-terra",
+      reasoning_effort: "low",
+      max_completion_tokens: 2500,
       messages: [
         {
           role: "user",
@@ -156,6 +162,10 @@ export async function POST(request: NextRequest) {
       if (!ordonnance[`${eye}Axe`])      ordonnance[`${eye}Axe`]      = "0";
     }
 
+    // Normalisation des champs booléens (jamais null — défaut = "false")
+    if (ordonnance.deuxPaires === null) ordonnance.deuxPaires = "false";
+    if (ordonnance.intoleranceProgressifs === null) ordonnance.intoleranceProgressifs = "false";
+
     // Nettoyer le nomPatient : retirer tout ce qui suit "Bienvenue" si GPT a capturé du texte parasite
     if (ordonnance.nomPatient) {
       ordonnance.nomPatient = ordonnance.nomPatient
@@ -164,10 +174,34 @@ export async function POST(request: NextRequest) {
       if (!ordonnance.nomPatient) ordonnance.nomPatient = null;
     }
 
-    console.log("[scan-ordonnance] GPT raw:", raw);
-    console.log("[scan-ordonnance] cleaned+normalized:", ordonnance);
+    // Identifier les champs que GPT n'a pas pu lire (retournés null avant normalisation)
+    const CHAMPS_LABELS: Record<string, string> = {
+      odSphere:        "Sphère OD",
+      odCylindre:      "Cylindre OD",
+      ogSphere:        "Sphère OG",
+      ogCylindre:      "Cylindre OG",
+      odAddition:      "Addition OD",
+      ogAddition:      "Addition OG",
+      ecartPupillaire: "Écart pupillaire",
+      dateOrdonnance:  "Date d'ordonnance",
+      nomPatient:      "Nom du patient",
+    };
+    const champsIncertains: string[] = [];
+    for (const [key, label] of Object.entries(CHAMPS_LABELS)) {
+      const v = raw[key];
+      if (v === null || v === undefined || v === "null" || v === "undefined" || v === "") {
+        champsIncertains.push(label);
+      }
+    }
 
-    return NextResponse.json({ ordonnance, source: "gpt-4o" });
+    // Logs de diagnostic SANS données patient (pas de nom/prénom/prescripteur en clair)
+    console.log("[scan-ordonnance] valeurs optiques lues:", {
+      odSphere: ordonnance.odSphere, odCylindre: ordonnance.odCylindre, odAxe: ordonnance.odAxe,
+      ogSphere: ordonnance.ogSphere, ogCylindre: ordonnance.ogCylindre, ogAxe: ordonnance.ogAxe,
+    });
+    console.log("[scan-ordonnance] champs incertains:", champsIncertains);
+
+    return NextResponse.json({ ordonnance, champsIncertains, source: "gpt-4o" });
 
   } catch (error) {
     console.error("Scan ordonnance error:", error);

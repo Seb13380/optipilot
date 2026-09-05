@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { io, Socket } from "socket.io-client";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 import type { OffreVerre } from "@/lib/recommandation";
 
 interface ClientInfo {
@@ -13,6 +14,17 @@ interface ClientInfo {
   email?: string;
   mutuelle?: string;
   niveauGarantie?: string;
+}
+
+interface MontureStock {
+  id: string | number;
+  marque: string;
+  reference: string;
+  couleur?: string;
+  matiere?: string;
+  genre?: string;
+  prix: number;
+  stock?: number;
 }
 
 type RacStatut = "idle" | "loading" | "confirmed" | "error";
@@ -25,6 +37,8 @@ interface RacResult {
   detail: string;
   statut: string;
 }
+
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
 
 export default function DevisPage() {
   const router = useRouter();
@@ -53,6 +67,44 @@ export default function DevisPage() {
   const [bridgeUrl, setBridgeUrl] = useState<string | null>(null);
   const [optimumStatut, setOptimumStatut] = useState<OptimumStatut>("idle");
   const [optimumError, setOptimumError] = useState<string | null>(null);
+  const [optimumToast, setOptimumToast] = useState("");
+  const [champCopie, setChampCopie] = useState<string | null>(null);
+
+  // Remise opticien
+  const [remise, setRemise] = useState(0);
+
+  // Sélection monture depuis le stock Optimum
+  const [montureSelectionnee, setMontureSelectionnee] = useState<MontureStock | null>(null);
+  const [monturesStock, setMonturesStock] = useState<MontureStock[]>([]);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [stockPanelOpen, setStockPanelOpen] = useState(false);
+  const [stockSearch, setStockSearch] = useState("");
+
+  // Changement de verre
+  const [verrierOverride, setVerrierOverride] = useState("");
+  const [gammeOverride, setGammeOverride] = useState("");
+  const [verrierPanelOpen, setVerrierPanelOpen] = useState(false);
+
+  // Renouvellement anticipé
+  const [renouvelAnticipe, setRenouvelAnticipe] = useState(false);
+  const [motifAnticipe, setMotifAnticipe] = useState("");
+
+  // Saisie manuelle monture (bridge non connecté)
+  const [montureManuelle, setMontureManuelle] = useState({ fabricant: "", marque: "", modele: "", calibreOeil: "", calibrePont: "", calibreBranche: "" });
+
+  // Client — email & recherche
+  const [clientEmail, setClientEmail] = useState("");
+  const [emailInputOpen, setEmailInputOpen] = useState(false);
+  const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [clientSearchResults, setClientSearchResults] = useState<{id: string; nom: string; prenom: string; email?: string; mutuelle?: string}[]>([]);
+  const [clientSearchLoading, setClientSearchLoading] = useState(false);
+  const [emailSentTo, setEmailSentTo] = useState("");
+  const [clientCreateOpen, setClientCreateOpen] = useState(false);
+  const [clientCreateForm, setClientCreateForm] = useState({ prenom: "", nom: "", email: "", tel: ["","","","",""], mutuelle: "", dateNaissance: "", adresse: "", numeroSecu: "" });
+  const [clientCreateLoading, setClientCreateLoading] = useState(false);
+
+  const MUTUELLES = ["","Harmonie Mutuelle","MGEN","Malakoff Humanis","AG2R La Mondiale","Groupama","MAAF","GMF","MAIF","MACIF","Mutuelle de France","Generali","April","Allianz","AXA","Covéa","Swiss Life","Intégrance","Mutuelle des Motards","Smatis","Eovi-MCD","Apicil","Klesia","Pro BTP","Solimut","Amphivia","Autre"];
 
   useEffect(() => {
     const offreRaw = localStorage.getItem("optipilot_offre_selectionnee");
@@ -61,7 +113,15 @@ export default function DevisPage() {
     const questRaw = localStorage.getItem("optipilot_questionnaire");
 
     if (offreRaw) setOffre(JSON.parse(offreRaw));
-    if (clientRaw) setClient(JSON.parse(clientRaw));
+    if (clientRaw) {
+      const c = JSON.parse(clientRaw);
+      setClient(c);
+      setClientEmail(c.email || "");
+      // Synchronise optipilot_client_id si le scan mutuelle a renvoyé un id
+      if (c.id && !localStorage.getItem("optipilot_client_id")) {
+        localStorage.setItem("optipilot_client_id", c.id);
+      }
+    }
     if (ordoRaw) setOrdonnance(JSON.parse(ordoRaw));
     if (questRaw) {
       const q = JSON.parse(questRaw);
@@ -69,11 +129,22 @@ export default function DevisPage() {
       if (!clientRaw) setClient({ mutuelle: q.mutuelle, niveauGarantie: q.niveauGarantie });
     }
 
+    // Monture sélectionnée depuis le catalogue (stock Optimum)
+    const montureStockRaw = localStorage.getItem("optipilot_monture_stock");
+    if (montureStockRaw) {
+      try {
+        const m = JSON.parse(montureStockRaw);
+        setMontureSelectionnee(m);
+        if (m.prix) setPrixMonture(m.prix);
+        localStorage.removeItem("optipilot_monture_stock"); // consommé une seule fois
+      } catch { /* ignore */ }
+    }
+
     const savedBridgeUrl = localStorage.getItem("optipilot_bridge_url");
     if (savedBridgeUrl) setBridgeUrl(savedBridgeUrl);
 
     // Connexion Socket.io pour récupérer RAC réel en temps réel
-    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000", {
+    const socket = io(BACKEND, {
       transports: ["websocket", "polling"],
     });
     socketRef.current = socket;
@@ -101,22 +172,88 @@ export default function DevisPage() {
   }, []);
 
   const totalVerres = offre?.prixVerres || 0;
-  const totalDevis = prixMonture + totalVerres;
+  const totalBrut = prixMonture + totalVerres;
+  const totalDevis = totalBrut - remise;
   const remboursement = offre ? offre.remboursementSecu + offre.remboursementMutuelle : 0;
   const resteACharge = Math.max(0, totalDevis - remboursement);
+  const verrierAffiche = verrierOverride || offre?.verrier || "";
+  const gammeAffichee  = gammeOverride  || offre?.gamme  || "";
+  const MOTIFS_ANTICIPE: Record<string, string> = {
+    adaptation_opticien:     "Adaptation opticien — changement de correction (ordonnance < 3 ans)",
+    degradation_performances: "Dégradation des performances oculaires de l'équipement",
+    condition_medicale:       "Condition médicale particulière (glaucome, DMLA, cataracte évolutive…)",
+    pathologie_non_oculaire:  "Pathologie non oculaire ou traitement médicamenteux long cours",
+  };
+
+  async function rechercherClient(q: string) {
+    setClientSearchQuery(q);
+    if (q.length < 2) { setClientSearchResults([]); return; }
+    setClientSearchLoading(true);
+    try {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const userRaw = localStorage.getItem("optipilot_user");
+      const magasin = userRaw ? JSON.parse(userRaw).magasinId : "";
+      const res = await fetch(
+        `${BACKEND}/api/clients/search?nom=${encodeURIComponent(q)}&magasinId=${magasin}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) setClientSearchResults(await res.json());
+    } catch { /* offline */ }
+    setClientSearchLoading(false);
+  }
+
+  async function creerClientInline() {
+    if (!clientCreateForm.nom.trim() || !clientCreateForm.prenom.trim()) return;
+    setClientCreateLoading(true);
+    try {
+      const token = localStorage.getItem("optipilot_token") || "";
+      const userRaw = localStorage.getItem("optipilot_user");
+      const magasinId = userRaw ? JSON.parse(userRaw).magasinId : "";
+      const telephone = clientCreateForm.tel.join("");
+      const res = await fetch(`${BACKEND}/api/clients`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ prenom: clientCreateForm.prenom, nom: clientCreateForm.nom, email: clientCreateForm.email, telephone, mutuelle: clientCreateForm.mutuelle, dateNaissance: clientCreateForm.dateNaissance || null, adresse: clientCreateForm.adresse || null, numeroSecu: clientCreateForm.numeroSecu || null, magasinId }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        selectionnerClient(created);
+        setClientCreateOpen(false);
+        setClientCreateForm({ prenom: "", nom: "", email: "", tel: ["","","","",""], mutuelle: "", dateNaissance: "", adresse: "", numeroSecu: "" });
+      }
+    } catch { /* offline */ }
+    setClientCreateLoading(false);
+  }
+
+  function selectionnerClient(c: { id: string; nom: string; prenom: string; email?: string; mutuelle?: string }) {
+    localStorage.setItem("optipilot_client_id", c.id);
+    localStorage.setItem("optipilot_client", JSON.stringify(c));
+    setClient({ nom: c.nom, prenom: c.prenom, email: c.email, mutuelle: c.mutuelle });
+    setClientEmail(c.email || "");
+    setClientSearchOpen(false);
+    setClientSearchQuery("");
+    setClientSearchResults([]);
+  }
 
   async function envoyerDevis() {
+    const emailFinal = clientEmail.trim();
+    if (!emailFinal) { setEmailInputOpen(true); return; }
     setSending(true);
     try {
       const token = localStorage.getItem("optipilot_token") || "";
       const userRaw = localStorage.getItem("optipilot_user");
       const magasin = userRaw ? JSON.parse(userRaw).magasinId : "demo-magasin";
-      const clientId = localStorage.getItem("optipilot_client_id") || "demo";
+      const clientId = localStorage.getItem("optipilot_client_id") || "";
+      if (!clientId) {
+        alert("Veuillez d'abord rechercher et sélectionner le client.");
+        setSending(false);
+        return;
+      }
 
       const montantSS  = racResult ? racResult.secu  : (offre?.remboursementSecu  ?? 0);
       const montantMut = racResult ? racResult.mutuelle : (offre?.remboursementMutuelle ?? 0);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis`, {
+      const res = await fetch(`${BACKEND}/api/devis`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -132,7 +269,19 @@ export default function DevisPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setDevisId(data.id ?? null);
+        const newDevisId = data.id ?? null;
+        setDevisId(newDevisId);
+        // Envoyer le devis par email
+        if (newDevisId) {
+          try {
+            await fetch(`${BACKEND}/api/devis/${newDevisId}/email`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ email: emailFinal }),
+            });
+          } catch { /* email non bloquant */ }
+        }
+        setEmailSentTo(emailFinal);
       }
     } catch {
       // Mode démo
@@ -148,7 +297,7 @@ export default function DevisPage() {
       const token = localStorage.getItem("optipilot_token") || "";
       const montantSS  = racResult ? racResult.secu  : (offre?.remboursementSecu  ?? 0);
       const montantMut = racResult ? racResult.mutuelle : (offre?.remboursementMutuelle ?? 0);
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/devis/${devisId}`, {
+      await fetch(`${BACKEND}/api/devis/${devisId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -189,6 +338,9 @@ export default function DevisPage() {
 
   function copierDonnees() {
     const rac = racResult ? racResult.montant : resteACharge;
+    const ligneMonture = montureSelectionnee
+      ? `${montureSelectionnee.marque} — ${montureSelectionnee.reference} : ${prixMonture}€`
+      : `Monture : ${prixMonture}€`;
     const texte = `DEVIS OPTIPILOT
 Client: ${client.prenom || ""} ${client.nom || ""}
 Date: ${new Date().toLocaleDateString("fr-FR")}
@@ -199,14 +351,46 @@ OG: Sph ${ordonnance.ogSphere || "?"} Cyl ${ordonnance.ogCylindre || "?"} Axe ${
 ADD: ${ordonnance.odAddition || "—"}
 
 DEVIS ${offre?.nom?.toUpperCase()}:
-Monture: ${prixMonture}€
+${ligneMonture}
 Verres (${offre?.verrier} ${offre?.gamme}): ${totalVerres}€
-Total: ${totalDevis}€
+Sous-total: ${totalBrut}€${remise > 0 ? `\nRemise opticien: -${remise}€\nTotal net: ${totalDevis}€` : ""}
 ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.mutuelle}€\nReste à charge RÉEL : ${rac}€` : `Remboursement SS + mutuelle : -${remboursement}€\nReste à charge estimé : ${resteACharge}€`}`;
 
     navigator.clipboard.writeText(texte).then(() => {
       alert("✓ Données copiées dans le presse-papier");
     });
+  }
+
+  async function envoyerViaRelais() {
+    setOptimumStatut("sending");
+    setOptimumError(null);
+    try {
+      const token = localStorage.getItem("optipilot_token");
+      const res = await fetch(`${BACKEND}/api/bridge/devis-push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          client,
+          ordonnance,
+          offre,
+          prixMonture,
+          totalVerres,
+          totalDevis,
+          resteACharge,
+          remise,
+          verrierChoisi: verrierOverride || offre?.verrier,
+          gammeChoisie:  gammeOverride  || offre?.gamme,
+          renouvelAnticipe,
+          motifAnticipe: renouvelAnticipe ? motifAnticipe : undefined,
+        }),
+      });
+      if (!res.ok) throw new Error(`Erreur serveur (${res.status})`);
+      setOptimumStatut("waiting_cotation");
+      setOptimumToast("⏳ En attente du PC du magasin…");
+    } catch (err) {
+      setOptimumStatut("error");
+      setOptimumError(err instanceof Error ? err.message : "Erreur relais");
+    }
   }
 
   async function envoyerVersOptimum() {
@@ -258,14 +442,16 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
           clientId,
           ordonnanceId: ordoId,
           monture: prixMonture,
-          verrier: offre?.verrier || "",
-          gamme: offre?.gamme || "",
+          verrier: verrierOverride || offre?.verrier || "",
+          gamme:   gammeOverride   || offre?.gamme   || "",
           offre: offre?.nom || "",
           prixVerres: totalVerres,
           totalDevis,
           resteACharge,
           remboursementSecu: offre?.remboursementSecu || 0,
           remboursementMutuelle: offre?.remboursementMutuelle || 0,
+          renouvelAnticipe,
+          motifAnticipe: renouvelAnticipe ? motifAnticipe : undefined,
         }),
       });
       if (!devisRes.ok) throw new Error(`Erreur devis (${devisRes.status})`);
@@ -308,12 +494,30 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
   }
 
   async function confirmerRACReel() {
+    // Sans bridge : afficher immédiatement le RAC estimé calculé depuis l'offre
+    if (!bridgeUrl) {
+      setRacStatut("loading");
+      setTimeout(() => {
+        const secuEst = offre?.remboursementSecu ?? 0;
+        const mutEst = offre?.remboursementMutuelle ?? 0;
+        setRacResult({
+          montant: resteACharge,
+          secu: secuEst,
+          mutuelle: mutEst,
+          detail: `${client.mutuelle || "Mutuelle"} ${client.niveauGarantie || ""} — estimation grille tarifaire`.trim(),
+          statut: "estimé",
+        });
+        setRacStatut("confirmed");
+      }, 600);
+      return;
+    }
+
     setRacStatut("loading");
     const userRaw = localStorage.getItem("optipilot_user");
     const user = userRaw ? JSON.parse(userRaw) : { magasinId: "demo-magasin" };
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rac-request`, {
+      await fetch(`${BACKEND}/api/rac-request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -327,22 +531,82 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
         }),
       });
     } catch {
-      // Mode démo : simulation réponse 3 secondes
-      setTimeout(() => {
-        const demoResult: RacResult = {
-          montant: Math.max(0, totalDevis - (offre?.remboursementSecu || 30) - 185),
-          secu: offre?.remboursementSecu || 30,
-          mutuelle: 185,
-          detail: `${client.mutuelle || "MGEN"} ${client.niveauGarantie || "Confort"} — ${offre?.type || "Progressif"}`,
-          statut: "accordé",
-        };
-        setRacResult(demoResult);
-        setRacStatut("confirmed");
-      }, 3000);
+      // Fallback si backend injoignable
+      const secuEst = offre?.remboursementSecu ?? 0;
+      const mutEst = offre?.remboursementMutuelle ?? 0;
+      setRacResult({
+        montant: resteACharge,
+        secu: secuEst,
+        mutuelle: mutEst,
+        detail: `${client.mutuelle || "Mutuelle"} ${client.niveauGarantie || ""} — estimation grille tarifaire`.trim(),
+        statut: "estimé",
+      });
+      setRacStatut("confirmed");
     }
   }
 
+  async function chargerStock() {
+    setStockLoading(true);
+    try {
+      const res = await fetch(`/api/montures?prixMax=9999`);
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.montures)) {
+        setMonturesStock(data.montures);
+      }
+    } catch {
+      // Bridge non disponible — saisie manuelle conservée
+    } finally {
+      setStockLoading(false);
+    }
+  }
+
+  async function ouvrirDansOptimum() {
+    const userRaw = localStorage.getItem("optipilot_user");
+    const user = userRaw ? JSON.parse(userRaw) : {};
+    const payload = {
+      nom: client.nom || "",
+      prenom: client.prenom || "",
+      mutuelle: client.mutuelle || "",
+      niveauGarantie: (client as { niveauGarantie?: string }).niveauGarantie || "",
+      verrier: verrierOverride || offre?.verrier || "",
+      gamme:   gammeOverride   || offre?.gamme   || "",
+      offre: offre?.nom || "",
+      prixVerres: totalVerres,
+      prixMonture,
+      prixTotal: totalDevis,
+      remboursementSecu: racResult?.secu ?? offre?.remboursementSecu ?? 0,
+      remboursementMutuelle: racResult?.mutuelle ?? offre?.remboursementMutuelle ?? 0,
+      magasinId: user.magasinId || "",
+      renouvelAnticipe,
+      motifAnticipe: renouvelAnticipe ? motifAnticipe : undefined,
+    };
+
+    const bridgeIp = localStorage.getItem("optipilot_bridge_ip");
+    const bridgePort = localStorage.getItem("optipilot_bridge_port") || "5174";
+    const bridgeToken = localStorage.getItem("optipilot_bridge_token") || "";
+
+    if (bridgeIp) {
+      try {
+        const res = await fetch(`http://${bridgeIp}:${bridgePort}/open-optimum-devis`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-bridge-token": bridgeToken },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          setOptimumToast("✓ Optimum Live ouvert sur le PC");
+          setTimeout(() => setOptimumToast(""), 3000);
+          return;
+        }
+      } catch { /* fallback */ }
+    }
+
+    // Fallback : ouvrir directement (mode desktop avec extension)
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    window.open(`https://livebyoptimum.com/accueil#optipilot-devis=${encoded}`, "_blank");
+  }
+
   return (
+      <OpticianGuard>
       <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         title="Votre Devis"
@@ -376,9 +640,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   style={{
                     background:
                       offre.nom === "Essentiel"
-                        ? "#22c55e"
-                        : offre.nom === "Confort"
-                        ? "#5331D0"
+                        ? "#a855f7"
                         : "#5331D0",
                   }}
                 >
@@ -422,23 +684,43 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
 
             {/* Détail financier */}
             <div className="flex flex-col gap-2">
+              <div className={!montureSelectionnee && prixMonture === 120 ? "pulse-border" : ""}>
               <DevisLigne
-                label="Monture"
+                label={montureSelectionnee ? `${montureSelectionnee.marque} — ${montureSelectionnee.reference}` : "Monture"}
                 value={`${prixMonture}€`}
+                sub={montureSelectionnee?.couleur}
                 editable
                 onEdit={(v) => setPrixMonture(parseInt(v) || 0)}
               />
+              </div>
               <DevisLigne
-                label={`Verres — ${offre?.verrier || ""} ${offre?.gamme || ""}`}
+                label={`Verres — ${verrierAffiche} ${gammeAffichee}`}
                 value={`${totalVerres}€`}
                 sub={offre ? `Indice ${offre.indice} • Classe ${offre.classe100ps}` : undefined}
               />
               <div className="pt-2" style={{ borderTop: "1px solid rgba(10,3,56,0.8)" }} />
               <DevisLigne
                 label="Sous-total"
-                value={`${totalDevis}€`}
+                value={`${totalBrut}€`}
                 bold
               />
+              {/* Remise */}
+              {remise > 0 && (
+                <div className="flex items-center justify-between py-1.5 px-1">
+                  <span className="text-base" style={{ color: "#c084fc" }}>Remise opticien</span>
+                  <span className="text-base font-bold" style={{ color: "#c084fc" }}>-{remise}€</span>
+                </div>
+              )}
+              {remise > 0 && (
+                <>
+                  <div className="pt-2" style={{ borderTop: "1px solid rgba(10,3,56,0.8)" }} />
+                  <DevisLigne
+                    label="Total net"
+                    value={`${totalDevis}€`}
+                    bold
+                  />
+                </>
+              )}
               <DevisLigne
                 label="Remboursement Sécurité Sociale"
                 value={`${offre?.remboursementSecu || 0}€`}
@@ -450,10 +732,10 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                 green
               />
               <div
-                className="flex items-center justify-between p-5 rounded-xl mt-2"
+                className="flex flex-col items-start p-5 rounded-xl mt-2"
                 style={{ background: "linear-gradient(135deg, rgba(83,49,208,0.12), rgba(83,49,208,0.22))", border: "1px solid rgba(83,49,208,0.4)" }}
               >
-                <p className="text-lg font-bold" style={{ color: "#FDFDFE" }}>
+                <p className="text-sm font-semibold uppercase tracking-wide mb-1" style={{ color: "rgba(155,150,218,0.7)" }}>
                   Reste à Charge
                 </p>
                 <p className="text-4xl font-black" style={{ color: "#9B96DA" }}>
@@ -493,6 +775,509 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
             transition={{ delay: 0.2 }}
             className="flex flex-col gap-4"
           >
+            {/* ─── CLIENT ─── */}
+            <div className="rounded-2xl p-5" style={{ background: "#0A0338", border: "1px solid rgba(83,49,208,0.4)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="section-label">CLIENT</p>
+                <button
+                  onClick={() => setClientSearchOpen((v) => !v)}
+                  className="text-xs px-3 py-1 rounded-lg font-semibold"
+                  style={{ background: "rgba(83,49,208,0.18)", color: "#9B96DA" }}
+                >
+                  Rechercher
+                </button>
+              </div>
+              {(client.nom || client.prenom) ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>{client.prenom} {client.nom}</p>
+                  {clientEmail ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm" style={{ color: "#9B96DA" }}>{clientEmail}</p>
+                      <button onClick={() => setEmailInputOpen((v) => !v)} className="text-xs" style={{ color: "rgba(155,150,218,0.55)" }}>✏</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setEmailInputOpen(true)}
+                      className="text-xs text-left"
+                      style={{ color: "#e879f9" }}
+                    >
+                      + Ajouter un email (requis pour l'envoi)
+                    </button>
+                  )}
+                  {emailInputOpen && (
+                    <div className="flex gap-2 mt-1">
+                      <input
+                        type="email"
+                        value={clientEmail}
+                        onChange={(e) => setClientEmail(e.target.value)}
+                        placeholder="email@client.fr"
+                        className="flex-1 px-3 py-1.5 rounded-lg text-sm outline-none"
+                        style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.35)" }}
+                        onKeyDown={(e) => e.key === "Enter" && setEmailInputOpen(false)}
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => setEmailInputOpen(false)}
+                        className="px-3 py-1.5 rounded-lg text-sm font-bold"
+                        style={{ background: "rgba(83,49,208,0.25)", color: "#FDFDFE" }}
+                      >
+                        OK
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm" style={{ color: "rgba(155,150,218,0.6)" }}>Aucun client sélectionné</p>
+              )}
+              {clientSearchOpen && (
+                <div className="mt-3">
+                  <input
+                    value={clientSearchQuery}
+                    onChange={(e) => rechercherClient(e.target.value)}
+                    placeholder="Nom du client…"
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none mb-2"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                    autoFocus
+                  />
+                  {clientSearchLoading && <p className="text-xs text-center py-2" style={{ color: "#9B96DA" }}>Recherche…</p>}
+                  {clientSearchResults.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => selectionnerClient(c)}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left mb-1"
+                      style={{ background: "rgba(83,49,208,0.12)", border: "1px solid rgba(83,49,208,0.2)" }}
+                    >
+                      <span className="text-sm font-semibold" style={{ color: "#FDFDFE" }}>{c.prenom} {c.nom}</span>
+                      <span className="text-xs" style={{ color: "#9B96DA" }}>{c.email || "sans email"}</span>
+                    </button>
+                  ))}
+                  {clientSearchQuery.length >= 2 && !clientSearchLoading && clientSearchResults.length === 0 && (
+                    <div className="text-center py-2">
+                      <p className="text-xs mb-2" style={{ color: "rgba(155,150,218,0.6)" }}>Client introuvable</p>
+                      <button
+                        onClick={() => { setClientCreateOpen(true); setClientSearchOpen(false); }}
+                        className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+                        style={{ background: "rgba(83,49,208,0.2)", color: "#9B96DA" }}
+                      >
+                        + Créer ce client
+                      </button>
+                    </div>
+                  )}
+              </div>
+              )}
+              {clientCreateOpen && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <p className="text-xs font-bold mb-1" style={{ color: "#c084fc" }}>Nouveau client</p>
+                  {/* Prénom / Nom */}
+                  <div className="flex gap-2">
+                    {(["prenom","nom"] as const).map((k) => (
+                      <input key={k} type="text" placeholder={k === "prenom" ? "Prénom *" : "Nom *"}
+                        value={clientCreateForm[k]}
+                        onChange={(e) => setClientCreateForm((f) => ({ ...f, [k]: e.target.value }))}
+                        className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                        style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                      />
+                    ))}
+                  </div>
+                  {/* Email */}
+                  <input type="email" placeholder="Email"
+                    value={clientCreateForm.email}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, email: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                  />
+                  {/* Téléphone — 5 cases de 2 chiffres */}
+                  <div className="flex gap-1 items-center">
+                    <span className="text-xs shrink-0" style={{ color: "#9B96DA" }}>+33</span>
+                    {clientCreateForm.tel.map((v, i) => (
+                      <input key={i} type="text" inputMode="numeric" maxLength={2} value={v}
+                        placeholder="00"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          setClientCreateForm((f) => { const t = [...f.tel]; t[i] = val; return { ...f, tel: t }; });
+                          if (val.length === 2 && i < 4) {
+                            const next = document.getElementById(`tel-create-${i+1}`);
+                            if (next) (next as HTMLInputElement).focus();
+                          }
+                        }}
+                        id={`tel-create-${i}`}
+                        className="w-10 text-center px-1 py-2 rounded-lg text-sm outline-none"
+                        style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                      />
+                    ))}
+                  </div>
+                  {/* Date de naissance */}
+                  <input type="date"
+                    value={clientCreateForm.dateNaissance}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, dateNaissance: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)", colorScheme: "dark" }}
+                  />
+                  {/* Adresse */}
+                  <input type="text" placeholder="Adresse postale"
+                    value={clientCreateForm.adresse}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, adresse: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                  />
+                  {/* Numéro sécu */}
+                  <input type="text" placeholder="N° Sécurité Sociale" maxLength={15}
+                    value={clientCreateForm.numeroSecu}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, numeroSecu: e.target.value.replace(/\D/g, "").slice(0, 15) }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none font-mono"
+                    style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)", letterSpacing: "0.1em" }}
+                  />
+                  {/* Mutuelle */}
+                  <select
+                    value={clientCreateForm.mutuelle}
+                    onChange={(e) => setClientCreateForm((f) => ({ ...f, mutuelle: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "rgba(20,10,60,0.95)", color: clientCreateForm.mutuelle ? "#FDFDFE" : "rgba(155,150,218,0.6)", border: "1px solid rgba(83,49,208,0.3)" }}
+                  >
+                    <option value="">Mutuelle…</option>
+                    {MUTUELLES.filter(Boolean).map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={creerClientInline}
+                      disabled={clientCreateLoading || !clientCreateForm.nom || !clientCreateForm.prenom}
+                      className="flex-1 py-2 rounded-lg text-sm font-bold"
+                      style={{ background: "rgba(83,49,208,0.5)", color: "#FDFDFE", opacity: clientCreateLoading ? 0.6 : 1 }}
+                    >
+                      {clientCreateLoading ? "Création…" : "Créer et sélectionner"}
+                    </button>
+                    <button
+                      onClick={() => setClientCreateOpen(false)}
+                      className="px-3 py-2 rounded-lg text-sm"
+                      style={{ background: "rgba(83,49,208,0.1)", color: "#9B96DA" }}
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ─── SÉLECTION MONTURE STOCK ─── */}
+            <div className="rounded-2xl p-5" style={{ background: "#0A0338", border: "1px solid rgba(83,49,208,0.4)" }}>
+              <p className="section-label mb-3">MONTURE</p>
+              {montureSelectionnee ? (
+                <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: "rgba(83,49,208,0.15)" }}>
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: "#FDFDFE" }}>
+                      {montureSelectionnee.marque} — {montureSelectionnee.reference}
+                    </p>
+                    {montureSelectionnee.couleur && (
+                      <p className="text-xs mt-0.5" style={{ color: "#9B96DA" }}>{montureSelectionnee.couleur}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-base font-bold" style={{ color: "#9B96DA" }}>{montureSelectionnee.prix}€</span>
+                    <button
+                      onClick={() => setMontureSelectionnee(null)}
+                      className="text-xs px-2 py-1 rounded-lg"
+                      style={{ color: "rgba(155,150,218,0.7)", background: "rgba(83,49,208,0.12)" }}
+                    >
+                      Changer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setStockPanelOpen((v) => !v); if (!stockPanelOpen && monturesStock.length === 0) chargerStock(); }}
+                  className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+                  style={{ background: "rgba(83,49,208,0.15)", color: "#9B96DA", border: "1.5px dashed rgba(83,49,208,0.5)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="8" stroke="#9B96DA" strokeWidth="2"/>
+                    <path d="M21 21l-4-4" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Choisir depuis le stock Optimum
+                </button>
+              )}
+              <AnimatePresence>
+                {stockPanelOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-3 rounded-xl overflow-hidden"
+                    style={{ border: "1px solid rgba(83,49,208,0.3)", background: "rgba(10,3,56,0.9)" }}
+                  >
+                    <div className="p-3 pb-2">
+                      <input
+                        value={stockSearch}
+                        onChange={(e) => setStockSearch(e.target.value)}
+                        placeholder="Rechercher (marque, référence…)"
+                        className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                        style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                      />
+                    </div>
+                    {stockLoading ? (
+                      <div className="flex items-center justify-center py-6 gap-3">
+                        <svg className="animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="#9B96DA" strokeWidth="2.5" strokeDasharray="50" strokeDashoffset="15"/>
+                        </svg>
+                        <span className="text-sm" style={{ color: "#9B96DA" }}>Chargement du stock…</span>
+                      </div>
+                    ) : monturesStock.length === 0 ? (
+                      <div className="p-4">
+                        <p className="text-xs font-semibold mb-3" style={{ color: "#9B96DA" }}>
+                          Saisie manuelle — bridge Optimum non connecté
+                        </p>
+                        <div className="flex flex-col gap-2.5">
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Fabricant</label>
+                              <input
+                                value={montureManuelle.fabricant}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, fabricant: e.target.value }))}
+                                placeholder="ex: Luxottica"
+                                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Marque</label>
+                              <input
+                                value={montureManuelle.marque}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, marque: e.target.value }))}
+                                placeholder="ex: Ray-Ban"
+                                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Modèle / Référence</label>
+                            <input
+                              value={montureManuelle.modele}
+                              onChange={(e) => setMontureManuelle((p) => ({ ...p, modele: e.target.value }))}
+                              placeholder="ex: Wayfarer RB2140"
+                              className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                              style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Taille — calibre œil / pont / branche</label>
+                            <div className="flex gap-2">
+                              <input
+                                value={montureManuelle.calibreOeil}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, calibreOeil: e.target.value }))}
+                                placeholder="52"
+                                className="w-1/3 px-3 py-2 rounded-lg text-sm text-center outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                              <input
+                                value={montureManuelle.calibrePont}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, calibrePont: e.target.value }))}
+                                placeholder="18"
+                                className="w-1/3 px-3 py-2 rounded-lg text-sm text-center outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                              <input
+                                value={montureManuelle.calibreBranche}
+                                onChange={(e) => setMontureManuelle((p) => ({ ...p, calibreBranche: e.target.value }))}
+                                placeholder="145"
+                                className="w-1/3 px-3 py-2 rounded-lg text-sm text-center outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs mb-1 block" style={{ color: "rgba(155,150,218,0.7)" }}>Tarif (€)</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={prixMonture}
+                                onChange={(e) => setPrixMonture(Math.max(0, parseInt(e.target.value) || 0))}
+                                className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                                style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                              />
+                              <span className="text-sm font-bold" style={{ color: "#9B96DA" }}>€</span>
+                              <button
+                                onClick={() => {
+                                  if (!montureManuelle.marque) return;
+                                  const taille = [montureManuelle.calibreOeil, montureManuelle.calibrePont, montureManuelle.calibreBranche].filter(Boolean).join("-");
+                                  const reference = [montureManuelle.modele, montureManuelle.fabricant].filter(Boolean).join(" · ");
+                                  setMontureSelectionnee({ id: -1, marque: montureManuelle.marque, reference, couleur: taille || undefined, prix: prixMonture });
+                                  setStockPanelOpen(false);
+                                }}
+                                disabled={!montureManuelle.marque}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold"
+                                style={{
+                                  background: montureManuelle.marque ? "linear-gradient(135deg, #5331D0, #7c3aed)" : "rgba(83,49,208,0.2)",
+                                  color: montureManuelle.marque ? "#FDFDFE" : "rgba(155,150,218,0.4)",
+                                }}
+                              >
+                                Valider
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="max-h-52 overflow-y-auto">
+                        {monturesStock
+                          .filter((m) => {
+                            const q = stockSearch.toLowerCase();
+                            return !q || m.marque?.toLowerCase().includes(q) || m.reference?.toLowerCase().includes(q);
+                          })
+                          .slice(0, 30)
+                          .map((m) => (
+                            <button
+                              key={m.id}
+                              onClick={() => { setMontureSelectionnee(m); setPrixMonture(m.prix); setStockPanelOpen(false); setStockSearch(""); }}
+                              className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
+                              style={{ borderTop: "1px solid rgba(83,49,208,0.12)" }}
+                            >
+                              <div>
+                                <p className="text-sm font-bold" style={{ color: "#FDFDFE" }}>{m.marque} — {m.reference}</p>
+                                {m.couleur && <p className="text-xs" style={{ color: "#9B96DA" }}>{m.couleur}</p>}
+                              </div>
+                              <span className="text-sm font-bold ml-4 shrink-0" style={{ color: "#9B96DA" }}>{m.prix}€</span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* ─── CHANGER LE VERRE ─── */}
+            <div className="rounded-2xl overflow-hidden" style={{ background: "#0A0338", border: "1px solid rgba(83,49,208,0.4)" }}>
+              <button
+                className="w-full flex items-center justify-between px-5 py-4"
+                onClick={() => setVerrierPanelOpen((v) => !v)}
+              >
+                <div>
+                  <p className="section-label">VERRE</p>
+                  <p className="text-sm font-semibold mt-0.5" style={{ color: verrierOverride ? "#FDFDFE" : "#9B96DA" }}>
+                    {verrierAffiche}{gammeAffichee ? ` — ${gammeAffichee}` : ""}
+                  </p>
+                </div>
+                <span className="text-xs px-3 py-1 rounded-lg" style={{ background: "rgba(83,49,208,0.18)", color: "#9B96DA" }}>
+                  {verrierPanelOpen ? "Fermer" : "Changer"}
+                </span>
+              </button>
+              <AnimatePresence>
+                {verrierPanelOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="px-5 pb-4"
+                    style={{ borderTop: "1px solid rgba(83,49,208,0.2)" }}
+                  >
+                    <div className="flex flex-wrap gap-2 mt-3 mb-3">
+                      {["Essilor", "Hoya", "Zeiss", "Nikon", "BBGR"].map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => { setVerrierOverride(v); setGammeOverride(""); }}
+                          className="px-3 py-1.5 rounded-full text-sm font-semibold"
+                          style={{
+                            background: verrierOverride === v ? "rgba(83,49,208,0.5)" : "rgba(83,49,208,0.12)",
+                            color: verrierOverride === v ? "#FDFDFE" : "#9B96DA",
+                            border: `1.5px solid ${verrierOverride === v ? "rgba(139,92,246,0.7)" : "rgba(83,49,208,0.3)"}`,
+                          }}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      value={gammeOverride}
+                      onChange={(e) => setGammeOverride(e.target.value)}
+                      placeholder={`Gamme (ex: ${offre?.gamme || "Varilux Comfort Max"})`}
+                      className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                      style={{ background: "rgba(83,49,208,0.1)", color: "#FDFDFE", border: "1px solid rgba(83,49,208,0.3)" }}
+                    />
+                    {(verrierOverride || gammeOverride) && (
+                      <button
+                        onClick={() => { setVerrierOverride(""); setGammeOverride(""); }}
+                        className="mt-2 text-xs"
+                        style={{ color: "rgba(155,150,218,0.55)" }}
+                      >
+                        ✕ Réinitialiser
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* ─── RENOUVELLEMENT ANTICIPÉ ─── */}
+            <div className="rounded-2xl p-5" style={{ background: "#0A0338", border: `1px solid ${renouvelAnticipe ? "rgba(139,92,246,0.6)" : "rgba(83,49,208,0.4)"}` }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="section-label">RENOUVELLEMENT ANTICIPÉ</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.5)" }}>Art. D.165-1 CSS — prise en charge anticipée SS &amp; mutuelle</p>
+                </div>
+                <button
+                  onClick={() => { setRenouvelAnticipe((v) => !v); if (renouvelAnticipe) setMotifAnticipe(""); }}
+                  className="relative w-12 h-6 rounded-full transition-colors shrink-0"
+                  style={{ background: renouvelAnticipe ? "#5331D0" : "rgba(83,49,208,0.25)" }}
+                >
+                  <span
+                    className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
+                    style={{ left: renouvelAnticipe ? "calc(100% - 22px)" : "2px" }}
+                  />
+                </button>
+              </div>
+              {renouvelAnticipe && (
+                <div className="mt-4 flex flex-col gap-2">
+                  {[
+                    { value: "adaptation_opticien",      label: "Adaptation opticien",                                detail: "Changement de correction — ordonnance < 3 ans · Délai min : 1 an (≥ 16 ans)" },
+                    { value: "degradation_performances",  label: "Dégradation des performances oculaires",             detail: "Ordonnance < 3 ans · Délai min : 1 an (≥ 16 ans), pas de délai ( < 16 ans)" },
+                    { value: "condition_medicale",        label: "Condition médicale particulière",                     detail: "Glaucome, DMLA, cataracte évolutive… · Prescription ophtalmo requise" },
+                    { value: "pathologie_non_oculaire",   label: "Pathologie non oculaire / traitement long cours",    detail: "Diabète, Sida, corticoïdes… · Prescription ophtalmo requise" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setMotifAnticipe(opt.value)}
+                      className="w-full text-left px-3 py-2.5 rounded-xl"
+                      style={{
+                        background: motifAnticipe === opt.value ? "rgba(83,49,208,0.3)" : "rgba(83,49,208,0.1)",
+                        border: `1.5px solid ${motifAnticipe === opt.value ? "rgba(139,92,246,0.7)" : "rgba(83,49,208,0.2)"}`,
+                      }}
+                    >
+                      <p className="text-sm font-semibold" style={{ color: motifAnticipe === opt.value ? "#FDFDFE" : "#9B96DA" }}>{opt.label}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "rgba(155,150,218,0.5)" }}>{opt.detail}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ─── REMISE OPTICIEN ─── */}
+            <div
+              className="rounded-2xl p-5 flex items-center gap-4"
+              style={{ background: "#0A0338", border: "1px solid rgba(192,132,252,0.35)" }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M9.5 9.5h.01M14.5 14.5h.01M9 15L15 9" stroke="#c084fc" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="12" r="9" stroke="#c084fc" strokeWidth="2"/>
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-bold" style={{ color: "#c084fc" }}>REMISE OPTICIEN</p>
+                <p className="text-xs mt-0.5" style={{ color: "rgba(192,132,252,0.65)" }}>Offre commerciale, promo, fidélité…</p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-bold" style={{ color: "#c084fc" }}>−</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={remise}
+                  onChange={(e) => setRemise(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-20 text-right px-2 py-1.5 rounded-lg text-lg font-bold outline-none"
+                  style={{ background: "rgba(192,132,252,0.1)", color: "#c084fc", border: "1px solid rgba(192,132,252,0.35)" }}
+                />
+                <span className="text-base font-bold" style={{ color: "#c084fc" }}>€</span>
+              </div>
+            </div>
+
             {/* ─── BLOC RAC TEMPS RÉEL ─── */}
             <AnimatePresence mode="wait">
               {racStatut === "idle" && (
@@ -507,14 +1292,18 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   style={{
                     padding: "22px 24px",
                     fontSize: "1.125rem",
-                    background: "linear-gradient(135deg, #22c55e, #16a34a)",
-                    boxShadow: "0 6px 28px rgba(34,197,94,0.45)",
+                    background: bridgeUrl
+                      ? "linear-gradient(135deg, #5331D0, #7c3aed)"
+                      : "linear-gradient(135deg, #1C0B62, #5331D0)",
+                    boxShadow: "0 6px 28px rgba(83,49,208,0.45)",
                   }}
                 >
-                  <span style={{ fontSize: "1.5rem" }}>🎯</span>
+                  <span style={{ fontSize: "1.25rem", lineHeight: 1 }}>►</span>
                   <div className="text-left">
-                    <div>Confirmer et obtenir RAC réel</div>
-                    <div style={{ fontSize: "0.85rem", opacity: 0.85, fontWeight: 500 }}>Connexion automatique mutuelle</div>
+                    <div>{bridgeUrl ? "Confirmer et obtenir RAC réel" : "Valider le RAC estimé"}</div>
+                    <div style={{ fontSize: "0.85rem", opacity: 0.85, fontWeight: 500 }}>
+                      {bridgeUrl ? "Connexion automatique mutuelle" : "Basé sur la grille tarifaire de votre mutuelle"}
+                    </div>
                   </div>
                 </motion.button>
               )}
@@ -554,29 +1343,29 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   className="rac-card confirmed w-full"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.15)", border: "2px solid rgba(34,197,94,0.5)" }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(139,92,246,0.15)", border: "2px solid rgba(139,92,246,0.5)" }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                     <div>
-                      <p className="text-xl font-bold" style={{ color: "#22c55e" }}>Remboursement confirmé</p>
+                      <p className="text-xl font-bold" style={{ color: "#a78bfa" }}>{racResult.statut === "estimé" ? "RAC estimé" : "Remboursement confirmé"}</p>
                       <p className="text-base" style={{ color: "#9B96DA" }}>{racResult.detail}</p>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 mb-4" style={{ borderTop: "1px solid rgba(34,197,94,0.25)", paddingTop: 16 }}>
+                  <div className="flex flex-col gap-2 mb-4" style={{ borderTop: "1px solid rgba(139,92,246,0.25)", paddingTop: 16 }}>
                     <div className="flex justify-between items-center">
                       <span className="text-base" style={{ color: "#9B96DA" }}>Sécurité Sociale</span>
-                      <span className="text-lg font-bold" style={{ color: "#22c55e" }}>-{racResult.secu}€</span>
+                      <span className="text-lg font-bold" style={{ color: "#a78bfa" }}>-{racResult.secu}€</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-base" style={{ color: "#9B96DA" }}>{client.mutuelle || "Mutuelle"}</span>
-                      <span className="text-lg font-bold" style={{ color: "#22c55e" }}>-{racResult.mutuelle}€</span>
+                      <span className="text-lg font-bold" style={{ color: "#a78bfa" }}>-{racResult.mutuelle}€</span>
                     </div>
                     <div
                       className="flex justify-between items-center p-3 rounded-xl mt-1"
-                      style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.4)" }}
+                      style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.4)" }}
                     >
-                      <span className="text-lg font-bold" style={{ color: "#FDFDFE" }}>Votre RAC réel</span>
+                      <span className="text-lg font-bold" style={{ color: "#FDFDFE" }}>{racResult.statut === "estimé" ? "RAC estimé" : "Votre RAC réel"}</span>
                       <span className="text-4xl font-black" style={{ color: "#FDFDFE" }}>{racResult.montant}€</span>
                     </div>
                   </div>
@@ -599,6 +1388,17 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                       Voir autres options
                     </motion.button>
                   </div>
+
+                  {/* Simulateur vision */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => router.push("/vision")}
+                    className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 mt-1"
+                    style={{ background: "rgba(83,49,208,0.12)", color: "#9B96DA", border: "1px solid rgba(83,49,208,0.3)" }}
+                  >
+                    <span>👁️</span>
+                    Montrer la différence visuelle au client
+                  </motion.button>
                 </motion.div>
               )}
 
@@ -628,10 +1428,10 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="py-5 rounded-2xl text-center space-y-1"
-              style={{ background: "rgba(34,197,94,0.12)", border: "2px solid rgba(34,197,94,0.5)" }}
+              style={{ background: "rgba(83,49,208,0.18)", border: "2px solid rgba(139,92,246,0.5)" }}
             >
-              <p className="text-2xl">✅</p>
-              <p className="font-bold text-xl" style={{ color: "#22c55e" }}>Vente confirmée !</p>
+              <p className="text-2xl"></p>
+              <p className="font-bold text-xl" style={{ color: "#a78bfa" }}>Vente confirmée !</p>
               <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
                 Le suivi des remboursements SS &amp; mutuelle a été initialisé automatiquement.
               </p>
@@ -647,8 +1447,8 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                 disabled={confirming}
                 className="w-full py-5 rounded-2xl text-white font-bold text-xl flex items-center justify-center gap-3"
                 style={{
-                  background: "linear-gradient(135deg, #22c55e, #16a34a)",
-                  boxShadow: "0 6px 28px rgba(34,197,94,0.4)",
+                  background: "linear-gradient(135deg, #5331D0, #7c3aed)",
+                  boxShadow: "0 6px 28px rgba(83,49,208,0.4)",
                 }}
               >
                 {confirming ? (
@@ -660,7 +1460,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   </>
                 ) : (
                   <>
-                    <span style={{ fontSize: "1.5rem" }}>✅</span>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     <div className="text-left">
                       <div>Confirmer la vente</div>
                       <div style={{ fontSize: "0.85rem", opacity: 0.85, fontWeight: 500 }}>
@@ -676,7 +1476,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
               className="py-4 rounded-2xl text-center font-semibold text-lg"
               style={{ background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "2px solid #22c55e" }}
             >
-              ✓ Devis envoyé par email !
+              ✓ Devis envoyé à {emailSentTo || "(email non renseigné)"}
             </div>
           ) : racStatut !== "confirmed" ? (
             <motion.button
@@ -705,6 +1505,26 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
           <div className="flex gap-3">
             <motion.button
               whileTap={{ scale: 0.97 }}
+              onClick={ouvrirDansOptimum}
+              className="flex-1 py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2"
+              style={{ background: "linear-gradient(135deg, rgba(83,49,208,0.25), rgba(83,49,208,0.4))", color: "#FDFDFE", border: "2px solid rgba(83,49,208,0.6)" }}
+            >
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Ouvrir dans Optimum
+            </motion.button>
+          </div>
+          {optimumToast && (
+            <div className="py-3 rounded-xl text-center text-sm font-semibold" style={{ background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" }}>
+              {optimumToast}
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               onClick={exporterPDF}
               className="flex-1 py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2"
               style={{ background: "#0A0338", color: "#FDFDFE", border: "2px solid rgba(83,49,208,0.45)" }}
@@ -719,6 +1539,43 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
             >
               Copier données
             </motion.button>
+          </div>
+
+          {/* ─── Utiliser mon devis — mode universel (tout logiciel) ─── */}
+          <div className="rounded-2xl overflow-hidden" style={{ border: "1.5px solid rgba(83,49,208,0.3)", background: "rgba(10,3,56,0.6)" }}>
+            <div className="px-5 py-3" style={{ borderBottom: "1px solid rgba(83,49,208,0.2)" }}>
+              <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Copier pour mon logiciel</p>
+              <p className="text-xs mt-0.5" style={{ color: "#9B96DA" }}>Un clic par montant, colle-le directement dans ton logiciel de caisse</p>
+            </div>
+            <div className="px-5 py-3 flex flex-col gap-2">
+              {[
+                { label: "Monture", val: `${prixMonture}` },
+                { label: "Verres", val: `${totalVerres}` },
+                ...(remise > 0 ? [{ label: "Remise", val: `${remise}` }] : []),
+                { label: "Sécu", val: `${racResult ? racResult.secu : (offre?.remboursementSecu ?? 0)}` },
+                { label: "Mutuelle", val: `${racResult ? racResult.mutuelle : (offre?.remboursementMutuelle ?? 0)}` },
+                { label: "Reste à charge", val: `${racResult ? racResult.montant : resteACharge}` },
+              ].map((champ) => (
+                <button
+                  key={champ.label}
+                  onClick={() => {
+                    navigator.clipboard.writeText(champ.val);
+                    setChampCopie(champ.label);
+                    setTimeout(() => setChampCopie(null), 1500);
+                  }}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-sm"
+                  style={{ background: "rgba(83,49,208,0.12)", color: "#FDFDFE" }}
+                >
+                  <span style={{ color: "#9B96DA" }}>{champ.label}</span>
+                  <span className="font-bold flex items-center gap-2">
+                    {champ.val}€
+                    <span className="text-xs" style={{ color: champCopie === champ.label ? "#22c55e" : "#9B96DA" }}>
+                      {champCopie === champ.label ? "✓ copié" : "copier"}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* ─── SYNCHRONISATION OPTIMUM ─── */}
@@ -751,7 +1608,7 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                   <p className="text-base font-bold" style={{ color: "#FDFDFE" }}>Synchroniser Optimum</p>
                 </div>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(83,49,208,0.25)", color: "#9B96DA" }}>
-                  PC connecté
+                  {bridgeUrl ? "PC connecté" : "Relais cloud"}
                 </span>
               </div>
 
@@ -759,11 +1616,13 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
                 {optimumStatut === "idle" && (
                   <>
                     <p className="text-sm mb-3" style={{ color: "#9B96DA" }}>
-                      Envoie le client, l&apos;ordonnance et le devis directement dans Optimum. La cotation mutuelle revient automatiquement.
+                      {bridgeUrl
+                        ? "Envoie le client, l'ordonnance et le devis directement dans Optimum. La cotation mutuelle revient automatiquement."
+                        : "Le devis sera transmis au PC du magasin via le cloud. Le bridge récupère et remplit Optimum automatiquement."}
                     </p>
                     <motion.button
                       whileTap={{ scale: 0.97 }}
-                      onClick={envoyerVersOptimum}
+                      onClick={bridgeUrl ? envoyerVersOptimum : envoyerViaRelais}
                       className="w-full py-3.5 rounded-xl font-bold text-white text-base flex items-center justify-center gap-2"
                       style={{
                         background: "linear-gradient(135deg, #5331D0, #7c3aed)",
@@ -880,96 +1739,21 @@ ${racResult ? `Sécu : -${racResult.secu}€\n${client.mutuelle} : -${racResult.
         </div>
       </main>
     </div>
+    </OpticianGuard>
   );
 }
 
 // ─── Conseiller IA ─────────────────────────────────────────
 
-interface Tip {
-  phrase: string;
-  isUpsell?: boolean;
-}
-
-function genererTips(questionnaire: Record<string, unknown>, offre: OffreVerre | null): Tip[] {
-  const tips: Tip[] = [];
-  const ecran = Number(questionnaire.tempsEcran) || 0;
-  const profession = String(questionnaire.profession || "");
-  const conduiteNuit = Boolean(questionnaire.conduiteNuit);
-  const photophobie = Boolean(questionnaire.photophobie);
-  const isProgressif = offre?.type?.toLowerCase().includes("progressif");
-
-  if (ecran >= 6) {
-    tips.push({
-      phrase: `"Avec ${ecran}h/jour sur écran, ce filtre lumière bleue va vraiment réduire votre fatigue visuelle dès le soir — c'est le retour que tous nos clients bureau me font."`,
-    });
-  } else if (ecran >= 3) {
-    tips.push({
-      phrase: `"Le filtre anti-lumière bleue est inclus — idéal pour vos ${ecran}h sur écran, vous sentirez la différence après une semaine."`,
-    });
-  }
-
-  if (conduiteNuit) {
-    tips.push({
-      phrase: `"L'antireflet premium élimine 99% des reflets des phares la nuit. C'est souvent la raison n°1 qui fait choisir cette offre pour les conducteurs."`,
-    });
-  }
-
-  if (photophobie) {
-    tips.push({
-      phrase: `"Avec votre sensibilité à la lumière, ces verres photochromiques s'adaptent automatiquement — plus besoin d'une paire de soleil séparée pour sortir."`,
-    });
-  }
-
-  if (isProgressif) {
-    tips.push({
-      phrase: `"Pour les progressifs, le temps d'adaptation est de 3 à 7 jours en général. Mais la grande majorité de nos clients oublient qu'ils en portent au bout de 2 semaines."`,
-    });
-  }
-
-  if (profession === "bureautique") {
-    tips.push({
-      phrase: `"Pour un usage bureau, l'antireflet élimine aussi les reflets des néons et de la vitre de votre écran — vos yeux fatiguent beaucoup moins."`,
-    });
-  } else if (profession === "conduite" || profession === "transport") {
-    tips.push({
-      phrase: `"Pour les conducteurs professionnels, la clarté visuelle est critique. Ces verres sont taillés exactement pour ça."`,
-    });
-  } else if (profession === "sante") {
-    tips.push({
-      phrase: `"En milieu médical vous alternez entre écran, dossiers et patients — ce profil de verre est optimisé pour ces changements constants."`,
-    });
-  }
-
-  if (offre?.nom === "Essentiel") {
-    tips.push({
-      phrase: `"Je vous signale que pour ${offre ? Math.round((offre.resteACharge * 0.3)) : 30}€ de plus environ, l'offre Confort inclut un indice plus mince et un antireflet premium — c'est l'offre que choisissent la moitié de nos clients."`,
-      isUpsell: true,
-    });
-  }
-
-  if (offre?.nom === "Confort") {
-    tips.push({
-      phrase: `"Si vous avez un budget un peu plus flexible, l'offre Premium inclut la garantie 2 ans casse + rayure — pour des lunettes que vous portez tous les jours, ça peut valoir le coup."`,
-      isUpsell: true,
-    });
-  }
-
-  // Si pas de tips spécifiques
-  if (tips.length === 0) {
-    tips.push({
-      phrase: `"Ce choix correspond parfaitement à votre profil. Les verres ${offre?.gamme || ""} sont une référence dans cette gamme."`,
-    });
-  }
-
-  return tips;
+interface ChatMessage {
+  from: "client" | "ia";
+  texte: string;
 }
 
 function ConseillerIA({
-  questionnaire,
   offre,
   open,
   onToggle,
-  onUpgrade,
 }: {
   questionnaire: Record<string, unknown>;
   offre: OffreVerre | null;
@@ -977,7 +1761,38 @@ function ConseillerIA({
   onToggle: () => void;
   onUpgrade: () => void;
 }) {
-  const tips = genererTips(questionnaire, offre);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { from: "ia", texte: "Bonjour ! Avez-vous des questions sur votre devis, vos verres, votre correction ou vos remboursements ? Je suis là pour vous aider." },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, open]);
+
+  async function sendQuestion() {
+    const q = input.trim();
+    if (!q || loading) return;
+    setInput("");
+    setMessages((m) => [...m, { from: "client", texte: q }]);
+    setLoading(true);
+    try {
+      const contexte = offre ? `Offre choisie : ${offre.nom} — ${offre.gamme} (${offre.verrier}), indice ${offre.indice}, ${offre.prixVerres}€. Remboursement Sécu : ${offre.remboursementSecu}€, Mutuelle : ${offre.remboursementMutuelle}€. Reste à charge : ${offre.resteACharge}€.` : "";
+      const res = await fetch("/api/conseil-client", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q, contexte }),
+      });
+      const data = await res.json();
+      setMessages((m) => [...m, { from: "ia", texte: data.reponse || "Je n'ai pas pu répondre. Reformulez votre question." }]);
+    } catch {
+      setMessages((m) => [...m, { from: "ia", texte: "Une erreur est survenue. Veuillez réessayer." }]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <motion.div
@@ -988,31 +1803,22 @@ function ConseillerIA({
       style={{ border: "1.5px solid rgba(167,139,250,0.35)", background: "rgba(83,49,208,0.1)" }}
     >
       {/* Header */}
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between px-5 py-4"
-      >
+      <button onClick={onToggle} className="w-full flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="shrink-0 w-10 h-10 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(167,139,250,0.4)" }}>
             <Image src="/assets/images/IA_Optipilot.png" alt="OptiPilot IA" width={40} height={40} className="w-full h-full object-cover" />
           </div>
           <div className="text-left">
-            <p className="text-base font-bold" style={{ color: "#a78bfa" }}>Conseiller IA</p>
-            <p className="text-sm" style={{ color: "#9B96DA" }}>Phrases à dire au client</p>
+            <p className="text-base font-bold" style={{ color: "#a78bfa" }}>Assistant optique</p>
+            <p className="text-sm" style={{ color: "#9B96DA" }}>Vous avez des questions ?</p>
           </div>
         </div>
-        <svg
-          width="20"
-          height="20"
-          fill="none"
-          viewBox="0 0 24 24"
-          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-        >
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
           <path d="M6 9l6 6 6-6" stroke="#9B96DA" strokeWidth="2" strokeLinecap="round" />
         </svg>
       </button>
 
-      {/* Contenu */}
+      {/* Chat */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -1021,43 +1827,56 @@ function ConseillerIA({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-5 flex flex-col gap-3">
-              {tips.map((tip, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.07 }}
-                  className="rounded-xl p-4"
-                  style={{
-                    background: tip.isUpsell
-                      ? "rgba(20,5,40,0.92)"
-                      : "rgba(10,3,56,0.6)",
-                    border: tip.isUpsell
-                      ? "1px solid rgba(236,72,153,0.5)"
-                      : "1px solid rgba(83,49,208,0.2)",
-                    backdropFilter: "blur(8px)",
-                  }}
-                >
-                  <div className="flex items-start gap-3">
-                    <p
-                      className="text-sm italic leading-relaxed"
-                      style={{ color: tip.isUpsell ? "#f472b6" : "#FDFDFE" }}
+            <div className="px-4 pb-4 flex flex-col gap-3">
+              {/* Messages */}
+              <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.from === "client" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className="rounded-2xl px-4 py-2.5 text-sm leading-relaxed"
+                      style={{
+                        maxWidth: "85%",
+                        background: msg.from === "client"
+                          ? "linear-gradient(135deg, #5331D0, #7B5CE5)"
+                          : "rgba(10,3,56,0.85)",
+                        color: "#FDFDFE",
+                        border: msg.from === "ia" ? "1px solid rgba(83,49,208,0.3)" : "none",
+                      }}
                     >
-                      {tip.phrase}
-                    </p>
+                      {msg.texte}
+                    </div>
                   </div>
-                  {tip.isUpsell && (
-                    <button
-                      onClick={onUpgrade}
-                      className="mt-2 text-xs font-bold px-3 py-1.5 rounded-lg"
-                      style={{ background: "rgba(236,72,153,0.15)", color: "#f472b6" }}
-                    >
-                      Voir l&apos;offre supérieure →
-                    </button>
-                  )}
-                </motion.div>
-              ))}
+                ))}
+                {loading && (
+                  <div className="flex justify-start">
+                    <div className="rounded-2xl px-4 py-2.5 text-sm" style={{ background: "rgba(10,3,56,0.85)", color: "#9B96DA", border: "1px solid rgba(83,49,208,0.3)" }}>
+                      <span className="animate-pulse">En train de répondre…</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={bottomRef} />
+              </div>
+
+              {/* Saisie */}
+              <div className="flex gap-2 mt-1">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendQuestion()}
+                  placeholder="Posez votre question sur vos lunettes…"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ background: "rgba(8,2,40,0.8)", color: "#FDFDFE", border: "1.5px solid rgba(83,49,208,0.35)", caretColor: "#a78bfa" }}
+                />
+                <button
+                  onClick={sendQuestion}
+                  disabled={!input.trim() || loading}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-sm"
+                  style={{ background: input.trim() && !loading ? "linear-gradient(135deg, #5331D0, #7B5CE5)" : "rgba(83,49,208,0.25)", color: "white", transition: "all 0.2s" }}
+                >
+                  Envoyer
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

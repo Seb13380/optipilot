@@ -1,19 +1,36 @@
 @import "tailwindcss";
 
+html {
+  /* Base rem = 18px → tous les utilitaires Tailwind (text-xs, text-sm…) grossissent proportionnellement */
+  font-size: 18px;
+}
+
 :root {
-  --background: #020017;
-  --foreground: #FDFDFE;
-  --card: #0A0338;
-  --card-alt: #0F0545;
-  --primary: #5331D0;
-  --primary-light: #9B96DA;
-  --primary-dark: #1C0B62;
-  --accent: #9B96DA;
+  --background: #f0f0fa;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-alt: #f4f4fb;
+
+  /* ── Palette marque OptiPilot ──────────────────────────── */
+  --violet:       #5331D0;  /* Violet principal — CTAs, badges, cartes */
+  --violet-light: #7B5CE5;  /* Violet clair — hover, gradients */
+  --rose:         #ec4899;  /* Rose — accent secondaire, alertes douces */
+  --rose-light:   #f472b6;  /* Rose clair */
+  --bleu:         #1C0B62;  /* Bleu nuit — textes titres, dark bg */
+  --bleu-deep:    #0a0318;  /* Bleu très profond — cartes dark */
+  --gris:         #9B96DA;  /* Gris lavande — textes secondaires, icônes */
+  --gris-dark:    #6b7280;  /* Gris neutre — corps de texte */
+  /* ───────────────────────────────────────────────── */
+
+  --primary:      var(--violet);
+  --primary-light: var(--gris);
+  --primary-dark:  var(--bleu);
+  --accent:       var(--gris);
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --text-muted: #9B96DA;
-  --border: rgba(83,49,208,0.35);
+  --text-muted: var(--gris-dark);
+  --border: rgba(83,49,208,0.25);
 }
 
 @theme inline {
@@ -57,10 +74,34 @@ a {
   border-radius: 2px;
 }
 
+/* ── Dark mode variables ── */
+html.dark {
+  --background: #0a0318;
+  --foreground: #FDFDFE;
+  --card: #0d0530;
+  --card-alt: #110640;
+  --text-muted: #9B96DA;
+  --border: rgba(83,49,208,0.35);
+}
+
+html.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
 /* Background principal des pages */
 .page-bg {
   background:
-    url('/assets/images/BackGround-OptiPilot.png') center / cover no-repeat fixed;
+    radial-gradient(circle at 15% 20%, rgba(124,58,237,0.35), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(236,72,153,0.28), transparent 45%),
+    linear-gradient(180deg, #f0f0fa 0%, #e8e8f5 100%);
+}
+
+html.dark .page-bg {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(124,58,237,0.4), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(236,72,153,0.3), transparent 45%),
+    linear-gradient(180deg, #0a0318 0%, #0f052a 100%);
 }
 
 /* Card base */
@@ -90,6 +131,17 @@ a {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Clignotement border — signale un champ à renseigner */
+@keyframes pulseBorder {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(155,150,218,0);   border-color: rgba(83,49,208,0.25); }
+  50%       { box-shadow: 0 0 0 5px rgba(155,150,218,0.18); border-color: rgba(155,150,218,0.7); }
+}
+.pulse-border {
+  animation: pulseBorder 2s ease-in-out infinite;
+  border: 1px solid rgba(83,49,208,0.25);
+  border-radius: 10px;
 }
 
 /* Bounce léger pour les press */
@@ -175,5 +227,117 @@ a {
 
 .btn-secondary-xl:active {
   transform: scale(0.97);
+}
+
+/* ==============================================
+   OPTICAL CHIC — Design system landing v3 (clair, chic, éditorial)
+   Scopé sous .op-* / à l'intérieur de #op-landing pour ne rien casser
+   ailleurs dans l'app (dashboard, tablette, etc.)
+   ============================================== */
+#op-landing {
+  --op-bg: #f8f6f2;
+  --op-bg-2: #ffffff;
+  --op-cyan: #2b3a67;
+  --op-electric: #4a5f9e;
+  --op-iris: #b08d57;
+  --op-glass: rgba(255,255,255,0.72);
+  --op-glass-strong: rgba(255,255,255,0.92);
+  --op-glass-border: rgba(20,20,31,0.08);
+  --op-text: #14141f;
+  --op-text-dim: #6b6b76;
+  background: var(--op-bg);
+  color: var(--op-text);
+}
+
+/* Typo titres — Manrope ExtraBold, réservée aux grands titres (H1/H2), pas au corps de texte */
+.op-serif {
+  font-family: var(--font-heading), -apple-system, sans-serif;
+  font-weight: 800;
+}
+
+/* Fond clair avec halos très subtils */
+.op-bg-hero {
+  background:
+    radial-gradient(ellipse 60% 50% at 78% 18%, rgba(43,58,103,0.05), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 15% 75%, rgba(176,141,87,0.06), transparent 60%),
+    var(--op-bg);
+}
+
+/* Carte en verre — blanc translucide, ombre douce */
+.op-glass {
+  background: linear-gradient(180deg, var(--op-glass-strong) 0%, var(--op-glass) 100%);
+  border: 1px solid var(--op-glass-border);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  box-shadow: 0 8px 40px rgba(20,20,31,0.07), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* Texte en dégradé bleu profond → bleu clair */
+.op-gradient-text {
+  background: linear-gradient(120deg, var(--op-cyan) 0%, var(--op-electric) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Halo discret */
+.op-glow {
+  box-shadow: 0 0 50px rgba(43,58,103,0.12);
+}
+
+/* Bouton primaire — bleu profond, ombre douce */
+.op-btn-primary {
+  background: linear-gradient(135deg, var(--op-cyan) 0%, var(--op-electric) 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 30px rgba(43,58,103,0.28);
+}
+
+/* Bouton secondaire — contour fin */
+.op-btn-secondary {
+  background: var(--op-glass);
+  border: 1.5px solid var(--op-glass-border);
+  color: var(--op-text);
+}
+
+/* Forme "lentille optique" — verre réaliste : reflets, aberration chromatique légère */
+.op-lens {
+  position: relative;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.8) 8%, rgba(222,228,238,0.5) 26%, rgba(180,190,212,0.32) 50%, rgba(140,152,182,0.28) 75%, rgba(110,124,158,0.32) 100%);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255,255,255,0.9),
+    inset -34px -38px 70px rgba(43,58,103,0.32),
+    inset 30px 34px 60px rgba(255,255,255,1),
+    inset 0 0 100px rgba(150,162,190,0.3),
+    0 50px 100px rgba(20,20,31,0.22),
+    0 6px 24px rgba(20,20,31,0.14);
+}
+/* Liseré irisé sur le bord — évoque une lentille optique réelle */
+.op-lens::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: conic-gradient(from 200deg,
+    rgba(176,141,87,0.55) 0deg,
+    rgba(255,255,255,0.75) 65deg,
+    rgba(43,58,103,0.5) 145deg,
+    rgba(120,150,220,0.45) 205deg,
+    rgba(255,255,255,0.7) 275deg,
+    rgba(176,141,87,0.55) 360deg);
+  -webkit-mask: radial-gradient(circle, transparent 92%, black 94.5%, black 97.5%, transparent 100%);
+          mask: radial-gradient(circle, transparent 92%, black 94.5%, black 97.5%, transparent 100%);
+  pointer-events: none;
+}
+/* Reflet principal (haut-gauche) */
+.op-lens::after {
+  content: "";
+  position: absolute;
+  inset: 5%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 28% 22%, rgba(255,255,255,0.95), transparent 42%);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
 }
 

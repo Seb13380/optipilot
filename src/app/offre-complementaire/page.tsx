@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import OptiPilotHeader from "@/components/OptiPilotHeader";
+import OpticianGuard from "@/components/OpticianGuard";
 
 interface OffreCompl {
   id: string;
@@ -133,6 +134,7 @@ export default function OffreComplementairePage() {
   }
 
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen flex flex-col">
       <OptiPilotHeader
         title="Offre Complémentaire"
@@ -301,5 +303,6 @@ export default function OffreComplementairePage() {
         )}
       </AnimatePresence>
     </div>
+    </OpticianGuard>
   );
 }

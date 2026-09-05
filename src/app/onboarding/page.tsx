@@ -155,7 +155,7 @@ export default function OnboardingPage() {
       }));
 
       setStep(3);
-      setTimeout(() => router.replace("/dashboard"), 2500);
+      setTimeout(() => router.replace("/abonnement"), 2500);
     } catch (e: unknown) {
       const msg = (e as Error)?.message;
       setError(msg && msg !== "Erreur sauvegarde" ? msg : "Impossible de joindre le serveur. Vérifiez que le backend est démarré.");
@@ -177,7 +177,7 @@ export default function OnboardingPage() {
         className="mb-8 text-center"
       >
         <img
-          src="/assets/images/Logo-OptiPilot.png"
+          src="/assets/images/OptiPilot2.0Logo-transparent.png"
           alt="OptiPilot"
           className="h-40 w-auto object-contain mx-auto mb-3 drop-shadow-2xl"
         />
@@ -490,7 +490,7 @@ export default function OnboardingPage() {
                 Bienvenue sur OptiPilot !
               </h2>
               <p className="text-lg" style={{ color: "#9B96DA" }}>
-                {form.nom} est configuré. Redirection vers le dashboard...
+                {form.nom} est configuré. Dernière étape : votre mois offert...
               </p>
               <div className="mt-6 flex items-center justify-center gap-2" style={{ color: "#5331D0" }}>
                 <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none">

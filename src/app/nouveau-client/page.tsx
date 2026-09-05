@@ -1,7 +1,10 @@
 "use client";
-import { useState, useRef, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useCallback, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import OpticianGuard from "@/components/OpticianGuard";
+
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "https://optipilot-backend.onrender.com";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface MutuelleData {
@@ -27,9 +30,40 @@ interface ClientFound {
   ordonnances: Array<{ dateOrdonnance: string | null }>;
 }
 
+interface OptimumClient {
+  id: string | null;
+  nom: string;
+  prenom: string;
+  dateNaissance: string;
+  source: "optimum-live";
+}
+
 type Step = "scan" | "analyse" | "lookup" | "confirm-existing" | "new-client" | "saving" | "done";
 
 const NIVEAUX = ["Non renseigné", "Base", "Confort", "Confort+", "Premium", "Option 1", "Option 2", "Option 3"];
+
+// ─── Styles partagés ─────────────────────────────────────────────
+const cardStyle = { background: "rgba(10,3,56,0.92)", border: "1.5px solid rgba(83,49,208,0.4)" };
+const inputStyle = { borderColor: "rgba(83,49,208,0.35)", background: "rgba(2,0,23,0.7)", color: "#FDFDFE" };
+const inputClass = "w-full px-4 py-3.5 rounded-2xl text-base border-2 outline-none transition-all";
+const labelClass = "block text-xs font-bold mb-1.5 tracking-wider uppercase";
+
+// ─── Composant champ texte ────────────────────────────────────────
+function InputField({ label, value, onChange, type = "text", placeholder = "", required = false }: {
+  label: string; value: string; onChange: (v: string) => void;
+  type?: string; placeholder?: string; required?: boolean;
+}) {
+  return (
+    <div>
+      <label className={labelClass} style={{ color: "#9B96DA" }}>{label}{required && " *"}</label>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder} required={required} className={inputClass} style={inputStyle}
+        onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
+        onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
+      />
+    </div>
+  );
+}
 
 // ─── Composant Caméra ─────────────────────────────────────────────
 function CameraCapture({ label, onCapture, onSkip }: {
@@ -110,8 +144,9 @@ function CameraCapture({ label, onCapture, onSkip }: {
 }
 
 // ─── Page principale ─────────────────────────────────────────────
-export default function NouveauClientPage() {
+function NouveauClientPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>("scan");
   const [mutuelleData, setMutuelleData] = useState<MutuelleData | null>(null);
   const [clientFound, setClientFound] = useState<ClientFound | null>(null);
@@ -122,6 +157,30 @@ export default function NouveauClientPage() {
     consentementRgpd: false, consentementRelance: false,
   });
   const [error, setError] = useState("");
+  const [fromOptimum, setFromOptimum] = useState(false);
+  const [optimumSearching, setOptimumSearching] = useState(false);
+  const [optimumResults, setOptimumResults] = useState<OptimumClient[] | null>(null);
+  const [optimumError, setOptimumError] = useState("");
+
+  // ── Import depuis Optimum via paramètres URL ──────────────────
+  useEffect(() => {
+    if (searchParams.get("source") !== "optimum") return;
+    const nom = searchParams.get("nom") || "";
+    const prenom = searchParams.get("prenom") || "";
+    const mutuelle = searchParams.get("mutuelle") || "";
+    const telephone = searchParams.get("telephone") || "";
+    const email = searchParams.get("email") || "";
+    const ddn = searchParams.get("ddn") || "";
+    const numAdherent = searchParams.get("numAdherent") || "";
+    const numContrat = searchParams.get("numContrat") || "";
+    const adresse = searchParams.get("adresse") || "";
+    const codePostal = searchParams.get("codePostal") || "";
+    const ville = searchParams.get("ville") || "";
+    const adresseComplete = [adresse, codePostal, ville].filter(Boolean).join(" ");
+    setFromOptimum(true);
+    setForm((p) => ({ ...p, nom, prenom, mutuelle, telephone, email, dateNaissance: ddn, numAdherent, numContrat, adresse: adresseComplete || p.adresse }));
+    setStep("new-client");
+  }, [searchParams]);
 
   const user = typeof window !== "undefined"
     ? JSON.parse(localStorage.getItem("optipilot_user") || "{}")
@@ -158,6 +217,50 @@ export default function NouveauClientPage() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Recherche client Optimum Live (via relais extension PC — pas de bridge SQL) ──
+  async function searchOptimumLive() {
+    const query = `${form.nom} ${form.prenom}`.trim();
+    if (!query) return;
+    setOptimumSearching(true);
+    setOptimumError("");
+    setOptimumResults(null);
+    const token = localStorage.getItem("optipilot_token") || "";
+    try {
+      const pushRes = await fetch(`${BACKEND}/api/bridge/search-push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ query }),
+      });
+      if (!pushRes.ok) throw new Error("Impossible de lancer la recherche");
+      const { id } = await pushRes.json();
+
+      // Poll le résultat (l'extension PC doit être active sur Optimum Live)
+      for (let i = 0; i < 15; i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const res = await fetch(`${BACKEND}/api/bridge/search-result/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data.statut === "done") {
+          setOptimumResults((data.results as OptimumClient[]) || []);
+          setOptimumSearching(false);
+          return;
+        }
+        if (data.statut === "error") {
+          setOptimumError(data.results?.error || "Erreur de recherche");
+          setOptimumSearching(false);
+          return;
+        }
+      }
+      setOptimumError("Aucune réponse — vérifiez qu'un poste PC avec Optimum Live ouvert est connecté");
+    } catch (err) {
+      setOptimumError(err instanceof Error ? err.message : "Erreur de recherche");
+    } finally {
+      setOptimumSearching(false);
+    }
+  }
+
   async function lookupClient(nom: string, prenom: string) {
     if (!nom && !prenom) { setStep("new-client"); return; }
     setStep("lookup");
@@ -167,7 +270,7 @@ export default function NouveauClientPage() {
       if (nom) params.append("nom", nom);
       if (prenom) params.append("prenom", prenom);
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients/search?${params}`,
+        `${BACKEND}/api/clients/search?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const clients: ClientFound[] = await res.json();
@@ -203,7 +306,7 @@ export default function NouveauClientPage() {
     try {
       let client;
       if (clientFound) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients/${clientFound.id}`, {
+        const res = await fetch(`${BACKEND}/api/clients/${clientFound.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -216,7 +319,7 @@ export default function NouveauClientPage() {
         });
         client = await res.json();
       } else {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clients`, {
+        const res = await fetch(`${BACKEND}/api/clients`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -231,6 +334,7 @@ export default function NouveauClientPage() {
         client = await res.json();
       }
       localStorage.setItem("optipilot_client", JSON.stringify(client));
+      localStorage.setItem("optipilot_client_id", client.id || "");
       setStep("done");
       setTimeout(() => router.push("/scanner"), 2000);
     } catch {
@@ -239,34 +343,19 @@ export default function NouveauClientPage() {
     }
   }
 
-  const cardStyle = { background: "rgba(10,3,56,0.92)", border: "1.5px solid rgba(83,49,208,0.4)" };
-  const inputStyle = { borderColor: "rgba(83,49,208,0.35)", background: "rgba(2,0,23,0.7)", color: "#FDFDFE" };
-  const inputClass = "w-full px-4 py-3.5 rounded-2xl text-base border-2 outline-none transition-all";
-  const labelClass = "block text-xs font-bold mb-1.5 tracking-wider uppercase";
-
-  function InputField({ label, value, onChange, type = "text", placeholder = "", required = false }: {
-    label: string; value: string; onChange: (v: string) => void;
-    type?: string; placeholder?: string; required?: boolean;
-  }) {
-    return (
-      <div>
-        <label className={labelClass} style={{ color: "#9B96DA" }}>{label}{required && " *"}</label>
-        <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder} required={required} className={inputClass} style={inputStyle}
-          onFocus={(e) => (e.target.style.borderColor = "#5331D0")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(83,49,208,0.35)")}
-        />
-      </div>
-    );
-  }
-
   return (
+    <OpticianGuard>
     <div className="page-bg min-h-screen px-4 py-8">
       <div className="flex items-center gap-4 mb-6 max-w-2xl mx-auto">
-        <button onClick={() => router.back()} className="text-2xl" style={{ color: "#9B96DA" }}>←</button>
+        <button onClick={() => router.back()} className="text-2xl" style={{ color: "#5331D0" }}>←</button>
         <div>
-          <h1 className="text-2xl font-black" style={{ color: "#FDFDFE" }}>Nouveau client</h1>
-          <p className="text-sm" style={{ color: "#9B96DA" }}>
+          <h1 className="text-2xl font-black" style={{ color: "#111827" }}>Nouveau client</h1>
+          {fromOptimum && (
+            <p className="text-xs font-semibold mt-1 px-2 py-0.5 rounded-full inline-block" style={{ background: "rgba(83,49,208,0.12)", color: "#5331D0" }}>
+              ✓ Données importées depuis Optimum
+            </p>
+          )}
+          <p className="text-sm" style={{ color: "#6b7280" }}>
             {step === "scan" && "Scannez la carte mutuelle"}
             {(step === "analyse" || step === "lookup") && "Analyse en cours..."}
             {step === "confirm-existing" && "Client reconnu — confirmez les informations"}
@@ -392,6 +481,37 @@ export default function NouveauClientPage() {
                 <InputField label="Nom" value={form.nom} onChange={(v) => setField("nom", v)} required />
                 <InputField label="Prénom" value={form.prenom} onChange={(v) => setField("prenom", v)} required />
               </div>
+              {!fromOptimum && (
+                <div className="mt-4">
+                  <motion.button whileTap={{ scale: 0.97 }} type="button" onClick={searchOptimumLive}
+                    disabled={!form.nom.trim() || optimumSearching}
+                    className="w-full py-3 rounded-2xl text-sm font-bold"
+                    style={{
+                      background: optimumSearching ? "rgba(155,150,218,0.15)" : "rgba(83,49,208,0.12)",
+                      color: "#9B96DA", border: "1px solid rgba(83,49,208,0.3)",
+                      opacity: !form.nom.trim() ? 0.5 : 1,
+                    }}>
+                    {optimumSearching ? "🔎 Recherche dans Optimum Live…" : "🔎 Vérifier dans Optimum Live"}
+                  </motion.button>
+                  {optimumError && (
+                    <p className="text-xs mt-2" style={{ color: "#ef4444" }}>{optimumError}</p>
+                  )}
+                  {optimumResults && optimumResults.length === 0 && (
+                    <p className="text-xs mt-2" style={{ color: "#22c55e" }}>✓ Aucun client existant — pas de doublon</p>
+                  )}
+                  {optimumResults && optimumResults.length > 0 && (
+                    <div className="mt-3 flex flex-col gap-2">
+                      <p className="text-xs font-semibold" style={{ color: "#f59e0b" }}>⚠ Client(s) déjà présent(s) dans Optimum Live :</p>
+                      {optimumResults.map((c, i) => (
+                        <div key={i} className="rounded-xl px-3 py-2 text-sm flex items-center justify-between"
+                          style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#FDFDFE" }}>
+                          <span>{c.nom} {c.prenom}{c.dateNaissance && ` · ${c.dateNaissance}`}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="rounded-3xl p-6" style={cardStyle}>
               <h3 className="text-xs font-black mb-1 tracking-wider" style={{ color: "#9B96DA" }}>COORDONNÉES</h3>
@@ -490,6 +610,14 @@ export default function NouveauClientPage() {
 
       </AnimatePresence>
     </div>
+    </OpticianGuard>
   );
 }
 
+export default function NouveauClientPage() {
+  return (
+    <Suspense>
+      <NouveauClientPageInner />
+    </Suspense>
+  );
+}

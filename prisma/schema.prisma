@@ -24,28 +24,38 @@ model Magasin {
   trialEndsAt      DateTime?
   stripeCustomerId String?
   stripeSubId      String?
+  // Catalogue verriers personnalisé (JSON array de TarifVerrier)
+  verriersConfig   Json?
+  // Personnalisation visuelle
+  logoUrl          String?  // base64 ou URL
+  couleurPrimaire  String?  // ex: "#5331D0"
   // Setup
   onboardingDone   Boolean  @default(false)
   createdAt        DateTime @default(now())
 
-  utilisateurs Utilisateur[]
-  clients      Client[]
-  devis        Devis[]
-  configTarifs ConfigTarif[]
+  utilisateurs   Utilisateur[]
+  clients        Client[]
+  devis          Devis[]
+  devisPending   DevisPending[]
+  clientPending  ClientPending[]
+  clientSearchRequests ClientSearchRequest[]
+  configTarifs   ConfigTarif[]
 
   @@map("magasins")
 }
 
 model Utilisateur {
-  id         String   @id @default(uuid())
-  magasinId  String
-  nom        String
-  email      String   @unique
-  motDePasse String
-  role       String   @default("vendeur")
-  createdAt  DateTime @default(now())
+  id            String   @id @default(uuid())
+  magasinId     String
+  nom           String
+  email         String   @unique
+  motDePasse    String
+  role          String   @default("vendeur")
+  isSuperAdmin  Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   magasin Magasin @relation(fields: [magasinId], references: [id])
+  devis   Devis[]
 
   @@map("utilisateurs")
 }
@@ -169,12 +179,14 @@ model Devis {
   montantRecuMutuelle     Decimal?
   datePaiementMutuelle    DateTime?
   motifRejetMutuelle      String?
+  createdByUserId String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  client     Client      @relation(fields: [clientId], references: [id])
-  magasin    Magasin     @relation(fields: [magasinId], references: [id])
-  ordonnance Ordonnance? @relation(fields: [ordonnanceId], references: [id])
+  client     Client        @relation(fields: [clientId], references: [id])
+  magasin    Magasin       @relation(fields: [magasinId], references: [id])
+  ordonnance Ordonnance?   @relation(fields: [ordonnanceId], references: [id])
+  createdBy  Utilisateur?  @relation(fields: [createdByUserId], references: [id])
 
   @@map("devis")
 }
@@ -195,4 +207,64 @@ model Questionnaire {
   client Client @relation(fields: [clientId], references: [id])
 
   @@map("questionnaires")
+}
+
+// ─── Devis en attente de transfert vers Optimum Live ───────────────
+// Permet à l'iPad d'envoyer un devis finalisé que le bridge PC va récupérer
+model DevisPending {
+  id          String   @id @default(uuid())
+  magasinId   String
+  payload     Json     // toutes les données du devis (client, ordo, offre, prix...)
+  statut      String   @default("pending") // pending | processing | done | error
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  magasin Magasin @relation(fields: [magasinId], references: [id])
+
+  @@map("devis_pending")
+}
+
+// ─── Client en attente de transfert vers l'iPad ────────────────────
+// Permet à l'extension PC d'envoyer un client qu'OptiPilot iPad va récupérer
+model ClientPending {
+  id          String   @id @default(uuid())
+  magasinId   String
+  payload     Json     // nom, prenom, ddn, telephone, email, mutuelle, numAdherent...
+  statut      String   @default("pending") // pending | done
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  magasin Magasin @relation(fields: [magasinId], references: [id])
+
+  @@map("client_pending")
+}
+
+// ─── Recherche client Optimum Live (relais iPad → extension PC) ────
+// L'iPad crée une demande ; l'extension PC (background.js) la récupère,
+// interroge l'API Optimum Live via le cookie ci_sessions, puis poste le
+// résultat. Plus besoin du bridge SQL local pour cette recherche.
+model ClientSearchRequest {
+  id          String   @id @default(uuid())
+  magasinId   String
+  query       String
+  statut      String   @default("pending") // pending | processing | done | error
+  results     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  magasin Magasin @relation(fields: [magasinId], references: [id])
+
+  @@map("client_search_requests")
+}
+
+// ─── Configuration globale (singleton) ─────────────────────────────
+model ConfigGlobale {
+  id                   String @id @default("global")
+  ambassadeursRestants Int    @default(10)
+  ambassadeursTotal    Int    @default(10)
+  // Fiscalité (auto-entrepreneur) — modifiable dans Admin > Paramètres > Fiscalité
+  tauxUrssaf           Float  @default(0)
+  declarationFrequence String @default("mensuelle") // mensuelle | trimestrielle
+
+  @@map("config_globale")
 }
