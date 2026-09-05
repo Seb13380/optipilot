@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "OptiPilot — Import Optimum",
-  "version": "1.8",
-  "description": "Importez vos clients depuis Optimum Live en 1 clic et transférez vos devis OptiPilot vers Optimum.",
+  "version": "1.9",
+  "description": "Importez vos clients depuis Optimum Live en 1 clic et transférez vos devis OptiPilot vers Optimum ou MyEasyOptic.",
   "icons": {
     "16":  "icons/icon16.png",
     "48":  "icons/icon48.png",
@@ -13,7 +13,8 @@
     "https://optipilot-backend.onrender.com/*",
     "https://www.optipilot.fr/*",
     "https://optipilot.fr/*",
-    "https://livebyoptimum.com/*"
+    "https://livebyoptimum.com/*",
+    "https://hds.myeasyoptic.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -27,6 +28,11 @@
     {
       "matches": ["*://livebyoptimum.com/*"],
       "js": ["devis-inject.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://hds.myeasyoptic.com/*"],
+      "js": ["myeasyoptic-inject.js"],
       "run_at": "document_idle"
     },
     {

@@ -66,8 +66,8 @@ async function getStoredToken() {
 async function injecterDevisDansOptimum(devis) {
   const payload = devis.payload;
 
-  // Trouver un onglet Optimum Live ouvert
-  const tabs = await chrome.tabs.query({ url: "*://livebyoptimum.com/*" });
+  // Cherche un onglet ouvert sur l'un des logiciels métier supportés
+  const tabs = await chrome.tabs.query({ url: ["*://livebyoptimum.com/*", "*://hds.myeasyoptic.com/*"] });
   if (tabs.length === 0) return;
 
   const tab = tabs[0];
